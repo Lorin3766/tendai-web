@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TendAI — Health & Longevity</title>
+  <meta name="theme-color" content="#0b1020" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" sizes="192x192" href="/assets/icon-192.png" />
+  <link rel="apple-touch-icon" href="/assets/icon-192.png" />
+  <link rel="stylesheet" href="/styles.css" />
+  <meta name="description" content="TendAI — personal health & longevity PWA with smooth, fast UI." />
+</head>
+<body>
+  <header class="app-header">
+    <img src="/assets/arc.svg" alt="TendAI golden arc" class="logo-arc" width="120" height="72" />
+    <h1 class="brand">Tend<span class="gold">AI</span></h1>
+  </header>
+
+  <main class="app-shell">
+    <section class="pill-tabs" role="tablist" aria-label="Main sections">
+      <button class="pill is-active" role="tab" aria-selected="true">Мой день</button>
+      <button class="pill" role="tab" aria-selected="false">Поговорить</button>
+      <button class="pill" role="tab" aria-selected="false">Мой путь</button>
+    </section>
+
+    <section class="feed">
+      <article class="card">
+        <h2 class="card-title">Совет дня</h2>
+        <p class="card-text">Пейте воду и выходите на 10‑минутную прогулку — маленький шаг для энергии и сосудов.</p>
+        <button class="btn">Обновить</button>
+      </article>
+
+      <article class="card">
+        <h2 class="card-title">Показатели недели</h2>
+        <div class="progress-wrap" aria-label="Weekly progress">
+          <div class="progress">
+            <div class="progress-bar" style="width: 66%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="66"></div>
+          </div>
+          <span class="chip">Шаги</span>
+          <span class="chip">Сон</span>
+          <span class="chip">Стресс</span>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>Offline‑ready. Installable. Fast like ChatGPT.</p>
+  </footer>
+
+  <script>
+    // Register Service Worker (with Feature Detect)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js');
+      });
+    }
+  </script>
+</body>
+</html>
