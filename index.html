@@ -1,61 +1,317 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TendAI — Health & Longevity</title>
-  <meta name="theme-color" content="#0b1020" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" sizes="192x192" href="/assets/icon-192.png" />
-  <link rel="apple-touch-icon" href="/assets/icon-192.png" />
-  <link rel="stylesheet" href="/styles.css" />
-  <meta name="description" content="TendAI — personal health & longevity PWA with smooth, fast UI." />
+  <title>TendAI</title>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0f19">
+
+  <style>
+    /* =====================
+       Design tokens
+    ======================*/
+    :root {
+      --bg1: #0b0f19;           /* deep navy */
+      --panel: #0f1422;         /* slightly lighter */
+      --text: #f2f2f2;          /* white/near white */
+      --muted: #b6bdc8;         /* secondary text */
+      --border: #ffd87a;        /* neon gold base */
+      --accent: #ffd87a;        /* alias */
+      --shadow: 0 0 0.5px rgba(255, 216, 122, 0.5), 0 0 8px rgba(255, 216, 122, 0.18);
+      --shadow-strong: 0 0 1px rgba(255, 216, 122, 0.7), 0 0 12px rgba(255, 216, 122, 0.28);
+      --radius-card: 22px;
+      --radius-ctrl: 16px;
+      --gap-1: 8px;
+      --gap-2: 12px;
+      --gap-3: 16px;
+      --gap-4: 24px;
+      --gap-5: 32px;
+      --line: 1.4;
+      --speed: 160ms;
+      --easing: cubic-bezier(.2,.7,.2,1);
+    }
+
+    /* Base */
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 600px at 50% -10%, #11193a 0%, var(--bg1) 55%) no-repeat, var(--bg1);
+      color: var(--text);
+      line-height: var(--line);
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    }
+
+    .container { max-width: 1280px; margin: 0 auto; padding: 32px 20px 40px; }
+
+    /* Header with arc */
+    header { display: grid; place-items: center; gap: 12px; margin-bottom: var(--gap-5); }
+    .logo { font-size: clamp(28px, 5vw, 40px); font-weight: 700; letter-spacing: 0.2px; }
+    .arc {
+      width: 170px; height: 54px; position: relative; filter: drop-shadow(0 0 8px rgba(255,216,122,.25));
+    }
+    .arc svg path { stroke: var(--accent); stroke-width: 2.2; fill: none; }
+
+    /* Tabs */
+    .tabs { display: inline-flex; gap: 6px; border-radius: 999px; }
+    .tab {
+      padding: 8px 18px; border-radius: 999px; border: 1.2px solid var(--border);
+      box-shadow: var(--shadow); color: var(--text); background: transparent;
+      cursor: pointer; transition: transform var(--speed) var(--easing), box-shadow var(--speed) var(--easing);
+    }
+    .tab[aria-selected="true"] { box-shadow: var(--shadow-strong); transform: translateZ(0) scale(1.01); }
+    .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* Layout: 3 columns */
+    .grid { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: var(--gap-5); align-items: start; }
+    .panel { background: var(--panel); border: 1.2px solid rgba(255,216,122,.4); border-radius: var(--radius-card); box-shadow: var(--shadow); padding: 20px; }
+
+    .dividerV { width: 1px; background: linear-gradient(180deg, rgba(255,216,122,.0), rgba(255,216,122,.28), rgba(255,216,122,.0)); height: 100%; opacity: .45; }
+
+    /* Left: Profile */
+    .profile h2, .actions h2 { margin: 0 0 var(--gap-3); font-size: 18px; font-weight: 600; }
+    .profile .row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 18px; }
+    .ring { width: 60px; height: 60px; border-radius: 999px; position: relative; display: grid; place-items: center; color: var(--text); font-weight: 600; }
+    .ring::before { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 1.6px solid var(--border); box-shadow: var(--shadow); }
+
+    .list { display: grid; gap: 10px; }
+    .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--radius-ctrl); border: 1.2px solid var(--border); box-shadow: var(--shadow); background: transparent; color: var(--text); }
+    .chip .ico { width: 18px; height: 18px; display: grid; place-items: center; }
+
+    .sectionTitle { margin: 18px 0 8px; color: var(--text); font-weight: 600; }
+    .muted { color: var(--muted); }
+
+    /* Center: Feed & Talk */
+    .centerCard { padding: 24px; }
+    .talk, .feed { transition: opacity var(--speed) var(--easing), transform var(--speed) var(--easing); }
+    .hidden { opacity: 0; transform: translateY(6px); pointer-events: none; position: absolute; inset: 0; }
+
+    .bubble { display: inline-block; border: 1.2px solid var(--border); box-shadow: var(--shadow); border-radius: 16px; padding: 12px 14px; max-width: min(90%, 540px); }
+
+    .inputRow { display: flex; gap: 10px; margin-top: var(--gap-4); }
+    .inputRow input[type="text"] {
+      flex: 1; padding: 12px 14px; border-radius: var(--radius-ctrl); background: transparent; border: 1.2px solid var(--border); box-shadow: var(--shadow); color: var(--text);
+    }
+    .btn {
+      padding: 12px 16px; border-radius: var(--radius-ctrl); border: 1.3px solid var(--border); color: var(--text); background: transparent; box-shadow: var(--shadow); cursor: pointer;
+      transition: transform var(--speed) var(--easing), box-shadow var(--speed) var(--easing), filter var(--speed) var(--easing);
+    }
+    .btn:hover, .chip:hover, .panel:hover { transform: translateZ(0) scale(1.01); box-shadow: var(--shadow-strong); }
+    .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .card { border: 1.2px solid rgba(255,216,122,.4); border-radius: var(--radius-card); padding: 16px; box-shadow: var(--shadow); background: transparent; }
+    .cards { display: grid; gap: 14px; }
+
+    /* Right: Actions & Mini-plans */
+    .actionItem { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--radius-ctrl); border: 1.2px solid var(--border); box-shadow: var(--shadow); }
+    .actionItem .left { display: flex; align-items: center; gap: 10px; }
+
+    /* Collapsible */
+    details { border: 1.2px solid rgba(255,216,122,.35); border-radius: var(--radius-card); padding: 14px; box-shadow: var(--shadow); background: transparent; }
+    details+details { margin-top: 12px; }
+    summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-weight: 600; }
+    summary::-webkit-details-marker { display: none; }
+
+    /* Accessibility & motion */
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+
+    /* Responsive */
+    @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } .dividerV { display:none; } }
+  </style>
 </head>
 <body>
-  <header class="app-header">
-    <img src="/assets/arc.svg" alt="TendAI golden arc" class="logo-arc" width="120" height="72" />
-    <h1 class="brand">Tend<span class="gold">AI</span></h1>
-  </header>
+  <div class="container">
+    <header>
+      <div class="arc" aria-hidden="true">
+        <svg viewBox="0 0 200 70" width="100%" height="100%" role="img" aria-label="TendAI arc">
+          <path d="M10 60 Q100 -10 190 60" />
+        </svg>
+      </div>
+      <div class="logo">TendAI</div>
+      <nav class="tabs" role="tablist" aria-label="View switcher">
+        <button class="tab" role="tab" id="tab-feed" aria-selected="true" aria-controls="panel-feed">Feed</button>
+        <button class="tab" role="tab" id="tab-talk" aria-selected="false" aria-controls="panel-talk">Talk</button>
+      </nav>
+    </header>
 
-  <main class="app-shell">
-    <section class="pill-tabs" role="tablist" aria-label="Main sections">
-      <button class="pill is-active" role="tab" aria-selected="true">Мой день</button>
-      <button class="pill" role="tab" aria-selected="false">Поговорить</button>
-      <button class="pill" role="tab" aria-selected="false">Мой путь</button>
-    </section>
-
-    <section class="feed">
-      <article class="card">
-        <h2 class="card-title">Совет дня</h2>
-        <p class="card-text">Пейте воду и выходите на 10‑минутную прогулку — маленький шаг для энергии и сосудов.</p>
-        <button class="btn">Обновить</button>
-      </article>
-
-      <article class="card">
-        <h2 class="card-title">Показатели недели</h2>
-        <div class="progress-wrap" aria-label="Weekly progress">
-          <div class="progress">
-            <div class="progress-bar" style="width: 66%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="66"></div>
+    <section class="grid" aria-live="polite">
+      <!-- Left column -->
+      <aside class="panel profile" aria-label="Profile">
+        <h2>Profile</h2>
+        <div class="row">
+          <div>
+            <div style="font-weight:700; font-size:18px">Antony</div>
+            <div class="muted">42 years</div>
           </div>
-          <span class="chip">Шаги</span>
-          <span class="chip">Сон</span>
-          <span class="chip">Стресс</span>
+          <div class="ring">33%</div>
         </div>
-      </article>
-    </section>
-  </main>
 
-  <footer class="app-footer">
-    <p>Offline‑ready. Installable. Fast like ChatGPT.</p>
-  </footer>
+        <div class="sectionTitle">Daily focus</div>
+        <div class="list">
+          <div class="chip"><span class="ico">💤</span><span>Sleep</span></div>
+          <div class="chip"><span class="ico">🍽️</span><span>Food</span></div>
+          <div class="chip"><span class="ico">💧</span><span>Water</span></div>
+          <div class="chip"><span class="ico">😌</span><span>Mood</span></div>
+          <div class="chip"><span class="ico">⚡</span><span>Stress</span></div>
+        </div>
+
+        <div class="sectionTitle">Goals</div>
+        <div class="muted">Settings</div>
+      </aside>
+
+      <div class="dividerV" aria-hidden="true"></div>
+
+      <!-- Center column -->
+      <main class="panel centerCard" aria-label="Main">
+        <!-- FEED -->
+        <div id="panel-feed" class="feed cards" role="tabpanel" aria-labelledby="tab-feed">
+          <div class="card">
+            <div style="font-weight:600; margin-bottom:8px">Today summary</div>
+            <div class="list">
+              <div class="chip"><span class="ico">🛌</span> Sleep — 7h 20m</div>
+              <div class="chip"><span class="ico">🚶</span> Steps — 8,540</div>
+              <div class="chip"><span class="ico">💧</span> Water — 6 cups</div>
+              <div class="chip"><span class="ico">🥚</span> Protein — 92 g</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="font-weight:600; margin-bottom:8px">Goal progress</div>
+            <div class="list">
+              <div class="chip"><span class="ico">🙂🙂🙂</span> Medium</div>
+              <div class="chip"><span class="ico">📉</span> Lower LDL (23/305)</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="font-weight:600; margin-bottom:8px">Tip of the day</div>
+            <div class="bubble">Try adding nuts on top of your salad to boost fiber and protein.</div>
+          </div>
+
+          <div class="card">
+            <div style="display:flex; gap:10px; align-items:center; justify-content:space-between;">
+              <div>
+                <div style="font-weight:600">Upcoming tasks</div>
+                <div class="muted">Tackle supplements • Drink water • Evening check‑in</div>
+              </div>
+              <button class="btn" type="button">Book</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TALK -->
+        <div id="panel-talk" class="talk hidden" role="tabpanel" aria-labelledby="tab-talk">
+          <div class="cards">
+            <div class="card">
+              <div class="bubble" aria-live="polite">
+                <div style="font-weight:700; margin-bottom:4px">Hello, Antony 👋</div>
+                <div class="muted">What’s bothering you today?</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="bubble" style="max-width:520px">My stomach hurts after dinner.</div>
+              <div class="inputRow">
+                <input id="msg" type="text" placeholder="Type a message…" aria-label="Type a message" />
+                <button class="btn" id="sendBtn" type="button">Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <div class="dividerV" aria-hidden="true"></div>
+
+      <!-- Right column -->
+      <aside class="panel actions" aria-label="Actions & Mini-plans">
+        <h2>Actions & Mini-plans</h2>
+        <div class="list">
+          <div class="actionItem"><div class="left"><span class="ico">🕒</span><span>Health in 60 sec</span></div></div>
+          <div class="actionItem"><div class="left"><span class="ico">💬</span><span>Symptoms</span></div></div>
+          <div class="actionItem"><div class="left"><span class="ico">🧪</span><span>Labs</span></div></div>
+          <div class="actionItem"><div class="left"><span class="ico">🧠</span><span>Smart check‑in</span></div></div>
+          <div class="actionItem"><div class="left"><span class="ico">📈</span><span>Progress tracker</span></div></div>
+        </div>
+
+        <div class="sectionTitle" style="margin-top:18px">Pinned</div>
+        <div class="list">
+          <div class="chip"><span class="ico">💧</span> Hydration plan</div>
+          <div class="chip"><span class="ico">🛌</span> Better Sleep (7 days)</div>
+        </div>
+
+        <div class="sectionTitle" style="margin-top:18px">More</div>
+        <details>
+          <summary>Tools & Safety <span class="muted">(open)</span></summary>
+          <div class="list" style="margin-top:10px">
+            <div class="chip"><span class="ico">🚩</span> Red flags / SOS</div>
+            <div class="chip"><span class="ico">🏷️</span> Discounts & coupons</div>
+          </div>
+        </details>
+      </aside>
+    </section>
+
+    <footer style="margin-top:28px; text-align:center" class="muted">
+      Not a medical service. For emergencies call your local emergency number.
+    </footer>
+  </div>
 
   <script>
-    // Register Service Worker (with Feature Detect)
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js');
-      });
+    // ===== Tabs logic (Feed | Talk) with persistence, keyboard shortcuts, and basic swipe =====
+    const tabFeed = document.getElementById('tab-feed');
+    const tabTalk = document.getElementById('tab-talk');
+    const panelFeed = document.getElementById('panel-feed');
+    const panelTalk = document.getElementById('panel-talk');
+
+    function selectTab(which) {
+      const isFeed = which === 'feed';
+      tabFeed.setAttribute('aria-selected', String(isFeed));
+      tabTalk.setAttribute('aria-selected', String(!isFeed));
+      panelFeed.classList.toggle('hidden', !isFeed);
+      panelTalk.classList.toggle('hidden', isFeed);
+      try { localStorage.setItem('tendai_tab', which); } catch(_){}
+      // Update hash for deep-linking
+      if (history.replaceState) {
+        history.replaceState(null, '', '#' + which);
+      } else {
+        location.hash = which;
+      }
     }
+
+    // Restore last tab
+    const last = (location.hash && location.hash.replace('#','')) || localStorage.getItem('tendai_tab') || 'talk';
+    selectTab(last);
+
+    tabFeed.addEventListener('click', () => selectTab('feed'));
+    tabTalk.addEventListener('click', () => selectTab('talk'));
+
+    // Keyboard shortcuts Ctrl+1 = Feed, Ctrl+2 = Talk
+    window.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === '1') { e.preventDefault(); selectTab('feed'); }
+      if (e.ctrlKey && e.key === '2') { e.preventDefault(); selectTab('talk'); }
+    });
+
+    // Basic touch swipe for center panel
+    let startX = null; const center = document.querySelector('main');
+    center.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, {passive:true});
+    center.addEventListener('touchend', (e) => {
+      if (startX == null) return; const dx = e.changedTouches[0].clientX - startX; startX = null;
+      if (Math.abs(dx) < 40) return; // threshold
+      if (dx < 0) selectTab('talk'); else selectTab('feed');
+    });
+
+    // Fake send message interaction
+    const sendBtn = document.getElementById('sendBtn');
+    const msgInput = document.getElementById('msg');
+    function send() {
+      const v = msgInput.value.trim(); if (!v) return; msgInput.value = '';
+      const c = document.createElement('div');
+      c.className = 'bubble'; c.style.marginTop = '10px'; c.textContent = v;
+      panelTalk.querySelector('.card:last-child').appendChild(c);
+      c.scrollIntoView({behavior:'smooth', block:'end'});
+    }
+    sendBtn?.addEventListener('click', send);
+    msgInput?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); send(); }});
   </script>
 </body>
 </html>
