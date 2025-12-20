@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TendAI</title>
+  <link rel="stylesheet" href="styles/theme.css" />
+  <link rel="stylesheet" href="styles/layout.css" />
+  <link rel="stylesheet" href="styles/components.css" />
+  <link rel="manifest" href="manifest.json" />
+</head>
+<body>
+  <div class="tendai-layout">
+    <!-- Brand Header -->
+    <header class="brand-header" aria-label="TendAI brand">
+      <h1 class="brand-title">TendAI</h1>
+    </header>
+
+    <!-- Main three-column layout -->
+    <main aria-label="TendAI main layout">
+      <div class="layout-grid">
+        <!-- LEFT COLUMN -->
+        <section id="col-left">
+          <!-- Profile -->
+          <article class="card-soft" id="profileHeader">
+            <div class="profile-header">
+              <div class="profile-avatar" id="profileAvatar">A</div>
+              <div class="profile-info">
+                <p class="profile-name" id="profileName">Antony</p>
+                <p class="profile-meta">
+                  <span id="profileAge">42 yrs</span>
+                </p>
+              </div>
+              <button
+                class="profile-menu-toggle"
+                id="profileMenuToggle"
+                aria-label="Open profile menu"
+              >
+                ☰
+              </button>
+            </div>
+
+            <div class="card-header-toggle" data-collapse="LEFT_PROFILE_MENU" role="button" tabindex="0" aria-expanded="false">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="card-subtitle" style="margin: 0;">Profile Progress</span>
+                <span class="profile-completeness-badge" id="profileCompletenessDesktop" title="More details → more personalized help.">0%</span>
+                <span class="profile-completeness-details" id="profileCompletenessDetailsDesktop">0 / 0</span>
+              </div>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="card-body-collapsible" data-collapse-body="LEFT_PROFILE_MENU">
+              <div style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-size: 12px; color: var(--fg-soft); margin-bottom: 4px;">Next step:</div>
+                <div id="nextStepDesktop" style="font-size: 14px; color: var(--fg); text-decoration: underline; cursor: pointer; display: none;"></div>
+              </div>
+              <div class="profile-menu" id="profileMenu" hidden>
+                <button type="button" data-section="body">
+                  <span>Your Body</span>
+                  <span class="profile-menu-status" data-profile-status="body"></span>
+                </button>
+                <button type="button" data-section="health">
+                  <span>Your Health</span>
+                  <span class="profile-menu-status" data-profile-status="health"></span>
+                </button>
+                <button type="button" data-section="mind">
+                  <span>Your Mind</span>
+                  <span class="profile-menu-status" data-profile-status="mind"></span>
+                </button>
+                <button type="button" data-section="lifestyle">
+                  <span>Lifestyle & Habits</span>
+                  <span class="profile-menu-status" data-profile-status="lifestyle"></span>
+                </button>
+                <button type="button" data-section="goals">
+                  <span>Goals & Intent</span>
+                  <span class="profile-menu-status" data-profile-status="goals"></span>
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Daily focus -->
+          <article class="card-soft" id="dailyFocusCard">
+            <div class="card-header-toggle" data-collapse="LEFT_DAILY_FOCUS" role="button" tabindex="0" aria-expanded="false">
+              <h3 class="card-subtitle" style="margin: 0;">Daily Focus</h3>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="card-body-collapsible" data-collapse-body="LEFT_DAILY_FOCUS">
+              <p class="card-line" id="dailyFocusText">Take time to reduce stress today.</p>
+            </div>
+          </article>
+
+          <!-- Wellbeing -->
+          <article class="card-soft" id="wellbeingCard">
+            <div class="card-header-toggle" data-collapse="LEFT_WELLBEING" role="button" tabindex="0" aria-expanded="false">
+              <h3 class="card-subtitle" style="margin: 0;">Wellbeing</h3>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="card-body-collapsible" data-collapse-body="LEFT_WELLBEING">
+              <p class="card-line" id="wellbeingSummaryText">
+                Energy steady • Stress moderate.
+              </p>
+            </div>
+          </article>
+
+        </section>
+
+        <!-- CENTER COLUMN -->
+        <section id="col-center">
+          <!-- Calendar FAB Button (on border line, top right corner) -->
+          <button class="calendar-fab" id="calendarFab" aria-label="Open calendar">📅</button>
+          
+          <div id="centerContent">
+            <!-- Tabs FEED / TALK -->
+            <nav class="center-tabs" role="tablist" id="centerTabs">
+              <button
+                type="button"
+                class="center-tab is-active"
+                role="tab"
+                id="tab-feed"
+                aria-controls="feed-view"
+                aria-selected="true"
+              >
+                Feed
+              </button>
+              <button
+                type="button"
+                class="center-tab"
+                role="tab"
+                id="tab-talk"
+                aria-controls="talk-view"
+                aria-selected="false"
+              >
+                Talk
+              </button>
+            </nav>
+
+            <!-- FEED VIEW -->
+            <div class="feed-view" id="feed-view">
+              <!-- My Day -->
+              <article class="card-soft" id="myDayCard">
+                <!-- Date -->
+                <div class="my-day-date" id="dayHeaderDate">
+                  Thu · Nov 23 · 2025
+                </div>
+
+                <!-- Weather -->
+                <div class="my-day-weather">
+                  <div class="my-day-weather-main" id="dayHeaderWeather">
+                    72°F · Sunny
+                  </div>
+                  <div class="my-day-weather-details" id="dayHeaderWeatherDetails">
+                    Wind: 5 mph · Pressure: 1013 hPa
+                  </div>
+                </div>
+
+                <!-- Advice from TendAI -->
+                <div class="my-day-advice" id="dayHeaderAdvice">
+                  Stable sleep and pressure — good day for focused work.
+                </div>
+              </article>
+
+              <!-- Hidden elements (kept for JS compatibility) -->
+              <article class="card-soft" id="dayHeaderCard" style="display: none;">
+                <div class="day-header">
+                  <div class="day-header-date" id="dayHeaderDate">Thu · Nov 23 · 2025</div>
+                  <div class="day-header-weather" id="dayHeaderWeather">72°F · Sunny · Feels like 70°</div>
+                  <div class="day-header-pressure" id="dayHeaderPressure">Pressure: 1013 hPa</div>
+                  <div class="day-header-stats" id="dayHeaderStats">
+                    <span class="day-stat-item">
+                      <span class="day-stat-label">Sleep:</span>
+                      <span class="day-stat-value" id="dayStatSleep">7.2 / 7.5 h</span>
+                    </span>
+                    <span class="day-stat-item">
+                      <span class="day-stat-label">Water:</span>
+                      <span class="day-stat-value" id="dayStatWater">6 / 8</span>
+                    </span>
+                    <span class="day-stat-item">
+                      <span class="day-stat-label">Energy:</span>
+                      <span class="day-stat-value" id="dayStatEnergy">Good</span>
+                    </span>
+                  </div>
+                  <div class="day-header-advice" id="dayHeaderAdvice">
+                    Stable sleep and pressure — good day for focused work.
+                  </div>
+                  <button
+                    type="button"
+                    class="btn"
+                    style="margin-top: 12px; width: 100%;"
+                    data-open-checkin
+                  >
+                    Update today
+                  </button>
+                </div>
+              </article>
+
+              <article class="card-soft day-pulse-card" style="display: none;">
+                <h3 class="card-title">Day pulse</h3>
+                <div class="pulse-grid" id="dayPulseGrid"></div>
+              </article>
+
+              <article class="card-soft" id="pinnedPlansCard" style="display: none;">
+                <h3 class="card-title">Pinned plans</h3>
+                <div class="pinned-list" id="pinnedPlansList"></div>
+              </article>
+
+              <article class="card-soft goal-panel-card" id="goalPanelCard" style="display: none;">
+                <div class="goal-panel is-active" data-goal-panel="body">
+                  <div class="goal-panel-head">
+                    <h3 class="card-title">Your Body</h3>
+                    <p class="goal-panel-status" id="goalPanelStatusBody">
+                      Maintain • Soft
+                    </p>
+                  </div>
+
+                  <div class="goal-content">
+                    <label class="goal-field">
+                      Goal focus
+                      <select id="bodyGoalType">
+                        <option value="lose">Lose fat</option>
+                        <option value="maintain">Maintain</option>
+                        <option value="gain">Gain muscle</option>
+                        <option value="recomp">Recomp / tone</option>
+                      </select>
+                    </label>
+
+                    <label class="goal-field">
+                      Intensity
+                      <select id="bodyGoalIntensity">
+                        <option value="1">Soft</option>
+                        <option value="2">Normal</option>
+                        <option value="3">Aggressive</option>
+                      </select>
+                    </label>
+
+                    <label class="goal-field">
+                      Target weight (kg)
+                      <input
+                        type="number"
+                        id="bodyTargetWeight"
+                        min="30"
+                        max="200"
+                        placeholder="Enter weight"
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      class="btn goal-save"
+                      data-goal-save="body"
+                    >
+                      Save
+                    </button>
+
+                    <p class="goal-warning" id="bodyGoalWarning" hidden></p>
+
+                    <p class="goal-panel-note">
+                      Adjust gradually and keep changes within what feels safe for
+                      you.
+                    </p>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <!-- TALK VIEW -->
+            <div class="talk-view hidden" id="talk-view">
+              <!-- TALK Header - скрыт, чтобы увеличить область сообщений -->
+              <article class="card-soft" id="talkHeaderCard" style="display: none;">
+                <h2 class="talk-header-title" id="aiGreetingText">
+                  How can I support you today?
+                </h2>
+              </article>
+
+              <!-- TALK Conversation -->
+              <article class="card-soft conversation-card" id="conversationCard">
+                <div class="chat-scroll-wrapper">
+                  <div id="chatLog" class="conversation-area" aria-live="polite"></div>
+                </div>
+
+                <div class="ai-input-row">
+                  <textarea
+                    id="chatInput"
+                    class="input chat-textarea"
+                    placeholder="Message"
+                    aria-label="Type a message"
+                    rows="1"
+                  ></textarea>
+                  <button id="sendBtn" class="btn">Send</button>
+                </div>
+                <button id="scrollToBottomBtn" class="scroll-to-bottom-btn" aria-label="Scroll to bottom" hidden>
+                  ↓
+                </button>
+              </article>
+            </div>
+
+            <!-- SERVICES VIEW (Mobile only) -->
+            <div class="services-view hidden" id="services-view">
+              <div id="screen-services">
+                <!-- Labs Section -->
+                <article class="card-soft service-section" data-service-section="labs">
+                  <div class="card-header-toggle" data-collapse="MOBILE_LABS" role="button" tabindex="0" aria-expanded="false">
+                    <h3 class="card-title" style="margin: 0;">Labs</h3>
+                    <span class="chevron">▼</span>
+                  </div>
+                  <div class="card-body-collapsible" data-collapse-body="MOBILE_LABS">
+                    <div class="chip-row" id="mobileLabsChipsContainer">
+                      <!-- Labs will be rendered dynamically -->
+                    </div>
+                  </div>
+                </article>
+
+                <!-- Online Doctor Section -->
+                <article class="card-soft service-section" data-service-section="online-doctor">
+                  <div class="card-header-toggle" data-collapse="MOBILE_ONLINE_DOCTOR" role="button" tabindex="0" aria-expanded="false">
+                    <h3 class="card-title" style="margin: 0;">Online doctor</h3>
+                    <span class="chevron">▼</span>
+                  </div>
+                  <div class="card-body-collapsible" data-collapse-body="MOBILE_ONLINE_DOCTOR">
+                    <div class="service-section-content" id="mobileOnlineDoctorContainer">
+                      <!-- Online doctor options will be rendered dynamically -->
+                    </div>
+                  </div>
+                </article>
+
+                <!-- Mini Programs Section -->
+                <article class="card-soft service-section" data-service-section="mini-programs">
+                  <div class="card-header-toggle" data-collapse="MOBILE_MINI_PROGRAMS" role="button" tabindex="0" aria-expanded="false">
+                    <h3 class="card-title" style="margin: 0;">Mini Programs</h3>
+                    <span class="chevron">▼</span>
+                  </div>
+                  <div class="card-body-collapsible" data-collapse-body="MOBILE_MINI_PROGRAMS">
+                    <div class="pinned-list" id="mobileMiniPlansList">
+                      <!-- Mini Programs will be rendered dynamically -->
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+
+            <!-- PROFILE VIEW (Mobile only) -->
+            <div class="profile-view hidden" id="profile-view">
+              <!-- Profile Header Card -->
+              <article class="card-soft" id="mobileProfileHeader">
+                <div class="profile-header">
+                  <div class="profile-avatar" id="mobileProfileAvatar">A</div>
+                  <div class="profile-info">
+                    <p class="profile-name" id="mobileProfileName">Antony</p>
+                    <p class="profile-meta">
+                      <span id="mobileProfileAge">42 yrs</span>
+                    </p>
+                  </div>
+                </div>
+              </article>
+
+              <!-- Your Profile Card -->
+              <article class="card-soft" id="mobileProfileCard">
+                <div class="card-header-toggle" data-collapse="MOBILE_PROFILE_MENU" role="button" tabindex="0" aria-expanded="false">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <h3 class="card-title" style="margin: 0;">Your Profile</h3>
+                    <span class="profile-completeness-badge" id="profileCompletenessMobile" title="More details → more personalized help.">0%</span>
+                    <span class="profile-completeness-details" id="profileCompletenessDetailsMobile">0 / 0</span>
+                  </div>
+                  <span class="chevron">▼</span>
+                </div>
+                <div class="card-body-collapsible" data-collapse-body="MOBILE_PROFILE_MENU">
+                  <div style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div style="font-size: 12px; color: var(--fg-soft); margin-bottom: 4px;">Next step:</div>
+                    <div id="nextStepMobile" style="font-size: 14px; color: var(--fg); text-decoration: underline; cursor: pointer; display: none;"></div>
+                  </div>
+                  <div class="profile-menu" id="mobileProfileMenu">
+                  <button type="button" data-section="body">
+                    <span>Your Body</span>
+                    <span class="profile-menu-status" data-profile-status="body"></span>
+                  </button>
+                  <button type="button" data-section="health">
+                    <span>Your Health</span>
+                    <span class="profile-menu-status" data-profile-status="health"></span>
+                  </button>
+                  <button type="button" data-section="mind">
+                    <span>Your Mind</span>
+                    <span class="profile-menu-status" data-profile-status="mind"></span>
+                  </button>
+                  <button type="button" data-section="lifestyle">
+                    <span>Lifestyle & Habits</span>
+                    <span class="profile-menu-status" data-profile-status="lifestyle"></span>
+                  </button>
+                  <button type="button" data-section="goals">
+                    <span>Goals & Intent</span>
+                    <span class="profile-menu-status" data-profile-status="goals"></span>
+                  </button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- Settings Card -->
+              <article class="card-soft" id="mobileSettingsCard">
+                <button type="button" class="settings-button" id="mobileSettingsButton" data-section="settings">
+                  <span>Settings</span>
+                  <span>→</span>
+                </button>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT COLUMN -->
+        <aside id="col-right">
+          <!-- Labs -->
+          <article class="card-soft quick-help-card" id="labsCard">
+            <div class="card-header-toggle" data-collapse="RIGHT_LABS" role="button" tabindex="0" aria-expanded="false">
+              <h3 class="card-title" style="margin: 0;">Labs</h3>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="card-body-collapsible" data-collapse-body="RIGHT_LABS">
+              <div class="chip-row" id="labsChipsContainer">
+                <!-- Labs will be rendered dynamically -->
+              </div>
+            </div>
+          </article>
+
+          <!-- Online doctor -->
+          <article class="card-soft quick-help-card" id="onlineDoctorCard">
+            <div class="card-header-toggle" data-collapse="RIGHT_ONLINE_DOCTOR" role="button" tabindex="0" aria-expanded="false">
+              <h3 class="card-title" style="margin: 0;">Online doctor</h3>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="card-body-collapsible" data-collapse-body="RIGHT_ONLINE_DOCTOR">
+              <div class="pinned-list" id="onlineDoctorList">
+                <!-- Online doctor options will be rendered dynamically -->
+              </div>
+            </div>
+          </article>
+
+          <!-- Mini Programs -->
+          <article class="card-soft" id="miniPlansCard">
+            <div class="card-header-toggle" data-collapse="RIGHT_MINI_PROGRAMS" role="button" tabindex="0" aria-expanded="false">
+              <h3 class="card-title" style="margin: 0;">Mini Programs</h3>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="card-body-collapsible" data-collapse-body="RIGHT_MINI_PROGRAMS">
+              <div class="pinned-list" id="miniPlansList">
+                <!-- Mini Programs will be rendered dynamically -->
+              </div>
+            </div>
+          </article>
+
+          <!-- Tips -->
+          <article class="card-soft compact-card" id="inspirationCard">
+            <h3 class="card-title">Tips</h3>
+            <p class="card-text" id="inspirationText">
+              TendAI will show helpful notes here later.
+            </p>
+          </article>
+
+          <a href="#" class="settings-link" id="settingsLink" data-section="settings">⚙ Settings</a>
+        </aside>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation (Mobile only) -->
+    <nav class="bottom-nav" role="tablist" id="bottomNav">
+      <button class="nav-item active" data-screen="feed" aria-label="Feed">
+        <span class="nav-item-icon">📊</span>
+        <span class="nav-item-label">Feed</span>
+      </button>
+      <button class="nav-item" data-screen="talk" aria-label="Talk">
+        <span class="nav-item-icon">💬</span>
+        <span class="nav-item-label">Talk</span>
+      </button>
+      <button class="nav-item" data-screen="services" aria-label="Services">
+        <span class="nav-item-icon">🔬</span>
+        <span class="nav-item-label">Services</span>
+      </button>
+      <button class="nav-item" data-screen="profile" aria-label="Profile">
+        <span class="nav-item-icon">👤</span>
+        <span class="nav-item-label">Profile</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Profile Modal Overlay -->
+  <div class="profile-modal-overlay" id="profileModalOverlay">
+    <div class="profile-modal" id="profileModal">
+      <div class="profile-modal-header">
+        <h3 class="card-title" id="profileModalTitle">Basic Information</h3>
+        <button class="profile-modal-close" id="profileModalClose" aria-label="Close">×</button>
+      </div>
+      <div class="profile-modal-tabs">
+        <button class="profile-modal-tab tab-active" data-tab="profile">Profile</button>
+        <button class="profile-modal-tab" data-tab="goals">Goals</button>
+      </div>
+      <div class="profile-modal-content" id="profileModalContent">
+        <!-- Content will be dynamically generated -->
+      </div>
+      <div class="profile-modal-footer">
+        <button class="btn profile-modal-save">Save</button>
+        <button class="btn profile-modal-cancel" style="background: rgba(255,255,255,0.1);">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal Overlay -->
+  <div class="profile-modal-overlay" id="settingsModalOverlay">
+    <div class="profile-modal" id="settingsModal">
+      <div class="profile-modal-header">
+        <h3 class="card-title">Settings</h3>
+        <button class="profile-modal-close" id="settingsModalClose" aria-label="Close">×</button>
+      </div>
+      <div class="settings-modal-content">
+        <!-- App & Preferences -->
+        <div class="settings-section">
+          <h4 class="settings-section-title">App & Preferences</h4>
+          
+          <label class="settings-field">
+            <div class="settings-field-label">
+              <span>Language</span>
+            </div>
+            <select class="settings-select" id="settingsLanguage">
+              <option value="en" selected>English</option>
+              <option value="ru">Русский</option>
+              <option value="uk">Українська</option>
+              <option value="es">Español</option>
+            </select>
+          </label>
+
+          <div class="settings-field">
+            <div class="settings-field-label">
+              <span>Daily check-ins</span>
+              <label class="settings-toggle" for="settingsDailyCheckins">
+                <input type="checkbox" id="settingsDailyCheckins">
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-field-hint">Short morning and evening questions about your wellbeing.</div>
+          </div>
+
+          <div class="settings-field">
+            <div class="settings-field-label">
+              <span>Reminders & tips</span>
+              <label class="settings-toggle" for="settingsNotifications">
+                <input type="checkbox" id="settingsNotifications">
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-field-hint">Allow TendAI to remind you about check-ins and mini programs.</div>
+          </div>
+        </div>
+
+        <!-- Your Data -->
+        <div class="settings-section">
+          <h4 class="settings-section-title">Your Data</h4>
+          
+          <button class="settings-row" id="settingsEditProfile">
+            <div class="settings-row-content">
+              <span class="settings-row-label">Edit profile data</span>
+              <span class="settings-row-hint">Age, body, health, mind, lifestyle.</span>
+            </div>
+            <span class="settings-row-arrow">→</span>
+          </button>
+
+          <button class="settings-row" id="settingsConnectSources">
+            <div class="settings-row-content">
+              <span class="settings-row-label">Connect health sources</span>
+              <span class="settings-row-hint">Google Fit, Apple Health (coming soon).</span>
+            </div>
+            <span class="settings-row-arrow">→</span>
+            <span class="settings-coming-soon">Coming soon</span>
+          </button>
+        </div>
+
+        <!-- Privacy & Security -->
+        <div class="settings-section">
+          <h4 class="settings-section-title">Privacy & Security</h4>
+          
+          <button class="settings-row" id="settingsPrivacyPolicy">
+            <div class="settings-row-content">
+              <span class="settings-row-label">Privacy Policy</span>
+            </div>
+            <span class="settings-row-arrow">→</span>
+          </button>
+
+          <button class="settings-row" id="settingsTermsOfUse">
+            <div class="settings-row-content">
+              <span class="settings-row-label">Terms of Use</span>
+            </div>
+            <span class="settings-row-arrow">→</span>
+          </button>
+
+          <div class="settings-info-text">
+            Your data is stored locally on your device. TendAI is not a medical service.
+          </div>
+
+          <button class="settings-row settings-row-danger" id="settingsDeleteData">
+            <div class="settings-row-content">
+              <span class="settings-row-label">Delete all local data</span>
+            </div>
+            <span class="settings-row-arrow">→</span>
+          </button>
+        </div>
+
+        <!-- About TendAI -->
+        <div class="settings-section">
+          <h4 class="settings-section-title">About TendAI</h4>
+          
+          <div class="settings-info-text">
+            TendAI is a personal wellbeing assistant.
+          </div>
+          <div class="settings-info-text">
+            It helps you understand your body, mind and habits step by step.
+          </div>
+
+          <div class="settings-field">
+            <div class="settings-field-label">
+              <span>Version</span>
+              <span class="settings-version">v1.0.0 (PWA)</span>
+            </div>
+          </div>
+
+          <!-- Location Settings -->
+          <div class="settings-section" style="margin-top: 24px;">
+            <div class="settings-section-title">Location</div>
+            <div class="settings-field" style="padding: 12px 16px;">
+              <label class="goal-field" style="margin-bottom: 12px;">
+                <span style="font-size: 13px; color: var(--fg-soft); margin-bottom: 4px; display: block;">Country (optional)</span>
+                <input type="text" id="settingsLocationCountry" placeholder="e.g., USA" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: var(--fg);" />
+              </label>
+              <label class="goal-field" style="margin-bottom: 12px;">
+                <span style="font-size: 13px; color: var(--fg-soft); margin-bottom: 4px; display: block;">City or ZIP</span>
+                <input type="text" id="settingsLocationCity" placeholder="e.g., New York or 10001" style="width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: var(--fg);" />
+              </label>
+              <button type="button" id="settingsLocationSave" class="btn" style="width: 100%; margin-top: 8px; padding: 10px; background: var(--gold); color: var(--bg); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Save Location</button>
+              <button type="button" id="settingsLocationUseGeo" class="btn" style="width: 100%; margin-top: 8px; padding: 10px; background: rgba(255,255,255,0.1); color: var(--fg); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-weight: 500; cursor: pointer;">Use my location</button>
+              <div id="settingsLocationStatus" style="margin-top: 8px; font-size: 12px; color: var(--fg-soft);"></div>
+            </div>
+          </div>
+
+          <button class="settings-row" id="settingsSendFeedback">
+            <div class="settings-row-content">
+              <span class="settings-row-label">Send feedback</span>
+            </div>
+            <span class="settings-row-arrow">→</span>
+          </button>
+
+          <button class="settings-row" id="settingsRateApp">
+            <div class="settings-row-content">
+              <span class="settings-row-label">Rate app</span>
+              <span class="settings-row-hint">Google Play (coming soon).</span>
+            </div>
+            <span class="settings-row-arrow">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day Check-in Modal -->
+  <div class="profile-modal-overlay" id="dayCheckinModalOverlay">
+    <div class="profile-modal" id="dayCheckinModal">
+      <div class="profile-modal-header">
+        <h3 class="card-title">Daily Check-in</h3>
+        <button class="profile-modal-close" id="dayCheckinClose" aria-label="Close">×</button>
+      </div>
+      <form id="dayCheckinForm" class="profile-modal-content" style="padding: 20px;">
+        <label class="goal-field">
+          Sleep hours (last night)
+          <input
+            type="number"
+            id="checkinSleep"
+            min="0"
+            max="12"
+            step="0.5"
+            placeholder="e.g., 7.5"
+          />
+        </label>
+
+        <label class="goal-field">
+          Water glasses (today)
+          <input
+            type="number"
+            id="checkinWater"
+            min="0"
+            max="20"
+            step="1"
+            placeholder="e.g., 6"
+          />
+        </label>
+
+        <label class="goal-field">
+          Energy level
+          <select id="checkinEnergy">
+            <option value="">Select...</option>
+            <option value="Low">Low</option>
+            <option value="Normal">Normal</option>
+            <option value="Good">Good</option>
+            <option value="High">High</option>
+          </select>
+        </label>
+
+        <label class="goal-field">
+          Stress level
+          <div class="card-slider" style="margin-top: 8px;">
+            <div class="slider-controls-row">
+              <button type="button" class="slider-btn-minus" data-slider-id="checkinStress" data-step="1" aria-label="Decrease">−</button>
+              <div class="slider-wrapper">
+                <input
+                  type="range"
+                  id="checkinStress"
+                  min="1"
+                  max="5"
+                  step="1"
+                  value="3"
+                  style="width: 100%;"
+                />
+                <div class="slider-labels">
+                  <span>1 = calm</span>
+                  <span class="slider-value" id="checkinStressDisplay">3</span>
+                  <span>5 = very stressed</span>
+                </div>
+              </div>
+              <button type="button" class="slider-btn-plus" data-slider-id="checkinStress" data-step="1" aria-label="Increase">+</button>
+            </div>
+          </div>
+        </label>
+      </form>
+      <div class="profile-modal-footer">
+        <button type="button" class="btn profile-modal-save" id="dayCheckinSave">Save</button>
+        <button type="button" class="btn profile-modal-cancel" id="dayCheckinCancel" style="background: rgba(255,255,255,0.1);">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <a href="privacy-policy.html">Privacy</a>
+      <span class="footer-separator">·</span>
+      <a href="terms-of-use.html">Terms</a>
+      <span class="footer-separator">·</span>
+      <a href="disclaimer.html">Disclaimer</a>
+      <span class="footer-separator">·</span>
+      <a href="mailto:support@tendai.app">support@tendai.app</a>
+    </div>
+  </footer>
+
+  <!-- Calendar must load BEFORE app-unified.js -->
+  <script type="module" src="js/calendar.js"></script>
+  
+  <script type="module" src="app-unified.js"></script>
+  <script type="module" src="js/tendai-assistant.js"></script>
+  <script type="module" src="js/profile-modals.js"></script>
+  <script type="module" src="js/services-init.js"></script>
+  <script type="module" src="js/location-service.js"></script>
+  <script type="module" src="js/weather-service.js"></script>
+  <script type="module" src="js/day-checkin.js"></script>
+  <script type="module" src="js/feed-updater.js"></script>
+  <script type="module" src="js/ai-feed-advice.js"></script>
+  <script type="module" src="js/unread-messages.js"></script>
+  <script type="module" src="js/profile-completeness.js"></script>
+  <script type="module" src="js/message-queue.js"></script>
+  <script type="module" src="js/unread-messages-ui.js"></script>
+  <script type="module" src="js/soft-streak.js"></script>
+  <script type="module" src="js/daily-action.js"></script>
+  <script type="module" src="js/morning-checkin.js"></script>
+  <script type="module" src="js/evening-checkin.js"></script>
+  <script type="module" src="js/next-step.js"></script>
+  <script src="js/collapsible.js"></script>
+</body>
+</html>
