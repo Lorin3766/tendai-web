@@ -1,0 +1,3214 @@
+/* TendAI — Components Styles */
+
+/* ============================================================
+   CALENDAR PANEL
+   ============================================================ */
+
+/* Lock body scroll when calendar is open */
+body.calendar-open {
+  overflow: hidden !important;
+}
+
+.calendar-panel-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999 !important;
+  padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
+}
+
+.calendar-panel {
+  position: relative;
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--surface-border);
+  max-width: 600px;
+  width: 100%;
+  max-height: calc(100vh - 40px); /* Desktop: account for overlay padding */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Prevent outer scroll, use internal scroll */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  margin: auto;
+  
+  /* Remove white scrollbar track */
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent; /* Firefox */
+}
+
+.calendar-panel::-webkit-scrollbar {
+  width: 10px;
+}
+
+.calendar-panel::-webkit-scrollbar-track {
+  background: transparent !important; /* убирает "белую полосу" */
+}
+
+.calendar-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.calendar-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.calendar-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid var(--surface-border);
+  flex-shrink: 0; /* Header always visible, never scrolls */
+  background: var(--bg); /* Ensure header has background */
+}
+
+.calendar-panel-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.calendar-panel-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--fg-soft);
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+.calendar-panel-close:hover {
+  color: var(--fg);
+}
+
+.calendar-panel-body {
+  padding: 20px;
+  overflow-y: auto; /* Internal scroll for body content */
+  flex: 1 1 auto;
+  min-height: 0; /* Critical for flex scrolling */
+  
+  /* Scrollbar styling for calendar body */
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  scrollbar-width: thin;
+}
+
+.calendar-panel-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.calendar-panel-body::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.calendar-panel-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.calendar-panel-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.calendar-section {
+  margin-bottom: 24px;
+}
+
+.calendar-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Calendar month header */
+.calendar-month-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(246, 195, 106, 0.85); /* Subtle gold tone (10-15%) */
+  margin-bottom: 16px;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.calendar-section-header {
+  margin-bottom: 12px;
+}
+
+.calendar-section-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+/* Month Calendar */
+.calendar-month {
+  width: 100%;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.calendar-weekdays > div {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-soft);
+  padding: 8px 4px;
+}
+
+.calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+  position: relative;
+  padding: 4px;
+}
+
+.calendar-day:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.calendar-day-selected {
+  background: rgba(246, 195, 106, 0.25); /* Slightly warmer gold-tinted highlight */
+  border: 1px solid rgba(246, 195, 106, 0.5); /* Slightly warmer border */
+  box-shadow: 0 0 0 1px rgba(246, 195, 106, 0.15) inset; /* Subtle inner glow */
+}
+
+.calendar-day-other-month {
+  opacity: 0.3;
+}
+
+.calendar-day-today {
+  /* Today gets slightly warmer gold-tinted highlight (even if not selected) */
+  background: rgba(246, 195, 106, 0.12);
+  border: 1px solid rgba(246, 195, 106, 0.25);
+}
+
+.calendar-day-today.calendar-day-selected {
+  /* Today + Selected: combine both highlights */
+  background: rgba(246, 195, 106, 0.3);
+  border: 1px solid rgba(246, 195, 106, 0.6);
+  box-shadow: 0 0 0 1px rgba(246, 195, 106, 0.2) inset;
+}
+
+.calendar-day-number {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+.calendar-day-marker {
+  position: absolute;
+  bottom: 2px;
+  font-size: 8px;
+  color: var(--gold);
+}
+
+.calendar-day-has-event .calendar-day-number {
+  font-weight: 600;
+}
+
+/* Events List */
+.calendar-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendar-events-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--fg-soft);
+  font-size: 14px;
+}
+
+.calendar-event-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--surface-border);
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+
+.calendar-event-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.calendar-event-time {
+  font-size: 12px;
+  color: var(--fg-soft);
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.calendar-event-content {
+  flex: 1;
+}
+
+.calendar-event-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+
+.calendar-event-meta {
+  font-size: 12px;
+  color: var(--fg-soft);
+}
+
+/* Calendar Panel Footer */
+.calendar-panel-footer {
+  display: flex;
+  gap: 8px;
+  padding: 20px;
+  border-top: 1px solid var(--surface-border);
+  flex-shrink: 0; /* Footer always visible, never scrolls */
+  background: var(--bg); /* Ensure footer has background */
+}
+
+.calendar-btn-add {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease-out;
+  background: var(--gold);
+  color: var(--bg);
+}
+
+.calendar-btn-add:hover {
+  background: rgba(246, 195, 106, 0.9);
+}
+
+/* Today button (new style) */
+.cal-today-btn {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.18);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 150ms ease-out;
+}
+
+.cal-today-btn:hover {
+  border-color: rgba(246, 195, 106, 0.35);
+  box-shadow: 0 0 0 2px rgba(246, 195, 106, 0.08);
+}
+
+.cal-today-btn:active {
+  transform: scale(0.98);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .calendar-panel {
+    max-width: 100%;
+    max-height: 100dvh; /* Use dynamic viewport height to account for mobile browser UI */
+    border-radius: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent outer scroll, use internal scroll */
+  }
+  
+  .calendar-panel-overlay {
+    padding: 0;
+  }
+  
+  .calendar-panel-body {
+    /* Ensure body scrolls on mobile */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .calendar-day {
+    font-size: 12px;
+  }
+  
+  .calendar-day-number {
+    font-size: 12px;
+  }
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+
+.card-soft {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(6, 8, 20, 0.55)
+  );
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--surface-border);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 12px;
+  transition: background-color 180ms ease-out, box-shadow 180ms ease-out;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.card-soft:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.card-soft:last-child {
+  margin-bottom: 0;
+}
+
+.card-subtitle {
+  margin: 0 0 6px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--fg-muted);
+}
+
+/* ============================================================
+   COLLAPSIBLE SECTIONS (Accordion)
+   ============================================================ */
+
+.card-header-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 12px 16px;
+  margin: 0 0 10px 0;
+  transition: opacity 150ms ease-out;
+}
+
+.card-header-toggle:hover {
+  opacity: 0.8;
+}
+
+.card-header-toggle:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.chevron {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--fg-muted);
+  transition: transform 200ms ease-out;
+  margin-left: 12px;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.card-header-toggle.is-open .chevron {
+  transform: rotate(180deg);
+}
+
+.card-body-collapsible {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 250ms ease-out, opacity 200ms ease-out;
+  margin: 0;
+  padding: 0;
+}
+
+.card-body-collapsible.is-open {
+  max-height: 2000px; /* Достаточно большое значение для контента */
+  opacity: 1;
+}
+
+/* Desktop only - collapsible работает только на широких экранах */
+@media (min-width: 1025px) {
+  .card-header-toggle {
+    display: flex;
+  }
+  
+  /* Закрытые секции скрыты через max-height и opacity, display управляется через класс */
+  .card-body-collapsible:not(.is-open) {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+  
+  .card-body-collapsible.is-open {
+    max-height: 2000px;
+    opacity: 1;
+  }
+}
+
+/* Mobile - collapsible работает для Services, но не для левой колонки */
+@media (max-width: 1024px) {
+  /* Левая колонка - всегда открыта (не collapsible на mobile) */
+  #col-left .card-header-toggle {
+    display: none !important;
+  }
+  
+  #col-left .card-body-collapsible {
+    max-height: none !important;
+    opacity: 1 !important;
+    display: block !important;
+  }
+  
+  #col-left .card-body-collapsible.is-open,
+  #col-left .card-body-collapsible:not(.is-open) {
+    display: block !important;
+    max-height: none !important;
+    opacity: 1 !important;
+  }
+  
+  /* Services view - collapsible работает */
+  .services-view .card-header-toggle {
+    display: flex !important; /* Показываем заголовки-переключатели для Services */
+  }
+  
+  .services-view .card-body-collapsible {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 250ms ease-out, opacity 200ms ease-out;
+  }
+  
+  .services-view .card-body-collapsible.is-open {
+    max-height: 2000px;
+    opacity: 1;
+  }
+  
+  .services-view .card-body-collapsible:not(.is-open) {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+}
+
+.card-title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+/* Стили для заголовков внутри collapsible (чтобы не было двойного margin) */
+.card-header-toggle .card-title,
+.card-header-toggle .card-subtitle {
+  margin: 0;
+}
+
+/* Убираем пересечение границ между profile header и Profile Sections */
+#profileHeader .card-header-toggle {
+  margin-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 16px;
+}
+
+.card-line,
+.card-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--fg-soft);
+  line-height: 1.5;
+}
+
+.card-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.card-list li {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ============================================================
+   BUTTONS & INPUTS
+   ============================================================ */
+
+.btn {
+  border-radius: var(--radius-md);
+  border: none;
+  background: linear-gradient(120deg, #fce3b6, var(--gold));
+  color: #2c1a00;
+  padding: 12px 20px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 14px 28px rgba(246, 195, 106, 0.35);
+  transition: background-color 180ms ease-out, box-shadow 180ms ease-out;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  box-shadow: 0 16px 32px rgba(246, 195, 106, 0.4);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input {
+  flex: 1;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.32);
+  color: var(--fg);
+  padding: 12px 16px;
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+
+.chat-textarea {
+  resize: none;
+  min-height: 44px;
+  max-height: calc(1.5em * 3 + 24px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.talk-view .input,
+.talk-view .chat-textarea {
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 8px var(--gold-glow), inset 0 0 4px var(--gold-glow);
+  border-radius: 999px;
+}
+
+.ai-input-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-shrink: 0;
+  margin-top: auto;
+  width: 100%;
+}
+
+/* Mobile: закрепление input area внизу экрана */
+@media (max-width: 899px) {
+  /* Закрепляем input area внизу экрана */
+  .talk-view .ai-input-row {
+    position: fixed;
+    bottom: calc(80px + env(safe-area-inset-bottom)); /* Выше bottom-nav (80px с учетом padding) + safe-area */
+    left: 0;
+    right: 0;
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--surface-border);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 999; /* Выше контента, но ниже модалок (9999) */
+    margin: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Убираем input из потока conversation-card на mobile */
+  .talk-view .conversation-card {
+    padding-bottom: 0; /* Убираем padding снизу, так как input теперь fixed */
+  }
+  
+  /* Компенсация перекрытия: добавляем padding-bottom для chat-scroll-wrapper */
+  /* Высота input area (~60px) + bottom-nav (80px с учетом padding) + комфортный зазор (20px) */
+  .talk-view .chat-scroll-wrapper {
+    padding-bottom: calc(160px + env(safe-area-inset-bottom));
+  }
+  
+  /* Дополнительный padding для conversation-area, чтобы последнее сообщение было видно */
+  .talk-view .conversation-area {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  
+  /* Убираем margin-top: auto, так как input теперь fixed */
+  .talk-view .conversation-card .ai-input-row {
+    margin-top: 0;
+  }
+}
+
+/* ============================================================
+   CENTER TABS (Desktop)
+   ============================================================ */
+
+.center-tabs {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 8px;
+  flex-shrink: 0; /* Tabs не сжимаются и не скроллятся */
+  margin-bottom: 0;
+  position: sticky; /* Tabs остаются видимыми при скролле */
+  top: 0;
+  background: var(--bg-panel);
+  z-index: 100; /* Higher z-index to ensure tabs are above scrollbar overlay */
+  padding-top: 0;
+  margin-top: 0;
+  /* Ensure tabs container doesn't scroll and doesn't clip children */
+  overflow: visible;
+  /* Prevent tabs from being affected by parent scrollbar overlay */
+  isolation: isolate;
+  /* Prevent scrollbar overlay from appearing near tabs */
+  contain: layout style paint;
+}
+
+.center-tab {
+  flex: 1;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: var(--fg);
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out, color 180ms ease-out;
+  position: relative;
+}
+
+.center-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.center-tab.is-active,
+.center-tab[aria-selected="true"] {
+  background: rgba(246, 195, 106, 0.16);
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: var(--shadow-gold-glow);
+}
+
+/* Calendar icon button (small square) — next to TALK */
+/* CRITICAL: Fixed geometry - always 36x36, never becomes a pill */
+#calendarBtn.calendar-tab-btn {
+  /* Geometry - FIXED, never changes */
+  flex: 0 0 auto !important; /* Never stretches or shrinks */
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
+  padding: 0 !important;
+  
+  /* Display - FIXED */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  
+  /* Appearance */
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  color: var(--fg) !important;
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1 !important;
+  transition: all 180ms ease-out;
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+}
+
+/* Prevent any pseudo-elements that might create a pill */
+#calendarBtn.calendar-tab-btn::before,
+#calendarBtn.calendar-tab-btn::after {
+  display: none !important;
+  content: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: none !important;
+  border: none !important;
+}
+
+#calendarBtn.calendar-tab-btn svg {
+  /* Geometry - FIXED, always 18x18 */
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  
+  /* Display - FIXED */
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  
+  /* Appearance - FIXED */
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  color: rgba(255, 255, 255, 0.95) !important; /* Almost white for maximum contrast */
+  fill: none !important; /* Explicitly set fill to none for stroke-only elements */
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3)); /* Subtle shadow for depth */
+  
+  /* Prevent transforms that might distort */
+  transform: none !important;
+  transition: all 180ms ease-out;
+}
+
+#calendarBtn.calendar-tab-btn svg circle {
+  fill: currentColor; /* Circles use fill, not stroke */
+  opacity: 0.9; /* Slightly reduce opacity for circles to make them visible but not too bold */
+}
+
+#calendarBtn.calendar-tab-btn:hover {
+  border-color: rgba(246, 195, 106, 0.35);
+  box-shadow: 0 0 0 2px rgba(246, 195, 106, 0.08);
+}
+
+#calendarBtn.calendar-tab-btn:hover svg {
+  color: var(--gold);
+  filter: drop-shadow(0 0 8px rgba(246, 195, 106, 0.4));
+}
+
+#calendarBtn.calendar-tab-btn:active {
+  transform: scale(0.95);
+}
+
+#calendarBtn.calendar-tab-btn[aria-expanded="true"],
+#calendarBtnMobile.calendar-header-btn[aria-expanded="true"] {
+  border-color: rgba(246, 195, 106, 0.6);
+  box-shadow: 0 0 18px rgba(246, 195, 106, 0.12), 0 0 8px rgba(246, 195, 106, 0.08); /* Very light gold glow (same language as FEED active) */
+}
+
+#calendarBtn.calendar-tab-btn[aria-expanded="true"] svg {
+  color: var(--gold);
+}
+
+.feed-view,
+.talk-view {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* На desktop скролл будет у centerContent, на mobile - у самих views */
+  overflow: visible;
+}
+
+.talk-view.hidden {
+  display: none;
+}
+
+.feed-view.hidden {
+  display: none;
+}
+
+.services-view.hidden {
+  display: none;
+}
+
+.profile-view.hidden {
+  display: none;
+}
+
+.talk-header-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+  text-align: center;
+}
+
+/* Скрываем заголовок TALK для увеличения области сообщений (mobile + desktop) */
+#talkHeaderCard {
+  display: none !important;
+}
+
+/* Talk view: убираем gap, так как заголовок скрыт (mobile + desktop) */
+.talk-view {
+  gap: 0 !important;
+}
+
+/* Conversation card занимает максимум доступного пространства */
+.talk-view .conversation-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* ============================================================
+   MESSAGES & CHAT
+   ============================================================ */
+
+.chat-scroll-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+.conversation-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  min-height: 100%;
+}
+
+#chatLog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  margin-bottom: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  max-width: 85%;
+  width: fit-content;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+/* Desktop: точные стили сообщений как в оригинале */
+@media (min-width: 1300px) {
+  .message {
+    font-size: 15px;
+    line-height: 1.4;
+    padding: 12px 16px;
+    max-width: 85%;
+  }
+  
+  .conversation-area {
+    gap: 12px;
+  }
+}
+
+.message:last-child {
+  margin-bottom: 0;
+}
+
+.message.bot {
+  align-self: flex-start;
+  background: rgba(246, 195, 106, 0.16);
+  border: 1px solid var(--gold);
+  box-shadow: var(--shadow-gold-glow);
+}
+
+.message.user {
+  align-self: flex-end;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  margin-left: auto;
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+}
+
+.message-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  margin-bottom: 2px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  overflow: hidden;
+}
+
+.message.bot .message-text {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.message.user .message-text {
+  color: var(--fg);
+}
+
+.message-time {
+  font-size: 10px;
+  color: var(--fg-muted);
+  opacity: 0.6;
+  align-self: flex-end;
+  margin-top: 4px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.message.bot .message-time {
+  color: var(--gold);
+  opacity: 0.5;
+}
+
+.message.typing-indicator {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.message.typing-indicator .message-text {
+  color: var(--fg-muted);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.typing-dots {
+  display: inline-block;
+  margin-left: 2px;
+}
+
+.typing-dots span {
+  display: inline-block;
+  animation: typingDot 1.4s infinite;
+  opacity: 0;
+}
+
+.typing-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingDot {
+  0%, 60%, 100% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Date separator */
+.date-separator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 16px 0;
+  padding: 0;
+  position: relative;
+}
+
+.date-separator-text {
+  display: inline-block;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Message animation */
+.message-appearing {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.message-appearing.message-visible {
+  animation: slide-up-fade-in 150ms ease-out forwards;
+}
+
+@keyframes slide-up-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scroll to bottom button */
+.scroll-to-bottom-btn {
+  position: absolute;
+  bottom: 80px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--bg);
+  border: 2px solid var(--gold);
+  box-shadow: 0 4px 12px rgba(246, 195, 106, 0.4), 0 0 8px var(--gold-glow);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  z-index: 100;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  opacity: 0.9;
+}
+
+.scroll-to-bottom-btn:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.scroll-to-bottom-btn[hidden] {
+  display: none;
+}
+
+.conversation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+}
+
+/* Desktop: точные стили как в оригинале */
+@media (min-width: 1300px) {
+  .conversation-card {
+    padding: 20px;
+  }
+  
+  .chat-scroll-wrapper {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
+  .conversation-area {
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  #chatLog {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Goal Panel Styles */
+.goal-panel-card,
+#goalPanelCard {
+  display: none; /* Скрыта по умолчанию, показывается только в режиме body */
+}
+
+.goal-panel-card {
+  padding-bottom: 24px;
+  margin-bottom: 0;
+}
+
+.goal-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.goal-panel[hidden] {
+  display: none;
+}
+
+.goal-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.goal-panel-status {
+  margin: 0;
+  font-size: 14px;
+  color: var(--fg-muted);
+}
+
+.goal-content {
+  display: grid;
+  gap: 14px;
+}
+
+.goal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--fg-muted);
+}
+
+.goal-field select,
+.goal-field input {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--fg);
+  padding: 10px 12px;
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.goal-field select:focus,
+.goal-field input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+
+.goal-warning {
+  margin: 0;
+  color: var(--danger);
+  font-size: 14px;
+}
+
+.goal-panel-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+.goal-save {
+  margin-top: 4px;
+}
+
+/* ============================================================
+   DAY HEADER
+   ============================================================ */
+
+.day-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.day-header-date {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: 0.5px;
+}
+
+.day-header-weather {
+  font-size: 14px;
+  color: var(--fg-soft);
+}
+
+.day-header-pressure {
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+.day-header-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.day-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.day-stat-label {
+  color: var(--fg-muted);
+}
+
+.day-stat-value {
+  color: var(--fg-soft);
+  font-weight: 500;
+}
+
+.day-header-advice {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  color: var(--fg-soft);
+  line-height: 1.4;
+}
+
+/* ============================================================
+   PROFILE
+   ============================================================ */
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 20px;
+  background: radial-gradient(circle at 30% 30%, #fdf1d4, var(--gold));
+  color: #1b1300;
+  box-shadow: 0 12px 26px rgba(246, 195, 106, 0.4);
+  flex-shrink: 0;
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.profile-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.profile-meta {
+  margin: 4px 0 0;
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--fg-muted);
+}
+
+.profile-menu {
+  margin-top: 0; /* Убираем margin-top, так как теперь внутри collapsible */
+  display: grid;
+  gap: 10px;
+}
+
+/* Show profile menu in desktop mode */
+@media (min-width: 1025px) {
+  #profileMenu[hidden] {
+    display: grid !important;
+    visibility: visible !important;
+  }
+  
+  /* Hide toggle button in desktop */
+  #profileMenuToggle {
+    display: none !important;
+  }
+  
+  /* Make sure buttons are clickable in desktop */
+  #profileMenu button {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+  }
+  
+  /* Online doctor иконки: классические, узнаваемые, как системные (desktop only) */
+  /* Стиль: простые, интуитивные, максимальная узнаваемость - как в телефоне и мессенджерах */
+  #onlineDoctorCard .pinned-plan-icon,
+  #onlineDoctorList .pinned-plan-icon {
+    margin-right: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px; /* Умеренный размер, как раньше */
+    height: 42px;
+    border-radius: var(--radius-sm);
+    background: rgba(246, 195, 106, 0.18); /* Нейтральная подложка, вторичная */
+    /* Без glow, без эффекта "дизайнерского бейджа" */
+    transition: all 180ms ease-out;
+    line-height: 1;
+  }
+
+  /* SVG внутри иконки - классические, узнаваемые */
+  #onlineDoctorCard .pinned-plan-icon svg,
+  #onlineDoctorList .pinned-plan-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+  }
+
+  /* Hover эффект - минимальный */
+  #onlineDoctorCard .pinned-plan:hover .pinned-plan-icon,
+  #onlineDoctorList .pinned-plan:hover .pinned-plan-icon {
+    background: rgba(246, 195, 106, 0.25); /* Чуть ярче при hover */
+  }
+}
+
+.profile-menu button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--fg);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 180ms ease-out;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.profile-menu button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.profile-menu button:active {
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(0.98);
+}
+
+.profile-menu-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 180ms ease-out;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Sections list (4 buttons for Your Body, Health, Mind, Lifestyle) */
+.sections-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 0;
+}
+
+.section-button {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out, color 180ms ease-out;
+}
+
+.section-button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.section-button:active {
+  transform: scale(0.98);
+}
+
+/* ============================================================
+   CHIPS & LISTS
+   ============================================================ */
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 6px 14px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  cursor: pointer;
+  transition: all 180ms ease-out;
+}
+
+.chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chip-action {
+  cursor: pointer;
+}
+
+.pinned-list {
+  display: grid;
+  gap: 10px;
+}
+
+.pinned-plan {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--fg);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pinned-plan:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  text-decoration: none;
+  color: var(--gold);
+  font-weight: 600;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.settings-link:hover {
+  color: var(--gold-soft);
+}
+
+.quick-help-card {
+  /* Same as card-soft, no special styles needed */
+}
+
+.compact-card {
+  /* Same as card-soft, no special styles needed */
+}
+
+/* ============================================================
+   BOTTOM NAV (Mobile)
+   ============================================================ */
+
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 12px 0;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  background: var(--bg-panel);
+  border-top: 1px solid var(--surface-border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+  /* Учитываем safe-area для iPhone и Android */
+  min-height: calc(70px + env(safe-area-inset-bottom));
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-width: 0;
+  max-width: 100%;
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 180ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+  /* Убеждаемся, что кнопки полностью видны */
+  min-height: 44px; /* Минимальная высота для удобного тапа */
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-item.active {
+  color: var(--gold);
+  background: rgba(246, 195, 106, 0.16);
+  border-color: var(--gold);
+  box-shadow: var(--shadow-gold-glow);
+}
+
+.nav-item-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.nav-item-label {
+  font-size: 10px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.nav-item {
+  position: relative;
+}
+
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================ */
+
+/* Labs chips styling для mobile - золотистая обводка, прозрачный фон */
+@media (max-width: 899px) {
+  /* Gap только для Labs chip-row на mobile */
+  .service-section[data-service-section="labs"] .chip-row,
+  #mobileLabsChipsContainer.chip-row {
+    gap: 12px; /* Увеличен gap для лучшего визуального разделения */
+  }
+
+  /* Labs chips: капсула с золотистой обводкой на mobile */
+  .service-section[data-service-section="labs"] .chip,
+  #mobileLabsChipsContainer .chip {
+    border-radius: 999px; /* Капсула */
+    border: 1px solid var(--gold); /* Тонкая золотистая обводка */
+    padding: 10px 20px; /* Увеличен padding для лучшей нажимаемости */
+    font-size: 14px;
+    font-weight: 500;
+    background: transparent !important; /* Прозрачный фон */
+    color: var(--gold) !important; /* Золотистый текст */
+    min-height: 44px; /* Минимальная высота для удобной нажимаемости на mobile */
+  }
+
+  /* Hover: обводка ярче + легкое свечение */
+  .service-section[data-service-section="labs"] .chip:hover,
+  #mobileLabsChipsContainer .chip:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 12px rgba(246, 195, 106, 0.4); /* Легкое свечение */
+    transform: translateY(-1px); /* Легкое поднятие */
+  }
+
+  /* Active/Pressed: легкое затемнение */
+  .service-section[data-service-section="labs"] .chip:active,
+  #mobileLabsChipsContainer .chip:active {
+    background: rgba(246, 195, 106, 0.1) !important; /* Легкая заливка при нажатии */
+    transform: translateY(0); /* Возврат на место */
+    box-shadow: 0 0 8px rgba(246, 195, 106, 0.3);
+  }
+
+  /* Selected state: более яркая обводка + легкая заливка */
+  .service-section[data-service-section="labs"] .chip.chip-action,
+  #mobileLabsChipsContainer .chip.chip-action,
+  .service-section[data-service-section="labs"] .chip.selected,
+  #mobileLabsChipsContainer .chip.selected {
+    border-color: var(--gold);
+    border-width: 1.5px; /* Чуть толще обводка */
+    background: rgba(246, 195, 106, 0.08) !important; /* Очень легкая полупрозрачная заливка */
+    color: var(--gold);
+    box-shadow: 0 0 16px rgba(246, 195, 106, 0.5); /* Более заметное свечение */
+  }
+
+  /* Selected hover: еще ярче */
+  .service-section[data-service-section="labs"] .chip.chip-action:hover,
+  #mobileLabsChipsContainer .chip.chip-action:hover,
+  .service-section[data-service-section="labs"] .chip.selected:hover,
+  #mobileLabsChipsContainer .chip.selected:hover {
+    background: rgba(246, 195, 106, 0.12) !important; /* Чуть ярче заливка */
+    box-shadow: 0 0 20px rgba(246, 195, 106, 0.6);
+  }
+}
+
+@media (max-width: 899px) {
+  /* Keep FEED/TALK tabs (and calendar icon) visible on mobile per reference */
+  .center-tabs {
+    display: flex;
+    gap: 10px;
+    padding-bottom: 8px;
+  }
+
+  /* Hide desktop calendar button on mobile (it's in header instead) */
+  #calendarBtn.calendar-tab-btn {
+    display: none !important;
+  }
+  
+  /* Show mobile calendar button in header (already visible by default, but ensure it) */
+  #calendarBtnMobile.calendar-header-btn {
+    display: inline-flex !important;
+  }
+  
+  /* Calendar button: EXACT SAME styles as base - no differences, all with !important */
+  #calendarBtnMobile.calendar-header-btn {
+    /* Geometry - FIXED, same as base */
+    flex: 0 0 auto !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+    padding: 0 !important;
+    
+    /* Display - FIXED, same as base */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    
+    /* Appearance - same as base */
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    color: var(--fg) !important;
+    font-size: 18px;
+    line-height: 1 !important;
+    position: relative;
+  }
+  
+  /* Prevent any pseudo-elements in mobile */
+  #calendarBtn.calendar-tab-btn::before,
+  #calendarBtn.calendar-tab-btn::after {
+    display: none !important;
+    content: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: none !important;
+    border: none !important;
+  }
+
+  #calendarBtn.calendar-tab-btn svg {
+    /* Geometry - FIXED, same as base */
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    max-width: 18px !important;
+    max-height: 18px !important;
+    
+    /* Display - FIXED */
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    
+    /* Appearance - same as base */
+    stroke: currentColor !important;
+    stroke-width: 2 !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    fill: none !important;
+    transform: none !important;
+  }
+  
+  .main-panel {
+    padding: 12px 16px;
+  }
+  
+  .conversation-area {
+    padding: 12px;
+  }
+
+  /* Mobile card adjustments to match old version */
+  .card-soft {
+    margin-bottom: 12px;
+    border-radius: var(--radius-lg);
+    padding: 10px 14px;
+  }
+
+  .card-soft:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Feed view spacing - match old version */
+  .feed-view {
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Talk view spacing */
+  .talk-view {
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Services view spacing */
+  .services-view {
+    gap: 12px;
+  }
+
+  .services-view .card-soft {
+    margin-bottom: 12px;
+  }
+
+  .services-view .card-soft:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Service cards for Online doctor - match old version */
+  .services-list {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .service-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--surface-border);
+    cursor: pointer;
+    transition: all 180ms ease-out;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    position: relative;
+  }
+
+  .service-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .service-icon {
+    line-height: 1;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: rgba(246, 195, 106, 0.18); /* Нейтральная подложка, вторичная */
+    /* Без glow, без эффекта "дизайнерского бейджа" */
+    transition: all 180ms ease-out;
+  }
+
+  /* SVG внутри иконки (mobile) - классические, узнаваемые */
+  .service-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+  }
+
+  .service-card:hover .service-icon {
+    background: rgba(246, 195, 106, 0.25); /* Чуть ярче при hover */
+  }
+
+  .service-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .service-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .service-desc {
+    font-size: 12px;
+    color: var(--fg-muted);
+    line-height: 1.3;
+  }
+
+  .service-arrow {
+    font-size: 18px;
+    color: var(--fg-muted);
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  .service-card:hover .service-arrow {
+    color: var(--gold);
+  }
+
+  /* Labs chips styling - золотистая обводка, прозрачный фон */
+  /* Gap только для Labs chip-row */
+  .service-section[data-service-section="labs"] .chip-row,
+  #labsCard .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px; /* Увеличен gap для лучшего визуального разделения */
+  }
+
+  /* Labs chips: капсула с золотистой обводкой */
+  .service-section[data-service-section="labs"] .chip,
+  #labsCard .chip {
+    border-radius: 999px; /* Капсула */
+    border: 1px solid var(--gold); /* Тонкая золотистая обводка */
+    padding: 10px 20px; /* Увеличен padding для лучшей нажимаемости */
+    font-size: 14px;
+    font-weight: 500;
+    background: transparent; /* Прозрачный фон */
+    color: var(--gold); /* Золотистый текст */
+    cursor: pointer;
+    transition: all 200ms ease-out;
+    min-height: 44px; /* Минимальная высота для удобной нажимаемости на mobile */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Hover: обводка ярче + легкое свечение */
+  .service-section[data-service-section="labs"] .chip:hover,
+  #labsCard .chip:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 12px rgba(246, 195, 106, 0.4); /* Легкое свечение */
+    transform: translateY(-1px); /* Легкое поднятие */
+  }
+
+  /* Active/Pressed: легкое затемнение */
+  .service-section[data-service-section="labs"] .chip:active,
+  #labsCard .chip:active {
+    background: rgba(246, 195, 106, 0.1); /* Легкая заливка при нажатии */
+    transform: translateY(0); /* Возврат на место */
+    box-shadow: 0 0 8px rgba(246, 195, 106, 0.3);
+  }
+
+  /* Selected state: более яркая обводка + легкая заливка */
+  .service-section[data-service-section="labs"] .chip.chip-action,
+  #labsCard .chip.chip-action,
+  .service-section[data-service-section="labs"] .chip.selected,
+  #labsCard .chip.selected {
+    border-color: var(--gold);
+    border-width: 1.5px; /* Чуть толще обводка */
+    background: rgba(246, 195, 106, 0.08); /* Очень легкая полупрозрачная заливка */
+    color: var(--gold);
+    box-shadow: 0 0 16px rgba(246, 195, 106, 0.5); /* Более заметное свечение */
+  }
+
+  /* Selected hover: еще ярче */
+  .service-section[data-service-section="labs"] .chip.chip-action:hover,
+  #labsCard .chip.chip-action:hover,
+  .service-section[data-service-section="labs"] .chip.selected:hover,
+  #labsCard .chip.selected:hover {
+    background: rgba(246, 195, 106, 0.12); /* Чуть ярче заливка */
+    box-shadow: 0 0 20px rgba(246, 195, 106, 0.6);
+  }
+
+  /* Profile view spacing */
+  .profile-view {
+    gap: 12px;
+  }
+
+  .profile-view .card-soft {
+    margin-bottom: 12px;
+  }
+
+  .profile-view .card-soft:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Profile menu in mobile - match old version */
+  #mobileProfileCard {
+    margin-bottom: 12px;
+  }
+
+  #mobileProfileCard .card-title {
+    margin-bottom: 12px;
+  }
+
+  #mobileProfileMenu {
+    margin-top: 0;
+    gap: 10px;
+    display: grid;
+  }
+
+  #mobileProfileMenu button {
+    margin-bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #mobileProfileMenu button > span:first-child {
+    flex: 1;
+    text-align: left;
+  }
+
+  #mobileProfileMenu button > span:last-child {
+    color: var(--fg-muted);
+    font-size: 12px;
+  }
+
+  /* Mobile profile header */
+  #mobileProfileHeader {
+    margin-bottom: 12px;
+  }
+
+  /* Settings card */
+  #mobileSettingsCard {
+    margin-bottom: 0;
+  }
+
+  .settings-button {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--fg);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 180ms ease-out;
+    text-align: left;
+  }
+
+  .settings-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .settings-button > span:first-child {
+    flex: 1;
+  }
+
+  .settings-button > span:last-child {
+    color: var(--fg-muted);
+    font-size: 16px;
+  }
+
+  /* Ensure proper spacing for all views */
+  .feed-view .card-soft,
+  .services-view .card-soft,
+  .profile-view .card-soft {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Day header card adjustments */
+  .day-header {
+    gap: 8px;
+  }
+
+  .day-header-stats {
+    gap: 12px;
+    padding: 8px 0;
+  }
+
+  /* Исправление отступов для day-header-card - чтобы не был прижат к tabs */
+  .feed-view #dayHeaderCard:first-child {
+    margin-top: 0; /* Убираем лишний отступ, так как tabs уже имеют отступ */
+  }
+
+  /* Services - визуально вторичные, менее яркие (desktop right column) */
+  #col-right .card-soft {
+    opacity: 0.75; /* Приглушаем все Services карточки */
+    transition: opacity 180ms ease-out;
+  }
+
+  #col-right .card-soft:hover {
+    opacity: 0.9; /* Чуть ярче при hover, но не полностью */
+  }
+
+  /* Приглушенные заголовки Services */
+  #col-right .card-title {
+    color: var(--fg-muted);
+    font-weight: 500; /* Меньше жирности */
+  }
+
+  /* Приглушенные элементы внутри Services */
+  #col-right .pinned-plan,
+  #col-right .chip {
+    opacity: 0.85;
+    border-color: rgba(255, 255, 255, 0.06); /* Более тонкая обводка */
+    background: rgba(255, 255, 255, 0.02); /* Более прозрачный фон */
+  }
+
+  #col-right .pinned-plan:hover,
+  #col-right .chip:hover {
+    opacity: 0.95;
+    background: rgba(255, 255, 255, 0.04); /* Менее яркий hover */
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Убираем золотые акценты из Services (делаем их менее привлекательными) */
+  #col-right .pinned-plan:hover {
+    border-color: rgba(255, 255, 255, 0.1); /* Не золотой */
+  }
+
+  #col-right .chip.chip-action,
+  #col-right .chip.selected {
+    border-color: rgba(255, 255, 255, 0.12); /* Менее яркая обводка */
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  /* Mobile Services - также приглушенные */
+  .services-view .service-section {
+    opacity: 0.75;
+    transition: opacity 180ms ease-out;
+  }
+
+  .services-view .service-section:hover {
+    opacity: 0.9;
+  }
+
+  .services-view .card-title {
+    color: var(--fg-muted);
+    font-weight: 500;
+  }
+
+  .services-view .pinned-plan,
+  .services-view .chip {
+    opacity: 0.85;
+    border-color: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .services-view .pinned-plan:hover,
+  .services-view .chip:hover {
+    opacity: 0.95;
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  /* My Day Card - спокойный экран "Мой день" */
+  #myDayCard {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+    /* Контент остается вверху, пустое пространство внизу - это "воздух" */
+    align-self: flex-start;
+    width: 100%;
+  }
+
+  /* Profile - нормальные отступы между карточками */
+  #col-left .card-soft {
+    margin-bottom: 16px;
+  }
+
+  #col-left .card-soft:last-child {
+    margin-bottom: 0;
+  }
+
+  /* Profile - спокойные отступы внутри карточек */
+  #col-left .card-soft {
+    padding: 20px;
+  }
+
+  .my-day-date {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--fg);
+    letter-spacing: 0.3px;
+    margin: 0;
+  }
+
+  .my-day-weather {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .my-day-weather-main {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--fg);
+    margin: 0;
+  }
+
+  .my-day-weather-details {
+    font-size: 13px;
+    color: var(--fg-muted);
+    margin: 0;
+  }
+
+  .my-day-advice {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--fg);
+    margin: 0;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Mini Programs styling - match old version */
+  .pinned-list {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .pinned-plan {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--fg);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    box-sizing: border-box;
+  }
+
+  .pinned-plan:hover {
+    border-color: var(--gold);
+    background: rgba(246, 195, 106, 0.05);
+  }
+
+
+  .pinned-plan > span:not(.pinned-plan-icon) {
+    flex: 1;
+    text-align: left;
+  }
+
+  .pinned-plan > span:last-child {
+    color: var(--fg-muted);
+    font-size: 12px;
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 900px) {
+  .bottom-nav {
+    display: none;
+  }
+  
+  .main-panel {
+    padding: 24px;
+  }
+  
+  /* НЕ переопределяем overflow для #centerContent - скролл управляется в layout.css */
+  /* На desktop скроллится #centerContent (overflow-y: auto в layout.css) */
+  /* На mobile скроллится каждый view отдельно */
+}
+
+/* Desktop: точные стили правой панели */
+@media (min-width: 1300px) {
+  .right-panel {
+    padding: 20px;
+  }
+  
+  .right-panel .card-soft {
+    margin-bottom: 16px;
+  }
+  
+  .right-panel .card-soft:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* ============================================================
+   PROFILE MODALS
+   ============================================================ */
+
+/* ============================================================
+   PROFILE MODALS - КОНТРАКТ CSS
+   ============================================================
+   КРИТИЧНО: Эти стили обеспечивают перекрытие UI.
+   Не изменять без проверки z-index и position.
+   ============================================================ */
+
+/* Profile Modal Overlay - КОНТРАКТ */
+.profile-modal-overlay {
+  position: fixed;
+  inset: 0;                    /* top: 0; left: 0; right: 0; bottom: 0; */
+  z-index: 9999;              /* Выше layout-grid (1000) и bottom-nav (1000) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;       /* Закрыто: не принимает клики */
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* Settings Modal Overlay - КОНТРАКТ */
+#settingsModalOverlay {
+  position: fixed;
+  inset: 0;                   /* top: 0; left: 0; right: 0; bottom: 0; */
+  z-index: 9999;              /* Выше layout-grid (1000) и bottom-nav (1000) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;       /* Закрыто: не принимает клики */
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* Активное состояние - модалка видна */
+.profile-modal-overlay.is-active,
+#settingsModalOverlay.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Модальное окно - КОНТРАКТ */
+.profile-modal {
+  position: relative;          /* Относительно overlay */
+  z-index: 10000;             /* Выше overlay (9999) */
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-card);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;        /* Всегда принимает клики */
+}
+
+.profile-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.profile-modal-close {
+  background: none;
+  border: none;
+  color: var(--fg);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s ease;
+}
+
+.profile-modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-modal-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.profile-modal-tab {
+  background: none;
+  border: none;
+  color: var(--fg-muted);
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-modal-tab:hover {
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.profile-modal-tab.tab-active {
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-modal-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.profile-modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 20px;
+  border-top: 1px solid var(--surface-border);
+}
+
+.profile-modal-footer .btn {
+  flex: 1;
+}
+
+/* ============================================================
+   SMART QUESTIONNAIRE v2 - Карточки в стиле ChatGPT
+   ============================================================ */
+
+.questionnaire-module {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 0;
+}
+
+.questionnaire-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+.questionnaire-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.questionnaire-card .card-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.questionnaire-card .card-description {
+  font-size: 14px;
+  color: var(--fg-soft);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.card-interactive {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Checkbox стиль */
+.card-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  transition: background-color 150ms ease-out;
+}
+
+.card-checkbox:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.card-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--gold);
+}
+
+.card-checkbox span {
+  font-size: 15px;
+  color: var(--fg);
+  flex: 1;
+}
+
+/* Select стиль */
+.card-select {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  color: var(--fg);
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 150ms ease-out, background-color 150ms ease-out;
+}
+
+.card-select:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.card-select:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Slider стиль */
+.card-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.slider-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.slider-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slider-btn-minus,
+.slider-btn-plus {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--fg);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease-out;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.slider-btn-minus:hover,
+.slider-btn-plus:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--gold);
+  transform: scale(1.05);
+}
+
+.slider-btn-minus:active,
+.slider-btn-plus:active {
+  transform: scale(0.95);
+  background: rgba(246, 195, 106, 0.2);
+}
+
+.card-slider input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.card-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(246, 195, 106, 0.4);
+  transition: transform 150ms ease-out;
+}
+
+.card-slider input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.card-slider input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(246, 195, 106, 0.4);
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin-top: 4px;
+}
+
+.slider-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold);
+  min-width: 24px;
+  text-align: center;
+}
+
+/* Choice (radio) стиль */
+.card-choice-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 14px 16px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 150ms ease-out;
+}
+
+.card-choice:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.card-choice input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--gold);
+}
+
+.card-choice input[type="radio"]:checked + span {
+  color: var(--gold);
+  font-weight: 500;
+}
+
+.card-choice:has(input[type="radio"]:checked) {
+  border-color: var(--gold);
+  background: rgba(246, 195, 106, 0.1);
+}
+
+.card-choice span {
+  font-size: 15px;
+  color: var(--fg);
+  flex: 1;
+}
+
+/* Multi-select стиль */
+.card-multi-select {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Textarea стиль */
+.card-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  color: var(--fg);
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 150ms ease-out, background-color 150ms ease-out;
+}
+
+.card-textarea:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.card-textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.card-textarea::placeholder {
+  color: var(--fg-muted);
+}
+
+/* "Why this matters" стиль */
+.card-why-matters {
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--surface-border);
+  line-height: 1.4;
+  font-style: italic;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 899px) {
+  .questionnaire-card {
+    padding: 20px;
+    gap: 14px;
+  }
+  
+  .questionnaire-card .card-title {
+    font-size: 18px;
+  }
+  
+  .questionnaire-card .card-description {
+    font-size: 13px;
+  }
+}
+
+/* ============================================================
+   SETTINGS - Switch Component (Toggle)
+   ============================================================ */
+
+/* Switch Container */
+.settings-toggle {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Hide default checkbox */
+.settings-toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Switch Track (капсула) */
+.settings-toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Switch Thumb (бегунок) */
+.settings-toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 2px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Switch ON state - золотой */
+.settings-toggle input[type="checkbox"]:checked + .settings-toggle-slider {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 12px rgba(246, 195, 106, 0.4);
+}
+
+/* Switch ON - бегунок сдвигается вправо */
+.settings-toggle input[type="checkbox"]:checked + .settings-toggle-slider::before {
+  transform: translateX(24px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Hover state */
+.settings-toggle:hover .settings-toggle-slider {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.settings-toggle:hover input[type="checkbox"]:checked + .settings-toggle-slider {
+  box-shadow: 0 0 16px rgba(246, 195, 106, 0.5);
+}
+
+/* Focus state for accessibility */
+.settings-toggle input[type="checkbox"]:focus + .settings-toggle-slider {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Active/pressed state */
+.settings-toggle:active .settings-toggle-slider::before {
+  transform: scale(0.95);
+}
+
+.settings-toggle:active input[type="checkbox"]:checked + .settings-toggle-slider::before {
+  transform: translateX(24px) scale(0.95);
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px var(--layout-pad);
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg);
+  z-index: 100;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.footer-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.footer-content a {
+  color: var(--fg-muted);
+  text-decoration: none;
+  font-size: 11px;
+  transition: color 180ms ease-out;
+  opacity: 0.7;
+}
+
+.footer-content a:hover {
+  color: var(--gold);
+  opacity: 1;
+}
+
+.footer-separator {
+  color: var(--fg-muted);
+  font-size: 11px;
+  opacity: 0.5;
+}
+
+/* Mobile footer */
+@media (max-width: 1024px) {
+  .app-footer {
+    padding: 8px 16px;
+  }
+
+  .footer-content {
+    gap: 4px;
+  }
+
+  .footer-content a {
+    font-size: 10px;
+  }
+
+  .footer-separator {
+    font-size: 10px;
+  }
+}
+
+/* ============================================================
+   LEGAL PAGES
+   ============================================================ */
+
+/* Legal pages - allow scrolling */
+.legal-layout {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+.legal-layout main {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+}
+
+.legal-page {
+  max-width: 800px;
+  margin: 24px auto;
+  padding: 0 var(--layout-pad);
+  min-height: calc(100vh - 200px);
+}
+
+.legal-content {
+  margin-top: 24px;
+  line-height: 1.7;
+}
+
+.legal-content h3 {
+  margin: 24px 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.legal-content p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--fg-soft);
+}
+
+.legal-content a {
+  color: var(--gold);
+  text-decoration: none;
+  transition: color 180ms ease-out;
+}
+
+.legal-content a:hover {
+  color: var(--gold-soft);
+  text-decoration: underline;
+}
+
+.disclaimer-warning {
+  background: rgba(246, 195, 106, 0.1);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin: 20px 0;
+}
+
+.disclaimer-warning h3 {
+  margin-top: 0;
+  color: var(--gold);
+}
+
+.disclaimer-warning p {
+  margin: 8px 0;
+  font-weight: 500;
+}
+
+.legal-footer {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.legal-footer .btn {
+  display: inline-block;
+}
+
+/* Disabled state */
+.settings-toggle input[type="checkbox"]:disabled + .settings-toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Settings field layout */
+.settings-field {
+  margin-bottom: 20px;
+}
+
+.settings-field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.settings-field-label > span:first-child {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fg);
+  flex: 1;
+}
+
+.settings-field-hint {
+  font-size: 13px;
+  color: var(--fg-muted);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* Settings section */
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Settings select */
+.settings-select {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  color: var(--fg);
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 150ms ease-out, background-color 150ms ease-out;
+  margin-top: 8px;
+}
+
+.settings-select:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.settings-select:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Settings modal content */
+.settings-modal-content {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(90vh - 140px);
+}
+
+/* Settings row (для кнопок) */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--surface-border);
+  cursor: pointer;
+  text-align: left;
+  color: var(--fg);
+  transition: background-color 150ms ease-out;
+}
+
+.settings-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.settings-row-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.settings-row-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.settings-row-hint {
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+.settings-row-arrow {
+  font-size: 18px;
+  color: var(--fg-muted);
+  margin-left: 12px;
+}
+
+.settings-row-danger {
+  color: var(--danger);
+}
+
+.settings-row-danger .settings-row-label {
+  color: var(--danger);
+}
+
+.settings-info-text {
+  font-size: 13px;
+  color: var(--fg-muted);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.settings-coming-soon,
+.settings-version {
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
+/* ============================================================
+   UNREAD MESSAGES INDICATOR
+   ============================================================ */
+
+.unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--gold);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(246, 195, 106, 0.4);
+  z-index: 20;
+  pointer-events: none;
+}
+
+.center-tab .unread-badge {
+  top: 2px;
+  right: 8px;
+}
+
+.nav-item .unread-badge {
+  top: 4px;
+  right: 4px;
+}
+
+/* ============================================================
+   PROFILE COMPLETENESS BADGE
+   ============================================================ */
+
+.profile-completeness-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1.2;
+  cursor: help;
+  transition: color 180ms ease-out, border-color 180ms ease-out, background 180ms ease-out;
+  white-space: nowrap;
+  min-height: 28px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.profile-completeness-badge:hover {
+  color: var(--gold);
+  border-color: rgba(246, 195, 106, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.profile-completeness-details {
+  font-size: 0.75em;
+  opacity: 0.7;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+/* Tooltip on hover (using title attribute, styled via browser default) */
+

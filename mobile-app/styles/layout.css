@@ -1,0 +1,784 @@
+/* TendAI — Unified Adaptive Layout */
+/* ============================================================
+   FULL-HEIGHT LAYOUT + ВНУТРЕННИЙ СКРОЛЛ КОЛОНОК (как ChatGPT)
+   ============================================================
+   
+   ПРИНЦИП:
+   - body/html: overflow: hidden (нет скролла у всей страницы)
+   - Desktop (≥1300px): 3 колонки с внутренним скроллом
+   - Mobile (<1300px): один экран с внутренним скроллом + фиксированный navbar
+   
+   ============================================================ */
+
+/* ============================================================
+   UNIFIED LAYOUT STRUCTURE
+   ============================================================ */
+
+.tendai-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height для mobile */
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Brand Header */
+.brand-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  flex-shrink: 0;
+  position: relative;
+  padding: 0 var(--layout-pad);
+  z-index: 10;
+}
+
+.brand-title {
+  margin: 0;
+  font-size: clamp(20px, 2.5vw, 26px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fg);
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.3),
+    0 0 24px var(--gold-glow);
+  position: relative;
+}
+
+/* BASE: Mobile calendar button hidden by default */
+#calendarBtnMobile.calendar-header-btn {
+  display: none !important;
+}
+
+.brand-title::before {
+  content: "";
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140%;
+  height: 140%;
+  background: radial-gradient(ellipse at center, var(--gold-glow) 0%, transparent 75%);
+  opacity: 0.5;
+  filter: blur(8px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Main Layout Container - using layout-grid like original */
+main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 1;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1.6fr) 320px;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 24px;
+  max-width: var(--max-width);
+  width: 100%;
+  margin: 24px auto 0;
+  height: 100%;
+  align-items: stretch;
+  align-content: stretch;
+  /* КРИТИЧНО: grid должен занимать всю доступную высоту для full-height layout */
+}
+
+.layout-grid > * {
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Columns Base Styles - using original structure */
+#col-left,
+#col-center,
+#col-right {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--surface-border);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--shadow-card), 0 0 0 1px rgba(246, 195, 106, 0.1), 0 -2px 8px rgba(255, 255, 255, 0.04);
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+}
+
+/* Desktop styles will be in the DESKTOP media query below */
+
+#col-left::before,
+#col-center::before,
+#col-right::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(
+    135deg,
+    var(--gold-glow) 0%,
+    transparent 40%,
+    transparent 60%,
+    var(--gold-glow) 100%
+  );
+  opacity: 0.4;
+  filter: blur(4px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+#col-left {
+  gap: 16px;
+  padding: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#col-right {
+  gap: 16px;
+  padding: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#col-center {
+  gap: 0;
+  padding: 0;
+  overflow: hidden; /* Колонка не скроллится, скроллится только контент внутри */
+  height: 100%;
+  min-height: 0; /* КРИТИЧНО: grid-ребенок должен иметь min-height:0 для правильной работы overflow у детей */
+}
+
+#centerContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0; /* КРИТИЧНО: без этого flex-ребенок не сжимается и overflow не работает */
+  height: 100%;
+  overflow: hidden; /* НЕ scrollable - скролл только в #centerBody */
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 24px;
+  padding-right: 24px;
+  margin-right: 0;
+  position: relative;
+  justify-content: flex-start;
+  /* Prevent scrollbar overlay from affecting tabs area */
+  isolation: isolate;
+  contain: layout style;
+}
+
+/* Center Body: scrollable content area (FEED/TALK views) */
+#centerBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto; /* Скролл только в body, не в header с табами */
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+  /* Ensure scrollbar doesn't affect tabs area */
+  margin-top: 0;
+  padding-top: 0;
+  
+  /* CRITICAL: Scrollbar styles applied to #centerBody - ALWAYS ACTIVE */
+  scrollbar-color: transparent transparent !important; /* Completely invisible thumb and track */
+  scrollbar-width: thin;
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+  /* Force Chrome to respect scrollbar styling */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* CRITICAL: Scrollbar styles for #centerBody - APPLIED ALWAYS, NOT IN MEDIA QUERY */
+#centerBody::-webkit-scrollbar {
+  width: 8px !important; /* Narrower scrollbar */
+}
+
+#centerBody::-webkit-scrollbar-track {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+#centerBody::-webkit-scrollbar-thumb {
+  background: transparent !important; /* Completely invisible thumb */
+  border-radius: 999px;
+  border: none !important;
+  width: 0 !important;
+}
+
+#centerBody::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.1) !important; /* Only slightly visible on hover */
+}
+
+#centerBody {
+  scrollbar-gutter: auto !important; /* Don't reserve space for scrollbar */
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--surface-border);
+  padding: 8px;
+  z-index: 1000;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================ */
+
+/* MOBILE (< 900px) */
+@media (max-width: 899px) {
+  .tendai-layout {
+    padding: 12px 16px 24px;
+  }
+
+  .layout-grid {
+    grid-template-columns: 1fr;
+    padding: 0;
+    gap: 0;
+    margin: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  #col-left,
+  #col-right {
+    display: none;
+  }
+  
+  #col-center {
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    height: 100%;
+    background: transparent;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* НЕ скроллится - скроллится только внутри views */
+  }
+  
+  #col-center::before {
+    display: none;
+  }
+  
+  #centerContent {
+    padding: 0;
+    margin: 0;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden; /* НЕ scrollable - скролл только в #centerBody */
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+  }
+  
+  /* Center Body: scrollable content on mobile */
+  #centerBody {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto; /* Скролл только в body, не в header с табами */
+    overflow-x: hidden;
+    width: 100%;
+    
+    /* Scrollbar styles for mobile */
+    scrollbar-color: transparent transparent !important;
+    scrollbar-width: thin;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+  }
+  
+  #centerBody::-webkit-scrollbar {
+    width: 8px !important;
+  }
+  
+  #centerBody::-webkit-scrollbar-track {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  #centerBody::-webkit-scrollbar-thumb {
+    background: transparent !important;
+    border-radius: 999px;
+    border: none !important;
+    width: 0 !important;
+  }
+  
+  #centerBody::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  #centerBody {
+    scrollbar-gutter: auto !important;
+  }
+  
+  .bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--surface-border);
+    padding: 12px 0;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    box-sizing: border-box;
+    /* Учитываем safe-area для iPhone и Android */
+    min-height: calc(70px + env(safe-area-inset-bottom));
+  }
+
+  /* Убираем padding-bottom у main, так как скролл теперь внутри views */
+  main {
+    padding-bottom: 0;
+  }
+  
+  .brand-header {
+    padding: 0 16px;
+    height: 48px;
+    margin-bottom: 0;
+    justify-content: space-between; /* Title left, calendar button right on mobile */
+  }
+  
+  .brand-title {
+    font-size: 20px;
+  }
+  
+  /* Calendar button in mobile header - styles only, visibility controlled by media queries */
+  .calendar-header-btn {
+    flex: 0 0 auto !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+    padding: 0 !important;
+    /* display controlled by media queries below - DO NOT set here */
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(0, 0, 0, 0.3) !important;
+    color: var(--fg) !important;
+    cursor: pointer;
+    line-height: 1 !important;
+    transition: all 180ms ease-out;
+    position: relative;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+  }
+  
+  .calendar-header-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+    display: block !important;
+    stroke: currentColor !important;
+    stroke-width: 2 !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    fill: none !important;
+    opacity: 1 !important;
+  }
+  
+  .calendar-header-btn:hover {
+    border-color: rgba(246, 195, 106, 0.35);
+    box-shadow: 0 0 0 2px rgba(246, 195, 106, 0.08);
+  }
+  
+  .calendar-header-btn:hover svg {
+    color: var(--gold);
+    filter: drop-shadow(0 0 8px rgba(246, 195, 106, 0.4));
+  }
+  
+  .calendar-header-btn[aria-expanded="true"] {
+    border-color: rgba(246, 195, 106, 0.6);
+    box-shadow: 0 0 18px rgba(246, 195, 106, 0.12), 0 0 8px rgba(246, 195, 106, 0.08);
+  }
+  
+  .calendar-header-btn[aria-expanded="true"] svg {
+    color: var(--gold);
+  }
+
+  /* Ensure views take full width and have proper spacing */
+  .feed-view,
+  .talk-view,
+  .services-view,
+  .profile-view {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 16px;
+    margin: 0;
+    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Скролл внутри каждого view - ЕДИНСТВЕННАЯ точка скролла на mobile */
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+    flex: 1 1 auto;
+    min-height: 0; /* КРИТИЧНО: flex-ребенок должен иметь min-height:0 для правильной работы overflow */
+    height: 100%;
+    /* Padding снизу для navbar (высота navbar + safe-area + комфортный зазор) */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+  
+  /* Talk view: убираем padding-bottom и gap, чтобы увеличить область сообщений */
+  .talk-view {
+    padding-bottom: 0;
+    gap: 0; /* Убираем gap, так как заголовок скрыт */
+  }
+  
+  /* Conversation card занимает максимум доступного пространства */
+  .talk-view .conversation-card {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  /* Adjust feed-view gap to match old version */
+  .feed-view {
+    gap: 12px;
+  }
+}
+
+/* TABLET (900px - 1024px) - 2 columns: center + right */
+@media (min-width: 900px) and (max-width: 1024px) {
+  .layout-grid {
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+  }
+  
+  #col-left {
+    display: none !important;
+  }
+  
+  #col-right {
+    display: flex;
+  }
+  
+  #col-center {
+    min-width: 0;
+  }
+  
+  #centerContent {
+    padding: 24px;
+  }
+  
+  .bottom-nav {
+    display: none;
+  }
+}
+
+/* DESKTOP (> 1024px) - 3 columns, like old layout */
+/* DESKTOP (>= 900px) - Show desktop calendar button, hide mobile */
+@media (min-width: 900px) {
+  /* Hide mobile calendar button on desktop (it's in tabs instead) */
+  #calendarBtnMobile.calendar-header-btn {
+    display: none !important;
+  }
+  
+  /* Show desktop calendar button in tabs */
+  #calendarBtn.calendar-tab-btn {
+    display: inline-flex !important;
+  }
+}
+
+/* MOBILE (< 900px) - Show mobile calendar button, hide desktop */
+@media (max-width: 899px) {
+  /* Hide desktop calendar button on mobile (it's in header instead) */
+  #calendarBtn.calendar-tab-btn {
+    display: none !important;
+  }
+  
+  /* Show mobile calendar button in header */
+  #calendarBtnMobile.calendar-header-btn {
+    display: inline-flex !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .tendai-layout {
+    padding: 12px var(--layout-pad) 24px;
+  }
+  
+  .layout-grid {
+    grid-template-columns: 280px minmax(0, 1.7fr) 320px;
+    gap: 16px; /* Уменьшено с 24px для более плотного расположения */
+    max-width: var(--max-width);
+    align-items: stretch;
+    margin: 24px auto 0;
+  }
+  
+  /* All columns visible on desktop */
+  #col-left {
+    display: flex;
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  #col-right {
+    display: flex;
+    visibility: visible;
+    opacity: 1;
+    padding: 24px;
+  }
+  
+  #col-center {
+    display: flex;
+    visibility: visible;
+    opacity: 1;
+    padding: 0;
+  }
+  
+  #centerContent {
+    padding: 24px;
+    padding-right: 24px; /* Match base styles - no extra padding that creates visual stripe */
+    padding-bottom: calc(24px + 50px); /* Компенсация для fixed футера */
+    margin-right: 0; /* Match base styles - no negative margin */
+    height: 100%;
+    min-height: 0;
+    overflow: hidden; /* НЕ scrollable - скролл только в #centerBody */
+    flex: 1 1 auto;
+    justify-content: flex-start;
+  }
+  
+  /* Center Body: scrollable content on desktop */
+  #centerBody {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto; /* Скролл только в body, не в header с табами */
+    overflow-x: hidden;
+    width: 100%;
+    
+    /* Scrollbar styles for desktop */
+    scrollbar-color: transparent transparent !important;
+    scrollbar-width: thin;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+  }
+  
+  #centerBody::-webkit-scrollbar {
+    width: 8px !important;
+  }
+  
+  #centerBody::-webkit-scrollbar-track {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  #centerBody::-webkit-scrollbar-thumb {
+    background: transparent !important;
+    border-radius: 999px;
+    border: none !important;
+    width: 0 !important;
+  }
+  
+  #centerBody::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  #centerBody {
+    scrollbar-gutter: auto !important;
+  }
+  
+  /* Additional scrollbar styles for other elements (keep for compatibility) */
+  /* NOTE: #centerBody scrollbar styles are now in base styles to ensure they always apply */
+  /* NOTE: #centerContent is NOT scrollable anymore - scroll is only in #centerBody */
+  .center-content,
+  .center-panel,
+  #feedContent,
+  #talkContent,
+  .talk-messages,
+  .feed-content {
+    scrollbar-color: transparent transparent !important; /* Completely invisible thumb and track */
+    scrollbar-width: thin;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+  }
+
+  .center-content::-webkit-scrollbar,
+  .center-panel::-webkit-scrollbar,
+  #feedContent::-webkit-scrollbar,
+  #talkContent::-webkit-scrollbar,
+  .talk-messages::-webkit-scrollbar,
+  .feed-content::-webkit-scrollbar {
+    width: 8px; /* Narrower scrollbar */
+  }
+
+  .center-content::-webkit-scrollbar-track,
+  .center-panel::-webkit-scrollbar-track,
+  #feedContent::-webkit-scrollbar-track,
+  #talkContent::-webkit-scrollbar-track,
+  .talk-messages::-webkit-scrollbar-track,
+  .feed-content::-webkit-scrollbar-track {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .center-content::-webkit-scrollbar-thumb,
+  .center-panel::-webkit-scrollbar-thumb,
+  #feedContent::-webkit-scrollbar-thumb,
+  #talkContent::-webkit-scrollbar-thumb,
+  .talk-messages::-webkit-scrollbar-thumb,
+  .feed-content::-webkit-scrollbar-thumb {
+    background: transparent !important; /* Completely invisible thumb */
+    border-radius: 999px;
+    border: none !important;
+    width: 0 !important;
+  }
+  
+  .center-content::-webkit-scrollbar-thumb:hover,
+  .center-panel::-webkit-scrollbar-thumb:hover,
+  #feedContent::-webkit-scrollbar-thumb:hover,
+  #talkContent::-webkit-scrollbar-thumb:hover,
+  .talk-messages::-webkit-scrollbar-thumb:hover,
+  .feed-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.1) !important; /* Only slightly visible on hover */
+  }
+  
+  /* Prevent scrollbar gutter from appearing */
+  .center-content,
+  .center-panel,
+  #feedContent,
+  #talkContent,
+  .talk-messages,
+  .feed-content {
+    scrollbar-gutter: auto !important; /* Don't reserve space for scrollbar */
+  }
+  
+  .bottom-nav {
+    display: none !important;
+  }
+  
+  /* На desktop views не скроллятся - скроллится только centerContent */
+  .feed-view,
+  .talk-view,
+  .services-view,
+  .profile-view {
+    overflow: visible; /* Не скроллится на desktop */
+    height: auto;
+    min-height: 100%; /* Занимает всю доступную высоту - контент вверху, "воздух" внизу */
+    padding-bottom: 0; /* Убираем padding для navbar на desktop */
+    /* Контент остается вверху, пустое пространство внизу - это "воздух" */
+    justify-content: flex-start;
+  }
+  
+  /* Tabs фиксированы сверху на desktop при скролле centerContent */
+  .center-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg-panel);
+    /* Компенсируем padding centerContent для правильного sticky */
+    margin: -24px -30px 0 -24px;
+    padding: 12px 30px 16px 24px; /* Увеличен padding-bottom для лучшего визуального разделения */
+    border-bottom: 1px solid var(--surface-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Первая карточка в feed-view должна иметь нормальный отступ сверху после tabs */
+  .feed-view {
+    gap: 16px; /* Обеспечиваем нормальный отступ между элементами */
+    padding-top: 0; /* Убираем верхний padding, так как tabs sticky */
+    /* Контент остается вверху, пустое пространство внизу - это "воздух" */
+    justify-content: flex-start;
+    min-height: 100%;
+  }
+  
+  /* Первая карточка Feed должна иметь отступ сверху, чтобы не прилипать к sticky tabs */
+  .feed-view > .card-soft:first-child {
+    margin-top: 0; /* Отступ уже есть от gap feed-view */
+  }
+  
+  /* Дополнительная защита: если tabs sticky наезжают, добавляем небольшой отступ */
+  .feed-view > #dayHeaderCard:first-child {
+    margin-top: 0;
+    padding-top: 0;
+  }
+  
+  /* Custom scrollbar for right panel */
+  #col-right::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  #col-right::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  
+  #col-right::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+  }
+  
+  #col-right::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  
+  /* Firefox scrollbar */
+  #col-right {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Custom scrollbar for left panel */
+  #col-left::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  #col-left::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  
+  #col-left::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+  }
+  
+  #col-left::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  
+  #col-left {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) rgba(0, 0, 0, 0.2);
+  }
+}
+
