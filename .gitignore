@@ -1,0 +1,34 @@
+# Temporary files and reports
+*.backup
+*.test
+*_REPORT*.md
+COMMIT_READY*.md
+CALENDAR_DEBUG*.md
+*_FINAL_REPORT*.md
+VERIFICATION_REPORT*.md
+
+# Keep important docs
+!STABILITY_RULES.md
+!README.md
+
+# Reports folder (keep structure but ignore content)
+mobile-app/_reports/*.md
+
+# Archive folder (keep structure but ignore content)
+mobile-app/_archive/**/*.md
+mobile-app/_archive/**/*.js
+
+# Audit folder (keep structure but ignore content - these are documentation)
+# Note: _audit/ contains important maps and rules, so we keep it tracked
+
+# Node modules
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
