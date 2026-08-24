@@ -1,9 +1,10 @@
-// TendAI — Profile Completeness Calculator
+// Serron — Profile Completeness Calculator
 // @owner: profile
 // @role: init
 // Calculates profile completion percentage based on filled fields (not sections)
 
 import { profileState } from '../../state.js';
+import { storageManager } from '../../core/storage.js';
 import { getProfileSchema } from './profile-schema.js';
 
 /**
@@ -153,36 +154,7 @@ export function calculateProfileCompleteness() {
     
     // Calculate percentage: (filledFields / totalFields) * 100
     const percentage = Math.round((filledFields / totalFields) * 100);
-    
-    // Diagnostic log - collect meaningful fields
-    const meaningfulFields = [];
-    function collectMeaningfulFields(obj, structure, path = '') {
-      for (const key in structure) {
-        const currentPath = path ? `${path}.${key}` : key;
-        const structureValue = structure[key];
-        const objValue = obj && obj[key];
-        
-        if (structureValue === null || structureValue === undefined || typeof structureValue !== 'object' || Array.isArray(structureValue)) {
-          if (isMeaningfulValue(objValue, key)) {
-            meaningfulFields.push({ path: currentPath, value: objValue });
-          }
-        } else {
-          if (objValue && typeof objValue === 'object' && !Array.isArray(objValue)) {
-            collectMeaningfulFields(objValue, structureValue, currentPath);
-          }
-        }
-      }
-    }
-    collectMeaningfulFields(profile, structure);
-    
-    console.log('[PROFILE COMPLETENESS]', {
-      totalFields: totalFields,
-      filledFields: filledFields,
-      percentage: percentage,
-      formula: `(${filledFields} / ${totalFields}) * 100 = ${percentage}%`,
-      meaningfulFields: meaningfulFields.map(f => f.path).slice(0, 10) // Show first 10
-    });
-    
+
     return {
       percentage: percentage,
       filledFields: filledFields,
@@ -203,37 +175,52 @@ export function calculateProfileCompleteness() {
  */
 export function updateProfileCompletenessDisplay() {
   const result = calculateProfileCompleteness();
-  const { percentage, filledFields, totalFields } = result;
-  
-  // Update desktop badge
-  const desktopBadge = document.getElementById('profileCompletenessDesktop');
-  if (desktopBadge) {
-    desktopBadge.textContent = `${percentage}%`;
-  }
-  
-  // Update desktop details (X/Y)
+  const { filledFields, totalFields } = result;
+  const detailsText = `${filledFields} / ${totalFields}`;
   const desktopDetails = document.getElementById('profileCompletenessDetailsDesktop');
-  if (desktopDetails) {
-    desktopDetails.textContent = `${filledFields} / ${totalFields}`;
-  }
-  
-  // Update mobile badge
-  const mobileBadge = document.getElementById('profileCompletenessMobile');
-  if (mobileBadge) {
-    mobileBadge.textContent = `${percentage}%`;
-  }
-  
-  // Update mobile details (X/Y)
+  if (desktopDetails) desktopDetails.textContent = detailsText;
   const mobileDetails = document.getElementById('profileCompletenessDetailsMobile');
-  if (mobileDetails) {
-    mobileDetails.textContent = `${filledFields} / ${totalFields}`;
-  }
+  if (mobileDetails) mobileDetails.textContent = detailsText;
+
+  // SYSTEM INTEGRITY only grows as the system learns more user context.
+  updateSystemIntegrityDisplay();
 }
+
+/**
+ * Update SYSTEM INTEGRITY from cumulative learned user context (0–100%).
+ */
+export function updateSystemIntegrityDisplay() {
+  const score = storageManager ? storageManager.calculateSystemIntegrityScore() : 0;
+  const percentage = Math.min(100, Math.max(0, score));
+  const filledSegments = Math.min(10, Math.round((percentage / 100) * 10));
+  const readoutText = `System Integrity · ${percentage}%`;
+
+  [ { badge: 'profileCompletenessDesktop', details: 'profileCompletenessDetailsDesktop', bar: 'dataIntegrityBarDesktop' },
+    { badge: 'profileCompletenessMobile', details: 'profileCompletenessDetailsMobile', bar: 'dataIntegrityBarMobile' } ].forEach(({ badge, details, bar }) => {
+    const badgeEl = document.getElementById(badge);
+    if (badgeEl) badgeEl.textContent = readoutText;
+    const detailsEl = document.getElementById(details);
+    if (detailsEl) detailsEl.textContent = `${percentage}%`;
+    const barEl = document.getElementById(bar);
+    if (barEl) {
+      const segments = barEl.querySelectorAll('.data-integrity-segment');
+      segments.forEach((seg, i) => {
+        seg.classList.toggle('filled', i < filledSegments);
+      });
+    }
+  });
+}
+
+/** @deprecated Use updateSystemIntegrityDisplay(). */
+export const updateIntegrityDisplay = updateSystemIntegrityDisplay;
 
 /**
  * Initialize profile completeness tracking
  */
 export function initProfileCompleteness() {
+  if (initProfileCompleteness.initialized) return;
+  initProfileCompleteness.initialized = true;
+
   // Update on load
   updateProfileCompletenessDisplay();
   
@@ -253,5 +240,7 @@ export function initProfileCompleteness() {
 // Export for global use
 window.calculateProfileCompleteness = calculateProfileCompleteness;
 window.updateProfileCompletenessDisplay = updateProfileCompletenessDisplay;
+window.updateSystemIntegrityDisplay = updateSystemIntegrityDisplay;
+window.updateIntegrityDisplay = updateSystemIntegrityDisplay;
 window.initProfileCompleteness = initProfileCompleteness;
 

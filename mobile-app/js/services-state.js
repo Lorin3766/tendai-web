@@ -1,14 +1,14 @@
-// TendAI — Services State
+// Serron — Services State
 // @owner: services
-// @role: state (Labs, Online Doctor, Mini Programs)
+// @role: state (Labs, Online Doctor, Programs)
 // Unified data source for mobile SERVICES tab and desktop right panel
 
 export const servicesState = {
   labs: [
-    { id: 'blood-test', name: 'Blood test' },
-    { id: 'cholesterol', name: 'Cholesterol' },
-    { id: 'hormones', name: 'Hormones' },
-    { id: 'full-check', name: 'Full check' }
+    { id: 'blood-test', name: 'Blood test', icon: '🩸' },
+    { id: 'cholesterol', name: 'Cholesterol', icon: '🧪' },
+    { id: 'hormones', name: 'Hormones', icon: '💊' },
+    { id: 'full-check', name: 'Full check', icon: '📋' }
   ],
 
   onlineDoctor: [
@@ -34,28 +34,10 @@ export const servicesState = {
 
   miniPrograms: [
     {
-      id: 'eat-smart',
-      name: 'Eat Smart',
-      days: 5,
-      icon: '🥗'
-    },
-    {
-      id: 'better-sleep',
-      name: 'Better Sleep',
-      days: 7,
-      icon: '🌙'
-    },
-    {
-      id: 'hydration-focus',
-      name: 'Hydration Focus',
-      days: 3,
-      icon: '💧'
-    },
-    {
-      id: 'calm-mind',
-      name: 'Calm Mind',
-      days: 3,
-      icon: '🧘‍♂️'
+      id: 'create-my-plan',
+      name: 'Create my plan',
+      days: 0,
+      icon: '📋'
     }
   ],
 

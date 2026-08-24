@@ -1,4 +1,4 @@
-/* TendAI — Unified Adaptive Layout */
+/* Serron — Unified Adaptive Layout */
 /* ============================================================
    FULL-HEIGHT LAYOUT + ВНУТРЕННИЙ СКРОЛЛ КОЛОНОК (как ChatGPT)
    ============================================================
@@ -82,7 +82,7 @@ main {
 
 .layout-grid {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1.6fr) 320px;
+  grid-template-columns: 260px minmax(0, 1fr) 260px;
   flex: 1 1 auto;
   min-height: 0;
   gap: 24px;
@@ -92,6 +92,7 @@ main {
   height: 100%;
   align-items: stretch;
   align-content: stretch;
+  overflow: hidden;
   /* КРИТИЧНО: grid должен занимать всю доступную высоту для full-height layout */
 }
 
@@ -142,14 +143,41 @@ main {
 
 #col-left {
   gap: 16px;
-  padding: 24px;
+  padding: 20px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  flex-shrink: 0;
+  background: var(--bg-panel);
   overflow-y: auto;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  contain: layout paint;
+}
+
+#col-left > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Sidebar profile card: fixed width — do not inherit min-width:0 / max-width:100% shrink that caused "INTE" truncation */
+#col-left > #profileHeader.data-integrity-container,
+#col-left > #profileHeader.data-integrity-container.card-soft {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 0;
 }
 
 #col-right {
   gap: 16px;
-  padding: 24px;
+  padding: 20px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  flex-shrink: 0;
+  background: var(--bg-panel);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -230,6 +258,51 @@ main {
   scrollbar-gutter: auto !important; /* Don't reserve space for scrollbar */
 }
 
+/* FEED / TALK sliding transition: hardware-accelerated translate3d, 60fps */
+.center-feed-talk-slider {
+  display: flex;
+  flex-direction: row;
+  width: 200%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  transition: transform 0.5s var(--ease-human-os);
+  will-change: transform;
+}
+
+.center-feed-talk-slider.hidden {
+  display: none !important;
+}
+
+.center-feed-talk-slider > .feed-view,
+.center-feed-talk-slider > .talk-view {
+  flex: 0 0 50%;
+  width: 50%;
+  min-width: 50%;
+  max-width: 50%;
+  min-height: 0;
+  align-self: stretch;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* FEED: pane scrolls. TALK: pane is a locked flex column; only .chat-scroll-wrapper scrolls */
+.center-feed-talk-slider > .feed-view {
+  overflow-y: auto;
+}
+
+.center-feed-talk-slider > .talk-view {
+  overflow: hidden;
+}
+
+#centerBody.view-feed .center-feed-talk-slider {
+  transform: translate3d(0, 0, 0);
+}
+
+#centerBody.view-talk .center-feed-talk-slider {
+  transform: translate3d(-50%, 0, 0);
+}
+
 /* Bottom Navigation */
 .bottom-nav {
   display: none;
@@ -250,8 +323,9 @@ main {
 
 /* MOBILE (< 900px) */
 @media (max-width: 899px) {
+  /* No extra bottom padding here — views (e.g. TALK) own tab-bar clearance to avoid a gap above the nav */
   .tendai-layout {
-    padding: 12px 16px 24px;
+    padding: 0 16px 0;
   }
 
   .layout-grid {
@@ -340,6 +414,11 @@ main {
   #centerBody {
     scrollbar-gutter: auto !important;
   }
+
+  /* TALK: never scroll the shell — avoids pushing the input pill below the viewport */
+  #centerBody.view-talk {
+    overflow: hidden;
+  }
   
   .bottom-nav {
     display: flex;
@@ -366,15 +445,9 @@ main {
     padding-bottom: 0;
   }
   
+  /* Hide brand header on mobile */
   .brand-header {
-    padding: 0 16px;
-    height: 48px;
-    margin-bottom: 0;
-    justify-content: space-between; /* Title left, calendar button right on mobile */
-  }
-  
-  .brand-title {
-    font-size: 20px;
+    display: none !important;
   }
   
   /* Calendar button in mobile header - styles only, visibility controlled by media queries */
@@ -419,7 +492,7 @@ main {
   
   .calendar-header-btn:hover svg {
     color: var(--gold);
-    filter: drop-shadow(0 0 8px rgba(246, 195, 106, 0.4));
+    filter: var(--serron-filter-calendar-hover);
   }
   
   .calendar-header-btn[aria-expanded="true"] {
@@ -431,9 +504,14 @@ main {
     color: var(--gold);
   }
 
-  /* Ensure views take full width and have proper spacing */
+  /* Ensure views take full width and proper spacing; slider panes stay 50% */
+  .center-feed-talk-slider > .feed-view,
+  .center-feed-talk-slider > .talk-view {
+    width: 50%;
+    min-width: 50%;
+    max-width: 50%;
+  }
   .feed-view,
-  .talk-view,
   .services-view,
   .profile-view {
     width: 100%;
@@ -453,17 +531,33 @@ main {
     padding-bottom: calc(80px + env(safe-area-inset-bottom));
     box-sizing: border-box;
   }
-  
-  /* Talk view: убираем padding-bottom и gap, чтобы увеличить область сообщений */
-  .talk-view {
-    padding-bottom: 0;
-    gap: 0; /* Убираем gap, так как заголовок скрыт */
-  }
-  
-  /* Conversation card занимает максимум доступного пространства */
-  .talk-view .conversation-card {
+
+  /* TALK: height-locked column; tab-bar clearance; history scrolls inside .chat-scroll-wrapper only */
+  .talk-view,
+  #talk-view.talk-view {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 16px;
+    margin: 0;
+    gap: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    overflow-x: hidden;
     flex: 1 1 auto;
     min-height: 0;
+    height: 100%;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Conversation card fills remaining space (overflow: visible so ⋯ menu is not clipped) */
+  .talk-view .conversation-card {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+    max-height: none;
     display: flex;
     flex-direction: column;
     margin: 0;
@@ -532,15 +626,54 @@ main {
 
 @media (min-width: 1025px) {
   .tendai-layout {
-    padding: 12px var(--layout-pad) 24px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    padding: 0;
+    background: var(--bg);
+  }
+
+  .brand-header {
+    display: none;
   }
   
   .layout-grid {
-    grid-template-columns: 280px minmax(0, 1.7fr) 320px;
-    gap: 16px; /* Уменьшено с 24px для более плотного расположения */
-    max-width: var(--max-width);
+    grid-template-columns: 260px minmax(0, 1fr) 260px;
+    gap: 8px;
+    max-width: none;
+    width: 100%;
     align-items: stretch;
-    margin: 24px auto 0;
+    margin: 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+  }
+
+  /* Vertical dividers between columns (thin, full-height, no impact on clicks/scroll) */
+  #col-left::after,
+  #col-center::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Desktop: no rounded corners on column containers — scene = strict rectangle */
+  #col-left,
+  #col-center,
+  #col-right {
+    border-radius: 0;
+  }
+  #col-left::before,
+  #col-center::before,
+  #col-right::before {
+    border-radius: 0;
   }
   
   /* All columns visible on desktop */
@@ -554,7 +687,11 @@ main {
     display: flex;
     visibility: visible;
     opacity: 1;
-    padding: 24px;
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
+    flex-shrink: 0;
+    padding: 20px;
   }
   
   #col-center {
@@ -562,16 +699,35 @@ main {
     visibility: visible;
     opacity: 1;
     padding: 0;
+    min-width: 0;
+    max-width: none;
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  #col-left {
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
+    flex-shrink: 0;
+    padding: 20px;
+  }
+
+  #col-right .card-soft,
+  #col-right .sidebar-panel-flat .card-header-toggle,
+  #col-right .service-row,
+  #col-right .pinned-list,
+  #col-right .service-options-list {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
   #centerContent {
-    padding: 24px;
-    padding-right: 24px; /* Match base styles - no extra padding that creates visual stripe */
-    padding-bottom: calc(24px + 50px); /* Компенсация для fixed футера */
-    margin-right: 0; /* Match base styles - no negative margin */
+    padding: 24px 0 24px 0; /* Footer скрыт на desktop — без компенсации 50px */
     height: 100%;
     min-height: 0;
-    overflow: hidden; /* НЕ scrollable - скролл только в #centerBody */
+    overflow: hidden;
     flex: 1 1 auto;
     justify-content: flex-start;
   }
@@ -685,8 +841,23 @@ main {
   .bottom-nav {
     display: none !important;
   }
+
+  .app-footer {
+    display: none; /* Вариант B: desktop = app shell без footer */
+  }
   
-  /* На desktop views не скроллятся - скроллится только centerContent */
+  /* Slider: FEED pane scrolls; TALK pane uses inner .chat-scroll-wrapper */
+  .center-feed-talk-slider > .feed-view,
+  .center-feed-talk-slider > .talk-view {
+    min-height: 0;
+    height: 100%;
+  }
+  .center-feed-talk-slider > .feed-view {
+    overflow-y: auto;
+  }
+  .center-feed-talk-slider > .talk-view {
+    overflow: hidden;
+  }
   .feed-view,
   .talk-view,
   .services-view,
@@ -705,9 +876,8 @@ main {
     top: 0;
     z-index: 10;
     background: var(--bg-panel);
-    /* Компенсируем padding centerContent для правильного sticky */
-    margin: -24px -30px 0 -24px;
-    padding: 12px 30px 16px 24px; /* Увеличен padding-bottom для лучшего визуального разделения */
+    margin: 0;
+    padding: 12px 24px 16px 24px;
     border-bottom: 1px solid var(--surface-border);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }

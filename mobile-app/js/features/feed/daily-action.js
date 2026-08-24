@@ -1,4 +1,4 @@
-// TendAI — Daily One Action
+// Serron — Daily One Action
 // @owner: feed
 // @role: utils
 // Provides one contextual action per day based on check-ins, weather, and state

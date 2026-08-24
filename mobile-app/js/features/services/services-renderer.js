@@ -1,43 +1,149 @@
-// TendAI — Services Renderer
+// Serron — Services Renderer
 // @owner: services
 // @role: ui
-// Functions to render Labs, Online Doctor, and Mini Programs in both mobile and desktop views
+// Functions to render Labs, Online Doctor, and Programs in both mobile and desktop views
 
 import { servicesState } from './services-state.js';
+import { getUserAgents } from '../human-os/user-agents.js';
+import {
+  getFocusAreaById,
+  getFocusAreaByName,
+  getBehaviorModeUserLabel,
+} from '../human-os/focus-areas.js';
+
+/** Robot icon for Focus Area rows (inline SVG for dark/gold UI) */
+const AGENT_ICON_SVG = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M9 3h6v2H9V3zm2 4v2h2V7h-2zM7 9h10a2 2 0 012 2v3h2v2h-2v3a2 2 0 01-2 2H7a2 2 0 01-2-2v-3H3v-2h2v-3a2 2 0 012-2zm0 5v4h10v-4H7zm2 2h2v2H9v-2zm4 0h2v2h-2v-2z" fill="currentColor"/></svg>`;
 
 /**
- * Render Labs section (chips/buttons)
- * @param {HTMLElement} container - Container element to render into
- * @param {string} mode - 'mobile' or 'desktop'
+ * Prefer catalog Focus Area name; strip legacy "NAME_ANALYZER" suffixes.
+ * @param {object} agent
+ */
+function focusAreaDisplayName(agent) {
+  const byId = getFocusAreaById(agent?.trackingLifeAreaId);
+  if (byId?.name) return byId.name;
+  const raw = String(agent?.name || '').trim();
+  const cleaned = raw
+    .replace(/_(MONITOR|ANALYZER|ASSISTANT|DATA\s*LOGGER)\b/i, '')
+    .replace(/\s*\(\d+\)\s*$/, '')
+    .trim();
+  const byName = getFocusAreaByName(cleaned) || getFocusAreaByName(raw);
+  if (byName?.name) return byName.name;
+  return cleaned || raw || 'Focus Area';
+}
+
+/**
+ * One agent row with contextual actions menu.
+ */
+function createAgentManageRow(agent) {
+  const isStandby = agent.active === false || agent.agentStatus === 'Paused';
+  const displayName = focusAreaDisplayName(agent);
+  const modeLabel = getBehaviorModeUserLabel(agent.behaviorModeId);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'service-row-agent-wrap';
+
+  const row = document.createElement('div');
+  row.className = `service-row service-row--agent${isStandby ? ' service-row--agent-standby' : ''}`;
+  row.setAttribute('role', 'group');
+
+  const icon = document.createElement('span');
+  icon.className = 'service-row-icon';
+  icon.innerHTML = AGENT_ICON_SVG;
+
+  const label = document.createElement('span');
+  label.className = 'service-row-name';
+  label.textContent = displayName;
+  if (modeLabel) label.title = modeLabel;
+
+  const status = document.createElement('span');
+  status.className = `service-row-agent-status${isStandby ? ' is-standby' : ' is-active'}`;
+  status.textContent = isStandby ? 'Paused' : 'Active';
+
+  const tools = document.createElement('div');
+  tools.className = 'service-row-agent-tools';
+
+  const menuTrigger = document.createElement('button');
+  menuTrigger.type = 'button';
+  menuTrigger.className = 'service-row-tool-btn service-row-tool-btn--menu';
+  menuTrigger.setAttribute('data-action', 'toggle-agent-menu');
+  menuTrigger.setAttribute('data-agent-id', agent.id);
+  menuTrigger.setAttribute('aria-haspopup', 'menu');
+  menuTrigger.setAttribute('aria-expanded', 'false');
+  menuTrigger.setAttribute('aria-label', 'Agent options');
+  menuTrigger.textContent = '⋯';
+
+  const menu = document.createElement('div');
+  menu.className = 'service-row-agent-menu';
+  menu.setAttribute('role', 'menu');
+  menu.hidden = true;
+  menu.innerHTML = `
+    <button type="button" class="service-row-agent-menu__item" data-action="toggle-agent-status" data-agent-id="${agent.id}" role="menuitem">${isStandby ? 'Set active' : 'Pause focus area'}</button>
+    <button type="button" class="service-row-agent-menu__item" data-action="configure-agent" data-agent-id="${agent.id}" role="menuitem">Configure knowledge</button>
+    <button type="button" class="service-row-agent-menu__item" data-action="reboot-agent" data-agent-id="${agent.id}" role="menuitem">Clear context</button>
+    <button type="button" class="service-row-agent-menu__item service-row-agent-menu__item--danger" data-action="terminate-agent" data-agent-id="${agent.id}" role="menuitem">Delete focus area</button>
+  `;
+
+  tools.appendChild(menuTrigger);
+  tools.appendChild(menu);
+
+  row.appendChild(icon);
+  row.appendChild(label);
+  row.appendChild(status);
+  row.appendChild(tools);
+
+  wrap.appendChild(row);
+  if (agent.instruction) wrap.title = agent.instruction;
+  return wrap;
+}
+
+/**
+ * Create one unified service row: icon (left) + name + arrow (right).
+ * Same visual language for Labs, Online doctor, Programs.
+ * @param {string} iconContent - Emoji or SVG HTML string
+ * @param {string} name - Label text
+ * @param {Object} attrs - data attributes for the row button
+ * @returns {HTMLButtonElement}
+ */
+function createServiceRow(iconContent, name, attrs = {}) {
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.className = 'service-row';
+  Object.entries(attrs).forEach(([k, v]) => row.setAttribute(k, v));
+
+  const icon = document.createElement('span');
+  icon.className = 'service-row-icon';
+  if (iconContent.startsWith('<')) {
+    icon.innerHTML = iconContent;
+  } else {
+    icon.textContent = iconContent;
+  }
+  const label = document.createElement('span');
+  label.className = 'service-row-name';
+  label.textContent = name;
+  const arrow = document.createElement('span');
+  arrow.className = 'service-row-arrow';
+  arrow.textContent = '→';
+
+  row.appendChild(icon);
+  row.appendChild(label);
+  row.appendChild(arrow);
+  return row;
+}
+
+/**
+ * Render Labs section — same list style as Online doctor and Programs
  */
 export function renderLabs(container, mode = 'mobile') {
   if (!container) return;
-
   const labs = servicesState.getLabs();
-  
-  if (mode === 'desktop') {
-    // Desktop: chip-row with chips
-    container.innerHTML = '';
-    labs.forEach(lab => {
-      const chip = document.createElement('button');
-      chip.className = 'chip chip-action';
-      chip.textContent = lab.name;
-      chip.setAttribute('data-service', 'lab');
-      chip.setAttribute('data-lab-id', lab.id);
-      container.appendChild(chip);
+  container.innerHTML = '';
+  labs.forEach(lab => {
+    const row = createServiceRow(lab.icon || '🩸', lab.name, {
+      'data-service': 'lab',
+      'data-lab-id': lab.id
     });
-  } else {
-    // Mobile: chip-row with chips (same structure)
-    container.innerHTML = '';
-    labs.forEach(lab => {
-      const chip = document.createElement('button');
-      chip.className = 'chip chip-action';
-      chip.textContent = lab.name;
-      chip.setAttribute('data-service', 'lab');
-      chip.setAttribute('data-lab-id', lab.id);
-      container.appendChild(chip);
-    });
-  }
+    container.appendChild(row);
+  });
 }
 
 /**
@@ -66,121 +172,53 @@ function getOnlineDoctorIcon(id) {
 }
 
 /**
- * Render Online Doctor section
- * @param {HTMLElement} container - Container element to render into
- * @param {string} mode - 'mobile' or 'desktop'
+ * Render Online Doctor section — same list style as Labs and Programs
  */
 export function renderOnlineDoctor(container, mode = 'mobile') {
   if (!container) return;
-
   const options = servicesState.getOnlineDoctor();
-  
-  if (mode === 'desktop') {
-    // Desktop: compact list similar to Mini Programs
-    container.innerHTML = '';
-    options.forEach(option => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'pinned-plan';
-      button.setAttribute('data-service', 'online-doctor');
-      button.setAttribute('data-doctor-id', option.id);
-      
-      const icon = document.createElement('span');
-      icon.className = 'pinned-plan-icon';
-      icon.innerHTML = getOnlineDoctorIcon(option.id);
-      
-      const name = document.createElement('span');
-      name.textContent = option.name;
-      
-      button.appendChild(icon);
-      button.appendChild(name);
-      container.appendChild(button);
+  container.innerHTML = '';
+  options.forEach(option => {
+    const row = createServiceRow(getOnlineDoctorIcon(option.id), option.name, {
+      'data-service': 'online-doctor',
+      'data-doctor-id': option.id
     });
-  } else {
-    // Mobile: service cards with icons and descriptions
-    container.innerHTML = '';
-    const servicesList = document.createElement('div');
-    servicesList.className = 'services-list';
-    
-    options.forEach(option => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'service-card';
-      button.setAttribute('data-service', 'online-doctor');
-      button.setAttribute('data-doctor-id', option.id);
-      
-      const icon = document.createElement('span');
-      icon.className = 'service-icon';
-      icon.innerHTML = getOnlineDoctorIcon(option.id);
-      
-      const info = document.createElement('div');
-      info.className = 'service-info';
-      
-      const name = document.createElement('span');
-      name.className = 'service-name';
-      name.textContent = option.name;
-      
-      const desc = document.createElement('span');
-      desc.className = 'service-desc';
-      desc.textContent = option.description;
-      
-      info.appendChild(name);
-      info.appendChild(desc);
-      
-      const arrow = document.createElement('span');
-      arrow.className = 'service-arrow';
-      arrow.textContent = '→';
-      
-      button.appendChild(icon);
-      button.appendChild(info);
-      button.appendChild(arrow);
-      
-      servicesList.appendChild(button);
-    });
-    
-    container.appendChild(servicesList);
-  }
+    container.appendChild(row);
+  });
 }
 
 /**
- * Render Mini Programs section
- * @param {HTMLElement} container - Container element to render into
- * @param {string} mode - 'mobile' or 'desktop'
+ * Render Programs section — same list style as Labs and Online doctor
  */
 export function renderMiniPrograms(container, mode = 'mobile') {
   if (!container) return;
-
   const programs = servicesState.getMiniPrograms();
-  
-  // Both mobile and desktop use similar structure (pinned-list with pinned-plan buttons)
   container.innerHTML = '';
   programs.forEach(program => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'pinned-plan';
-    button.setAttribute('data-service', 'mini-program');
-    button.setAttribute('data-program-id', program.id);
-    button.setAttribute('data-plan', program.name);
-    
-    if (mode === 'mobile') {
-      // Mobile: includes icon
-      const icon = document.createElement('span');
-      icon.className = 'pinned-plan-icon';
-      icon.textContent = program.icon;
-      button.appendChild(icon);
-    }
-    
-    const name = document.createElement('span');
-    name.textContent = program.name;
-    
-    const days = document.createElement('span');
-    days.textContent = `${program.days}d`;
-    
-    button.appendChild(name);
-    button.appendChild(days);
-    
-    container.appendChild(button);
+    const row = createServiceRow(program.icon || '📋', program.name, {
+      'data-service': 'mini-program',
+      'data-program-id': program.id
+    });
+    container.appendChild(row);
   });
+}
+
+/**
+ * Agents list + "Create agent" CTA (same row style as Programs).
+ */
+export function renderAgentsSection(container) {
+  if (!container) return;
+  container.innerHTML = '';
+  const agents = getUserAgents().filter((a) => a);
+  agents.forEach((agent) => {
+    container.appendChild(createAgentManageRow(agent));
+  });
+  // User-facing label is "focus area"; internal action ids keep `agent` (see focus-areas.js tech debt note).
+  const cta = createServiceRow(AGENT_ICON_SVG, '+ Add focus area', {
+    'data-action': 'create-agent',
+  });
+  cta.classList.add('service-row-cta');
+  container.appendChild(cta);
 }
 
 /**
@@ -193,11 +231,7 @@ export function renderAllServicesMobile(container) {
   // Find Labs section
   const labsSection = container.querySelector('[data-service-section="labs"]');
   if (labsSection) {
-    let labsContent = labsSection.querySelector('.service-section-content .chip-row');
-    // Fallback: use direct container if structure is different
-    if (!labsContent) {
-      labsContent = labsSection.querySelector('#mobileLabsChipsContainer');
-    }
+    const labsContent = labsSection.querySelector('.service-options-list') || labsSection.querySelector('#mobileLabsList');
     if (labsContent) {
       renderLabs(labsContent, 'mobile');
     }
@@ -216,7 +250,7 @@ export function renderAllServicesMobile(container) {
     }
   }
 
-  // Find Mini Programs section
+  // Find Programs section
   const programsSection = container.querySelector('[data-service-section="mini-programs"]');
   if (programsSection) {
     let programsContent = programsSection.querySelector('.service-section-content .pinned-list');
@@ -226,6 +260,17 @@ export function renderAllServicesMobile(container) {
     }
     if (programsContent) {
       renderMiniPrograms(programsContent, 'mobile');
+    }
+  }
+
+  const agentsSection = container.querySelector('[data-service-section="agents"]');
+  if (agentsSection) {
+    let agentsContent = agentsSection.querySelector('.pinned-list');
+    if (!agentsContent) {
+      agentsContent = agentsSection.querySelector('#mobileAgentsList');
+    }
+    if (agentsContent) {
+      renderAgentsSection(agentsContent);
     }
   }
 }
@@ -238,7 +283,7 @@ export function renderAllServicesDesktop(rightPanel) {
   if (!rightPanel) return;
 
   // Render Labs
-  const labsContainer = rightPanel.querySelector('#labsChipsContainer');
+  const labsContainer = rightPanel.querySelector('#labsList') || rightPanel.querySelector('#labsChipsContainer');
   if (labsContainer) {
     renderLabs(labsContainer, 'desktop');
   }
@@ -273,10 +318,15 @@ export function renderAllServicesDesktop(rightPanel) {
     renderOnlineDoctor(doctorList, 'desktop');
   }
 
-  // Render Mini Programs
+  // Render Programs
   const programsContainer = rightPanel.querySelector('#miniPlansList');
   if (programsContainer) {
     renderMiniPrograms(programsContainer, 'desktop');
+  }
+
+  const agentsContainer = rightPanel.querySelector('#agentsList');
+  if (agentsContainer) {
+    renderAgentsSection(agentsContainer);
   }
 }
 

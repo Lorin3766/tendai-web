@@ -1,4 +1,4 @@
-// TendAI — Unified Slider Configuration
+// Serron — Unified Slider Configuration
 // @owner: storage
 // @role: utils
 // ============================================================

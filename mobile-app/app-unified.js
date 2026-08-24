@@ -1,10 +1,52 @@
-// TendAI — Unified App (Mobile & Desktop)
+// Serron — Unified App (Mobile & Desktop)
 import { TalkComponent } from './components/talk.js';
+import { getState, subscribe } from './js/core/app-state.js';
+import { IS_VERBOSE_BOOT_LOGS } from './js/env-flags.js';
+import { profileState } from './js/state.js';
+import { OPEN_TALK_KEY, GREETING_KEY } from './js/features/settings/system-onboarding.js';
+import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel } from './js/features/talk/ecosystem-bridge.js';
 
 (function () {
   'use strict';
 
-  // Initialize components
+  if (IS_VERBOSE_BOOT_LOGS) {
+    console.log('[BOOT][UNIFIED] start (waiting for serron:boot-ready)');
+    console.log('[RUN MODE] unified');
+    const _bootDate = new Date();
+    console.log('[BOOT][UNIFIED] local', _bootDate.toISOString(), 'timezone=' + (Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown'));
+  }
+
+  // Detect mobile layout
+  const isMobile = window.matchMedia('(max-width: 899px)').matches;
+  if (IS_VERBOSE_BOOT_LOGS) {
+    console.log('[RUN MODE] mobile layout:', isMobile ? 'enabled (max-width: 899px)' : 'disabled (desktop)');
+  }
+
+  // Clean up any blocking classes from old calendar or modals (after hot reload)
+  // Remove classes that block UI interactions
+  const blockingClasses = ['calendar-open', 'modal-open', 'overlay-open', 'checkin-overlay-open'];
+  blockingClasses.forEach(className => {
+    if (document.body.classList.contains(className)) {
+      document.body.classList.remove(className);
+      if (IS_VERBOSE_BOOT_LOGS) console.log(`[BOOT][UNIFIED] Removed blocking class: ${className}`);
+    }
+  });
+
+  // Remove any old calendar DOM elements if they exist (safety check)
+  const oldCalendarElements = [
+    document.getElementById('calendarOverlay'),
+    document.getElementById('calendarModal'),
+    document.querySelector('.calendar-overlay'),
+    document.querySelector('.calendar-modal')
+  ];
+  oldCalendarElements.forEach(el => {
+    if (el) {
+      el.remove();
+      if (IS_VERBOSE_BOOT_LOGS) console.log('[BOOT][UNIFIED] Removed old calendar element:', el.id || el.className);
+    }
+  });
+
+  // DOM refs (used after boot-ready)
   const conversationCard = document.getElementById('conversationCard');
   const feedView = document.getElementById('feed-view');
   const talkView = document.getElementById('talk-view');
@@ -12,21 +54,299 @@ import { TalkComponent } from './components/talk.js';
   const profileView = document.getElementById('profile-view');
   const centerTabs = document.getElementById('centerTabs');
   const bottomNav = document.getElementById('bottomNav');
+  const centerBody = document.getElementById('centerBody');
+  const centerFeedTalkSlider = document.getElementById('centerFeedTalkSlider');
 
   let talkComponent = null;
   let currentView = 'feed';
+  const HISTORY_SYNC_LAST_DATE_KEY = 'tendai_last_sync_date';
+  const HISTORY_SYNC_PLACEHOLDERS_KEY = 'tendai_sync_placeholders_v1';
 
-  // Initialize TALK component
-  // Mount it inside #conversationCard (which is inside #talk-view)
-  if (conversationCard) {
+  function toDateKey(date = new Date()) {
+    const d = date instanceof Date ? date : new Date(date);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function fromDateKey(dateKey) {
+    return new Date(`${dateKey}T00:00:00`);
+  }
+
+  function dayDiff(aDateKey, bDateKey) {
+    const a = fromDateKey(aDateKey);
+    const b = fromDateKey(bDateKey);
+    const ms = b.getTime() - a.getTime();
+    return Math.floor(ms / 86400000);
+  }
+
+  /**
+   * Sync history gaps so inactivity does not mark user as drifting.
+   * Creates placeholder records for missing days.
+   */
+  function syncHistory() {
+    const todayKey = toDateKey();
+    let lastKey = null;
     try {
-      talkComponent = new TalkComponent(conversationCard);
+      lastKey = localStorage.getItem(HISTORY_SYNC_LAST_DATE_KEY);
+    } catch (_) {}
+
+    // First run or invalid date -> just establish baseline and continue
+    if (!lastKey || !/^\d{4}-\d{2}-\d{2}$/.test(lastKey)) {
+      try { localStorage.setItem(HISTORY_SYNC_LAST_DATE_KEY, todayKey); } catch (_) {}
+      window.__serronHistorySync = { isSyncing: false, gapDays: 0, missingDateKeys: [] };
+      return;
+    }
+
+    const diffDays = dayDiff(lastKey, todayKey);
+    const missingDays = Math.max(0, diffDays - 1);
+    if (missingDays <= 0) {
+      try { localStorage.setItem(HISTORY_SYNC_LAST_DATE_KEY, todayKey); } catch (_) {}
+      window.__serronHistorySync = { isSyncing: false, gapDays: 0, missingDateKeys: [] };
+      return;
+    }
+
+    const missingDateKeys = [];
+    for (let i = 1; i <= missingDays; i++) {
+      const d = fromDateKey(lastKey);
+      d.setDate(d.getDate() + i);
+      missingDateKeys.push(toDateKey(d));
+    }
+
+    const baselineProtocol = ['lecithin', 'gelatin', '10k steps'];
+    const placeholders = missingDateKeys.map((dateKey) => ({
+      id: `history-gap-${dateKey}`,
+      dateKey,
+      status: 'pending_user_confirmation',
+      protocol: baselineProtocol,
+      source: 'syncHistory',
+      createdAt: new Date().toISOString()
+    }));
+
+    try {
+      const existingRaw = localStorage.getItem(HISTORY_SYNC_PLACEHOLDERS_KEY);
+      const existing = existingRaw ? JSON.parse(existingRaw) : [];
+      const byId = new Map((Array.isArray(existing) ? existing : []).map((row) => [row.id, row]));
+      placeholders.forEach((row) => byId.set(row.id, row));
+      localStorage.setItem(HISTORY_SYNC_PLACEHOLDERS_KEY, JSON.stringify(Array.from(byId.values())));
+    } catch (_) {}
+
+    // Mirror to Master Record event log as placeholders
+    try {
+      const storage = window.__storageManager;
+      if (storage && typeof storage.appendToArray === 'function') {
+        placeholders.forEach((row) => {
+          storage.appendToArray('Signals.eventLog', {
+            type: 'HISTORY_SYNC_PLACEHOLDER',
+            dateKey: row.dateKey,
+            status: row.status,
+            protocol: row.protocol,
+            source: row.source,
+            createdAt: row.createdAt
+          });
+        });
+      }
+    } catch (_) {}
+
+    window.__serronHistorySync = {
+      isSyncing: true,
+      gapDays: missingDays,
+      missingDateKeys
+    };
+    try { localStorage.setItem(HISTORY_SYNC_LAST_DATE_KEY, todayKey); } catch (_) {}
+  }
+
+  /**
+   * Protocol Engine: ensure profile.protocols exists in localStorage (tendai-profile-state).
+   * Each item: { id, label, time, active: true }
+   */
+  function ensureProfileProtocols() {
+    try {
+      const profile = profileState.get();
+      let changed = false;
+      if (!Array.isArray(profile.protocols)) {
+        profile.protocols = [];
+        changed = true;
+      } else {
+        const normalized = profile.protocols
+          .map((row, i) => {
+            if (!row || typeof row !== 'object') return null;
+            const id = String(row.id || `protocol-${i}`).trim() || `protocol-${i}`;
+            const label = String(row.label || 'Routine').trim() || 'Routine';
+            const time = String(row.time || '—').trim() || '—';
+            const active = row.active !== false;
+            return { id, label, time, active };
+          })
+          .filter(Boolean);
+        if (normalized.length !== profile.protocols.length) changed = true;
+        else {
+          for (let i = 0; i < normalized.length; i++) {
+            const a = profile.protocols[i];
+            const b = normalized[i];
+            if (!a || a.id !== b.id || a.label !== b.label || a.time !== b.time || a.active !== b.active) {
+              changed = true;
+              break;
+            }
+          }
+        }
+        if (changed) profile.protocols = normalized;
+      }
+      if (changed) profileState.save(profile);
+    } catch (_) {}
+  }
+
+  // TALK component and tabs are initialized in runAfterBootReady() on serron:boot-ready
+
+  /**
+   * Render plan cards in FEED based on plan state.
+   * FEED is read-only: no plan CTAs, no "Create my plan", no Start/Manage/Open/Done.
+   * Plan creation lives in Programs (Services).
+   */
+  function renderFeedPlanCards() {
+    try {
+      const feedRoot = document.getElementById('feed-view');
+      if (!feedRoot) return;
+
+      // Hide pinned plans container in FEED — no plan cards or CTAs in feed
+      const pinnedContainer = feedRoot.querySelector('#pinnedPlansCard');
+      if (pinnedContainer) {
+        pinnedContainer.innerHTML = '';
+        pinnedContainer.style.display = 'none';
+      }
+
+      // Remove any legacy create-plan card that might exist outside container
+      const oldCreateCard = feedRoot.querySelector('#createPlanCard[data-card-id="create-plan"]');
+      if (oldCreateCard) oldCreateCard.remove();
     } catch (error) {
-      console.error('[INIT] Talk component failed:', error);
+      console.error('[FEED][PLAN] Failed to render plan cards:', error);
     }
   }
 
-  // Tabs initialization moved to initTabs() function below (isolated and safe)
+  // Subscribe to plan state changes (once)
+  if (!window.__serronPlanCardsSubscribed) {
+    try {
+      const unsubscribe = subscribe((newState, oldState, patch) => {
+        // Only react to plan state changes
+        if (patch.plan) {
+          const planChanged = patch.plan.status !== undefined || patch.plan.data !== undefined;
+          if (planChanged && currentView === 'feed') {
+            setTimeout(() => {
+              renderFeedPlanCards();
+            }, 100);
+          }
+        }
+      });
+      window.__serronPlanCardsSubscribed = true;
+      window.__serronPlanCardsUnsubscribe = unsubscribe;
+    } catch (error) {
+      console.warn('[FEED][PLAN] Failed to subscribe to plan state:', error);
+    }
+  }
+
+  // Programs: "Create my plan" — switch to TALK and start plan generation flow (analyzing + strategy buttons + plan)
+  if (!document.body.dataset.tendaiCreatePlanDelegate) {
+    document.body.addEventListener('click', (e) => {
+      const btn = e.target && e.target.closest && e.target.closest('[data-service="mini-program"][data-program-id="create-my-plan"]');
+      if (!btn) return;
+      e.preventDefault();
+      addGoldPulseToServiceRow(btn);
+      if (typeof window.switchView === 'function') {
+        window.switchView('talk');
+      }
+      setTimeout(() => {
+        if (talkComponent) startPlanGenerationFlow(talkComponent);
+      }, 200);
+    });
+    document.body.dataset.tendaiCreatePlanDelegate = '1';
+  }
+
+  // Labs: open report modal with chart and "Sync with AI"
+  if (!document.body.dataset.tendaiLabsDelegate) {
+    document.body.addEventListener('click', (e) => {
+      const row = e.target && e.target.closest && e.target.closest('[data-service="lab"]');
+      if (!row) return;
+      e.preventDefault();
+      const labId = row.getAttribute('data-lab-id') || 'blood-test';
+      const labName = row.querySelector('.service-row-name')?.textContent || labId;
+      addGoldPulseToServiceRow(row);
+      openLabsReportModal(labId, labName);
+    });
+    document.body.dataset.tendaiLabsDelegate = '1';
+  }
+
+  // Online Doctor "Chat with doctor": switch to TALK + Secure Medical Channel
+  if (!document.body.dataset.tendaiDoctorChatDelegate) {
+    document.body.addEventListener('click', (e) => {
+      const row = e.target && e.target.closest && e.target.closest('[data-service="online-doctor"][data-doctor-id="chat"]');
+      if (!row) return;
+      e.preventDefault();
+      addGoldPulseToServiceRow(row);
+      if (typeof window.switchView === 'function') window.switchView('talk');
+      setTimeout(() => {
+        if (talkComponent) startSecureMedicalChannel(talkComponent);
+      }, 200);
+    });
+    document.body.dataset.tendaiDoctorChatDelegate = '1';
+  }
+
+  function addGoldPulseToServiceRow(element) {
+    const row = element.classList && element.classList.contains('service-row') ? element : element.closest('.service-row');
+    if (!row) return;
+    row.classList.add('ecosystem-pulse');
+    setTimeout(() => row.classList.remove('ecosystem-pulse'), 1200);
+  }
+
+  // Enable location: delegated handler (catches data-action="enable-location" even when element is created after render)
+  if (!document.body.dataset.tendaiEnableLocationDelegate) {
+    document.body.dataset.tendaiEnableLocationDelegate = '1';
+    document.body.addEventListener('click', (e) => {
+      const el = e.target && e.target.closest && e.target.closest('[data-action="enable-location"]');
+      if (!el) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window.requestGeolocation !== 'function') return;
+      window.requestGeolocation()
+        .then((loc) => {
+          if (loc && loc.coords) {
+            if (typeof window.invalidateWeatherCache === 'function') {
+              window.invalidateWeatherCache();
+            }
+            if (typeof window.refreshWeatherCard === 'function') {
+              window.refreshWeatherCard();
+            }
+          }
+        })
+        .catch(() => {
+          if (typeof window.setWeatherLocationDenied === 'function') {
+            window.setWeatherLocationDenied();
+          }
+        });
+    });
+    document.body.addEventListener('keydown', (e) => {
+      const el = e.target && e.target.closest && e.target.closest('[data-action="enable-location"]');
+      if (!el || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window.requestGeolocation !== 'function') return;
+      window.requestGeolocation()
+        .then((loc) => {
+          if (loc && loc.coords) {
+            if (typeof window.invalidateWeatherCache === 'function') {
+              window.invalidateWeatherCache();
+            }
+            if (typeof window.refreshWeatherCard === 'function') {
+              window.refreshWeatherCard();
+            }
+          }
+        })
+        .catch(() => {
+          if (typeof window.setWeatherLocationDenied === 'function') {
+            window.setWeatherLocationDenied();
+          }
+        });
+    });
+  }
 
   // Switch between FEED, TALK, SERVICES, and PROFILE views
   function switchView(view) {
@@ -69,27 +389,52 @@ import { TalkComponent } from './components/talk.js';
       }
     }
 
+    // Keep mobile bottom nav in sync (avoids stale gold on Feed when viewing Talk/Services/Profile)
+    if (bottomNav) {
+      bottomNav.querySelectorAll('.nav-item').forEach((nav) => {
+        const screen = nav.getAttribute('data-screen');
+        const isActive = screen === view;
+        nav.classList.toggle('active', isActive);
+        if (isActive) nav.setAttribute('aria-current', 'page');
+        else nav.removeAttribute('aria-current');
+      });
+    }
+
     // Close calendar panel when switching views (predictable behavior)
+    // Use new unified calendar API only
     try {
       if (window.closeCalendar) {
         window.closeCalendar();
-      } else if (window.closeCalendarPanel) {
-        window.closeCalendarPanel();
       }
     } catch (error) {
       // Calendar close failed - not critical
     }
-    
-    // Hide all views first
+
+    // Slider: show/hide and set view class for FEED/TALK sliding transition
+    if (centerBody) centerBody.classList.remove('view-feed', 'view-talk');
+    if (centerFeedTalkSlider) centerFeedTalkSlider.classList.add('hidden');
     if (feedView) feedView.classList.add('hidden');
     if (talkView) talkView.classList.add('hidden');
     if (servicesView) servicesView.classList.add('hidden');
     if (profileView) profileView.classList.add('hidden');
 
-    // Show selected view
+    // Show selected view (feed/talk use slider + translate3d; services/profile use .hidden toggle)
     if (view === 'feed' && feedView) {
+      if (centerFeedTalkSlider) centerFeedTalkSlider.classList.remove('hidden');
       feedView.classList.remove('hidden');
-      
+      talkView.classList.remove('hidden');
+      if (centerBody) centerBody.classList.add('view-feed');
+      if (talkView) talkView.setAttribute('aria-hidden', 'true');
+      if (feedView) feedView.removeAttribute('aria-hidden');
+
+      // Entry animation: run once on first load when feed is shown
+      if (feedView && !window.__serronEntryReadyDone) {
+        window.__serronEntryReadyDone = true;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => feedView.classList.add('entry-ready'));
+        });
+      }
+
       // Record app visit (for silent mode tracking)
       if (window.recordAppVisit) {
         window.recordAppVisit();
@@ -105,9 +450,21 @@ import { TalkComponent } from './components/talk.js';
         window.updateNextStepDisplay();
       }
       
+      // Render plan cards from state
+      setTimeout(() => {
+        renderFeedPlanCards();
+      }, 200);
+      
       // Mark all feed messages as read when opening Feed
       if (window.markAllFeedAsRead) {
         window.markAllFeedAsRead();
+      }
+      // Clear notification badge and sync unread items (centralized notifications)
+      if (typeof window.clearNotifications === 'function') {
+        window.clearNotifications('feed');
+      }
+      if (typeof window.markAllAsRead === 'function') {
+        window.markAllAsRead('feed');
       }
       
       // Display unread messages (limited to 2, or last one if more)
@@ -166,11 +523,22 @@ import { TalkComponent } from './components/talk.js';
         }, 100);
       }
     } else if (view === 'talk' && talkView) {
+      if (centerFeedTalkSlider) centerFeedTalkSlider.classList.remove('hidden');
+      feedView.classList.remove('hidden');
       talkView.classList.remove('hidden');
-      
+      if (centerBody) centerBody.classList.add('view-talk');
+      if (feedView) feedView.setAttribute('aria-hidden', 'true');
+      if (talkView) talkView.removeAttribute('aria-hidden');
       // Mark all talk messages as read when opening Talk
       if (window.markAllTalkAsRead) {
         window.markAllTalkAsRead();
+      }
+      // Clear notification badge and sync unread items (centralized notifications)
+      if (typeof window.clearNotifications === 'function') {
+        window.clearNotifications('talk');
+      }
+      if (typeof window.markAllAsRead === 'function') {
+        window.markAllAsRead('talk');
       }
       
       // Display unread messages
@@ -187,6 +555,12 @@ import { TalkComponent } from './components/talk.js';
           setTimeout(() => talkComponent.scrollToBottom(), 50);
           setTimeout(() => talkComponent.scrollToBottom(), 150);
         });
+        if (typeof window.showDriftRecoveryPromptInTalk === 'function') {
+          window.showDriftRecoveryPromptInTalk(talkComponent.conversationArea);
+        }
+        if (typeof talkComponent.onTalkOpened === 'function') {
+          void talkComponent.onTalkOpened();
+        }
       }
     } else if (view === 'services' && servicesView) {
       servicesView.classList.remove('hidden');
@@ -207,19 +581,18 @@ import { TalkComponent } from './components/talk.js';
         }, 50);
       }
     }
-  }
 
-  // Load saved active tab from localStorage
-  function loadActiveTab() {
-    try {
-      const savedTab = localStorage.getItem('tendai_active_tab');
-      if (savedTab === 'talk' || savedTab === 'feed') {
-        return savedTab;
-      }
-    } catch (error) {
-      // Could not load active tab
+    // Chat input bar: only visible when TALK is active (fixes fixed input showing on FEED)
+    if (view === 'talk') {
+      document.body.classList.add('talk-view-active');
+    } else {
+      document.body.classList.remove('talk-view-active');
     }
-    return 'feed'; // Default to feed
+
+    // Notify badge systems of view change (hide badge on active tab)
+    try {
+      window.dispatchEvent(new CustomEvent('view-changed', { detail: { view } }));
+    } catch (_) {}
   }
 
   // Initialize mobile profile handlers
@@ -235,6 +608,96 @@ import { TalkComponent } from './components/talk.js';
     document.addEventListener('DOMContentLoaded', initMobileProfileHandlers);
   } else {
     initMobileProfileHandlers();
+  }
+  
+  // ============================================================
+  // MOBILE GAP DIAGNOSTICS (TALK input vs bottom-nav)
+  // ============================================================
+  function measureMobileGap() {
+    if (!isMobile) return;
+    
+    const inputRow = document.querySelector('.talk-view .ai-input-row');
+    const bottomNav = document.querySelector('.bottom-nav');
+    
+    if (!inputRow || !bottomNav) return;
+    
+    const inputRect = inputRow.getBoundingClientRect();
+    const navRect = bottomNav.getBoundingClientRect();
+    
+    const inputBottom = inputRect.bottom;
+    const navTop = navRect.top;
+    const gapPx = navTop - inputBottom;
+    
+    if (IS_VERBOSE_BOOT_LOGS) {
+      console.log('[MOBILE][GAP] inputBottom=' + inputBottom.toFixed(2) + ' navTop=' + navTop.toFixed(2) + ' gapPx=' + gapPx.toFixed(2));
+    }
+
+    // Find the cause
+    const inputStyles = window.getComputedStyle(inputRow);
+    const navStyles = window.getComputedStyle(bottomNav);
+
+    if (IS_VERBOSE_BOOT_LOGS) {
+      console.log('[MOBILE][GAP][CAUSE] input position=' + inputStyles.position + ' bottom=' + inputStyles.bottom);
+      console.log('[MOBILE][GAP][CAUSE] input margin-bottom=' + inputStyles.marginBottom + ' padding-bottom=' + inputStyles.paddingBottom);
+      console.log('[MOBILE][GAP][CAUSE] nav position=' + navStyles.position + ' height=' + navStyles.height + ' min-height=' + navStyles.minHeight);
+      console.log('[MOBILE][GAP][CAUSE] nav margin-top=' + navStyles.marginTop + ' padding-top=' + navStyles.paddingTop);
+      console.log('[MOBILE][GAP][BEFORE2] gapPx=' + gapPx);
+    }
+
+    // Analyze gap type
+    if (gapPx > 0 && gapPx < 2 && IS_VERBOSE_BOOT_LOGS) {
+      if (gapPx % 1 !== 0) {
+        console.log('[MOBILE][GAP][CAUSE] Fractional gap (' + gapPx + ') → likely rounding/transform/calc');
+      } else {
+        console.log('[MOBILE][GAP][CAUSE] Integer gap (' + gapPx + ') → likely border/outline');
+      }
+    }
+
+    // Re-measure after CSS fix (no JS auto-fix)
+    setTimeout(() => {
+      const inputRect2 = inputRow.getBoundingClientRect();
+      const navRect2 = bottomNav.getBoundingClientRect();
+      const gapPxAfter = navRect2.top - inputRect2.bottom;
+      if (IS_VERBOSE_BOOT_LOGS) console.log('[MOBILE][GAP][AFTER2] gapPx=' + gapPxAfter);
+    }, 100);
+    
+    return gapPx;
+  }
+  
+  // Measure gap when TALK view is shown
+  function checkTalkViewGap() {
+    if (!isMobile) return;
+    const talkView = document.getElementById('talk-view');
+    if (talkView && !talkView.classList.contains('hidden')) {
+      setTimeout(() => measureMobileGap(), 100);
+    }
+  }
+  
+  // Measure on view switch
+  const originalShowView = window.showView;
+  if (typeof originalShowView === 'function') {
+    window.showView = function(view) {
+      originalShowView(view);
+      if (view === 'talk') {
+        setTimeout(() => measureMobileGap(), 200);
+      }
+    };
+  }
+  
+  // Measure on resize
+  window.addEventListener('resize', () => {
+    if (isMobile) {
+      setTimeout(() => measureMobileGap(), 100);
+    }
+  });
+  
+  // Initial measurement after DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => checkTalkViewGap(), 500);
+    });
+  } else {
+    setTimeout(() => checkTalkViewGap(), 500);
   }
 
   // ============================================================
@@ -267,7 +730,7 @@ import { TalkComponent } from './components/talk.js';
       const result = initFn();
       const status = { success: true, name, timestamp: Date.now() };
       window.tendaiInitStatus.modules[name] = status;
-      console.log(`[INIT] ✅ ${name} initialized`);
+      if (IS_VERBOSE_BOOT_LOGS) console.log(`[INIT] ✅ ${name} initialized`);
       return status;
     } catch (error) {
       const status = { 
@@ -344,19 +807,8 @@ import { TalkComponent } from './components/talk.js';
     return { success: true, name: 'Tabs' };
   }
 
-  // Initialize Tabs FIRST (critical)
-  const tabsInit = safeInit('Tabs', initTabs);
-  
-  if (!tabsInit.success) {
-    console.error('[CRITICAL] Tabs initialization failed - app may not work');
-  }
-
-  // ============================================================
-  // MODULE INITIALIZATION (with guards)
-  // ============================================================
-  
   /**
-   * Load active tab and switch to it
+   * Load active tab from localStorage
    */
   function loadActiveTab() {
     try {
@@ -370,52 +822,6 @@ import { TalkComponent } from './components/talk.js';
     return 'feed';
   }
 
-  // Initialize with saved or default view (after tabs are ready)
-  try {
-    const initialView = loadActiveTab();
-    switchView(initialView);
-  } catch (error) {
-    console.error('[INIT] Error loading initial view:', error);
-    // Fallback to feed
-    try {
-      switchView('feed');
-    } catch (fallbackError) {
-      console.error('[CRITICAL] Cannot switch to feed view:', fallbackError);
-    }
-  }
-
-  // Initialize calendar (isolated - doesn't affect tabs)
-  // Calendar FAB initialization is handled by calendar.js module
-  safeInit('Calendar', () => {
-    // Calendar module handles its own initialization
-    return typeof window.toggleCalendar === 'function';
-  });
-
-  // Initialize other modules (with guards)
-  const initModules = [
-    { name: 'UnreadTracking', fn: () => window.initUnreadTracking?.() },
-    { name: 'ProfileCompleteness', fn: () => window.initProfileCompleteness?.() },
-    { name: 'NextStep', fn: () => window.initNextStep?.() },
-    { name: 'MorningCheckIn', fn: () => window.initMorningCheckIn?.() },
-    { name: 'EveningCheckIn', fn: () => window.initEveningCheckIn?.() },
-    { name: 'UnreadMessages', fn: () => window.initUnreadMessages?.() },
-    { name: 'DailyAction', fn: () => {
-      window.pickDailyAction?.();
-      window.updateDailyActionUI?.();
-    }},
-    { name: 'SoftStreak', fn: () => window.checkNewDay?.() }
-  ];
-
-  initModules.forEach((module, index) => {
-    setTimeout(() => {
-      safeInit(module.name, module.fn);
-    }, 500 + index * 100);
-  });
-
-  // ============================================================
-  // SMOKE TEST (automatic verification)
-  // ============================================================
-  
   /**
    * Run smoke test after initialization
    */
@@ -454,9 +860,9 @@ import { TalkComponent } from './components/talk.js';
     results.overall = results.tabs && results.switchView;
     
     // Log results
-    console.log('[SMOKE TEST] Results:', results);
+    if (IS_VERBOSE_BOOT_LOGS) console.log('[SMOKE TEST] Results:', results);
     if (results.overall) {
-      console.log('[SMOKE TEST] ✅ PASS - Core functionality available');
+      if (IS_VERBOSE_BOOT_LOGS) console.log('[SMOKE TEST] ✅ PASS - Core functionality available');
     } else {
       console.error('[SMOKE TEST] ❌ FAIL - Some core functionality missing');
       console.error('[SMOKE TEST] Details:', {
@@ -471,17 +877,100 @@ import { TalkComponent } from './components/talk.js';
     
     return results;
   }
-  
-  // Run smoke test after all modules initialized
-  setTimeout(() => {
-    runSmokeTest();
-  }, 2000);
+
+  /**
+   * UI initialization: runs only after serron:boot-ready (bootstrap has finished HealthSync + core inits).
+   * Single place for TalkComponent, tabs, initial view, calendar, smoke test.
+   */
+  function runAfterBootReady() {
+    syncHistory();
+    ensureProfileProtocols();
+    if (conversationCard) {
+      try {
+        talkComponent = new TalkComponent(conversationCard);
+        window.__serronTalkComponent = talkComponent;
+      } catch (error) {
+        console.error('[INIT] Talk component failed:', error);
+      }
+    }
+
+    try {
+      const pendingGreeting = sessionStorage.getItem(GREETING_KEY);
+      if (pendingGreeting && talkComponent && typeof talkComponent.deliverOnboardingGreeting === 'function') {
+        talkComponent.deliverOnboardingGreeting(pendingGreeting);
+        sessionStorage.removeItem(GREETING_KEY);
+      }
+    } catch (_) {}
+
+    const tabsInit = safeInit('Tabs', initTabs);
+    if (!tabsInit.success) {
+      console.error('[CRITICAL] Tabs initialization failed - app may not work');
+    }
+
+    try {
+      let initialView = loadActiveTab();
+      try {
+        if (sessionStorage.getItem(OPEN_TALK_KEY) === '1') {
+          initialView = 'talk';
+          sessionStorage.removeItem(OPEN_TALK_KEY);
+        }
+      } catch (_) {}
+      switchView(initialView);
+    } catch (error) {
+      console.error('[INIT] Error loading initial view:', error);
+      try {
+        switchView('feed');
+      } catch (fallbackError) {
+        console.error('[CRITICAL] Cannot switch to feed view:', fallbackError);
+      }
+    }
+
+    safeInit('Calendar', () => typeof window.toggleCalendar === 'function');
+
+    const summary = window.tendaiInitStatus.getSummary();
+    if (IS_VERBOSE_BOOT_LOGS) {
+      console.log('[INIT] ✅ App initialization complete');
+      console.log('[INIT] Summary:', {
+        total: summary.total,
+        success: summary.success,
+        failed: summary.failed,
+        duration: `${summary.duration}ms`,
+        modules: Object.keys(summary.modules).map((name) => ({
+          name,
+          status: summary.modules[name].success ? '✅' : '❌',
+        })),
+      });
+    }
+    if (summary.failed > 0 && IS_VERBOSE_BOOT_LOGS) {
+      Object.values(summary.modules).forEach(mod => {
+        if (!mod.success) {
+          console.warn(`  - ${mod.name}: ${mod.error}`);
+        }
+      });
+    }
+
+    setTimeout(runSmokeTest, 2000);
+  }
+
+  /**
+   * Prime per-card discuss context before opening TALK.
+   * Keeps card payload shape stable for feed and future card types.
+   */
+  function primeDiscussContext(payload) {
+    if (!payload || typeof payload !== 'object') return null;
+    const prepared = {
+      ...payload,
+      source: 'agent-card',
+      prepared_at: new Date().toISOString(),
+    };
+    window.__serronDiscussContext = prepared;
+    return prepared;
+  }
 
   // ============================================================
   // EXPORTS
   // ============================================================
-  
-  // Mark messages as read when switching to Talk
+
   const originalSwitchView = switchView;
   window.switchView = function(view) {
     try {
@@ -494,7 +983,6 @@ import { TalkComponent } from './components/talk.js';
     }
   };
 
-  // Switch to specific date (for calendar navigation)
   window.switchToDate = function(dateKey) {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -508,34 +996,19 @@ import { TalkComponent } from './components/talk.js';
     }
   };
 
-  // Export for external use
+  window.__serronPrimeDiscussContext = primeDiscussContext;
+
   window.tendaiApp = {
     switchView,
-    talkComponent
+    primeDiscussContext,
+    get talkComponent() { return talkComponent; }
   };
 
-  // Log init summary
-  const summary = window.tendaiInitStatus.getSummary();
-  console.log('[INIT] ✅ App initialization complete');
-  console.log('[INIT] Summary:', {
-    total: summary.total,
-    success: summary.success,
-    failed: summary.failed,
-    duration: `${summary.duration}ms`,
-    modules: Object.keys(summary.modules).map(name => ({
-      name,
-      status: summary.modules[name].success ? '✅' : '❌'
-    }))
-  });
-  
-  // Show init status in console (for quick debugging)
-  if (summary.failed > 0) {
-    console.warn(`[INIT] ⚠️ ${summary.failed} module(s) failed to initialize`);
-    Object.values(summary.modules).forEach(mod => {
-      if (!mod.success) {
-        console.warn(`  - ${mod.name}: ${mod.error}`);
-      }
-    });
+  // Gate: run UI init only after bootstrap has set SERRON_BOOT_READY and dispatched serron:boot-ready
+  if (window.SERRON_BOOT_READY === true) {
+    runAfterBootReady();
+  } else {
+    window.addEventListener('serron:boot-ready', runAfterBootReady, { once: true });
   }
 })();
 

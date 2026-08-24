@@ -1,4 +1,4 @@
-// TendAI — Calendar Reminders
+// Serron — Calendar Reminders
 // @owner: calendar
 // @role: ui
 // Event-based reminder system integrated with unread queue

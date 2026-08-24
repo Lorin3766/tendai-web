@@ -1,4 +1,4 @@
-# TendAI — Stability Rules
+# Serron — Stability Rules
 
 ## 🛡️ Правила стабильности проекта
 

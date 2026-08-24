@@ -1,7 +1,26 @@
-// TendAI — Calendar UI Component
+// LEGACY BLOCKED IN UNIFIED — do not edit logic here.
+// See: mobile-app/_audit/ARCHITECTURE_RUNTIME.md
+//
+// Serron — Calendar UI Component
 // @owner: calendar
 // @role: ui
 // Calendar Panel with month view and events list
+
+// DEPRECATED in unified-mode: Hard stop for legacy calendar
+import { RUN_MODE, IS_VERBOSE_BOOT_LOGS } from '../env-flags.js';
+const isBlocked = RUN_MODE === 'unified';
+if (isBlocked) {
+  if (IS_VERBOSE_BOOT_LOGS) {
+    console.warn('[CAL][LEGACY] blocked in unified', { file: 'js/calendar/ui.js' });
+  }
+  // Export empty stubs to prevent errors if imported
+  export function ensureCalendarPanel() { return null; }
+  export function openCalendar() {}
+  export function closeCalendar() {}
+  export function toggleCalendar() {}
+  // Block all execution - wrap rest in condition
+} else {
+  // Original code continues below
 
 import { getEventsForDate, getDatesWithEvents, addEvent, updateEvent, deleteEvent, localYMD, ymdToLocalDate } from './state.js';
 import { dayState } from '../state.js';
@@ -153,7 +172,7 @@ function renderEventsList(dateKey) {
         health: 'Health',
         program: 'Program',
         personal: 'Personal',
-        tendai: 'TendAI'
+        tendai: 'Serron'
       };
       
       html += `<div class="calendar-event-item" data-event-id="${event.id}">`;
@@ -425,8 +444,9 @@ function setupCalendarHandlers() {
   // Can be added later if needed
 }
 
-// Export for global use (unified API only)
-window.openCalendar = openCalendar;
-window.closeCalendar = closeCalendar;
-window.toggleCalendar = toggleCalendar;
+  // Export for global use (unified API only)
+  window.openCalendar = openCalendar;
+  window.closeCalendar = closeCalendar;
+  window.toggleCalendar = toggleCalendar;
+}
 

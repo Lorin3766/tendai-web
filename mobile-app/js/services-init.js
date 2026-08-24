@@ -1,4 +1,4 @@
-// TendAI — Services Initialization
+// Serron — Services Initialization
 // @owner: services
 // @role: init
 // Initialize services rendering for both mobile and desktop versions

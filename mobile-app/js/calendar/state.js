@@ -1,4 +1,4 @@
-// TendAI — Calendar State Management
+// Serron — Calendar State Management
 // @owner: calendar
 // @role: state
 // Stores calendar events locally

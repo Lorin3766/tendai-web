@@ -1,4 +1,4 @@
-// TendAI — Soft Streak (Gentle Habit Support, No Gamification)
+// Serron — Soft Streak (Gentle Habit Support, No Gamification)
 // @owner: storage
 // @role: utils
 // Tracks presence days without pressure or achievements

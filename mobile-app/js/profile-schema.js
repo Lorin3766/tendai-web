@@ -1,4 +1,4 @@
-// TendAI — Profile Schema
+// Serron — Profile Schema
 // @owner: profile
 // @role: state (Single Source of Truth)
 // ============================================================

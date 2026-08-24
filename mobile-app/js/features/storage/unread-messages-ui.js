@@ -1,4 +1,4 @@
-// TendAI — Unread Messages UI
+// Serron — Unread Messages UI
 // @owner: storage
 // @role: ui
 // Displays unread messages in Feed and Talk views
@@ -68,60 +68,16 @@ function renderTalkMessage(message) {
 
 /**
  * Display unread messages in Feed
+ * FEED = context only, no "unread" / debt. We never show Unread section in Feed.
  */
 export function displayUnreadFeedMessages() {
   const feedView = document.getElementById('feed-view');
   const screenFeed = document.getElementById('screen-feed');
-  
-  if (!feedView && !screenFeed) return;
-  
-  const unreadFeed = getUnreadMessages('feed');
-  
-  if (unreadFeed.length === 0) {
-    // Remove existing unread section if no messages
-    const existingSection = feedView?.querySelector('#unread-feed-section');
-    if (existingSection) existingSection.remove();
-    const existingSectionMobile = screenFeed?.querySelector('#unread-feed-section');
-    if (existingSectionMobile) existingSectionMobile.remove();
-    return;
-  }
-  
-  // Create unread section HTML
-  const unreadSectionHTML = `
-    <div id="unread-feed-section" style="margin-bottom: 20px;">
-      <div style="margin-bottom: 12px; padding: 0 4px;">
-        <h4 style="margin: 0; font-size: 12px; font-weight: 600; color: var(--fg-soft); text-transform: uppercase; letter-spacing: 0.5px;">Unread</h4>
-      </div>
-      ${unreadFeed.map(msg => renderFeedMessageCard(msg)).join('')}
-    </div>
-  `;
-  
-  // Insert at the top of Feed (before My Day card)
-  if (feedView) {
-    const existingSection = feedView.querySelector('#unread-feed-section');
-    const myDayCard = feedView.querySelector('#myDayCard');
-    
-    if (existingSection) {
-      existingSection.outerHTML = unreadSectionHTML;
-    } else if (myDayCard) {
-      myDayCard.insertAdjacentHTML('beforebegin', unreadSectionHTML);
-    } else {
-      feedView.insertAdjacentHTML('afterbegin', unreadSectionHTML);
-    }
-  }
-  
-  if (screenFeed) {
-    const existingSection = screenFeed.querySelector('#unread-feed-section');
-    const dayHeaderCard = screenFeed.querySelector('#dayHeaderCard');
-    
-    if (existingSection) {
-      existingSection.outerHTML = unreadSectionHTML;
-    } else if (dayHeaderCard) {
-      dayHeaderCard.insertAdjacentHTML('beforebegin', unreadSectionHTML);
-    } else {
-      screenFeed.insertAdjacentHTML('afterbegin', unreadSectionHTML);
-    }
-  }
+  // Only remove any legacy unread section; never add Unread to Feed
+  const existingSection = feedView?.querySelector('#unread-feed-section');
+  if (existingSection) existingSection.remove();
+  const existingSectionMobile = screenFeed?.querySelector('#unread-feed-section');
+  if (existingSectionMobile) existingSectionMobile.remove();
 }
 
 /**
@@ -168,6 +124,9 @@ export function displayUnreadTalkMessages() {
  * Initialize unread messages display
  */
 export function initUnreadMessages() {
+  if (initUnreadMessages.initialized) return;
+  initUnreadMessages.initialized = true;
+
   // Display in Feed
   displayUnreadFeedMessages();
   

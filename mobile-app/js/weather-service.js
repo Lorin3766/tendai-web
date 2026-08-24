@@ -1,9 +1,9 @@
-// TendAI — Weather Service (Unified Core)
+// Serron — Weather Service (Unified Core)
 // @owner: storage
 // @role: utils
 // Fetches real weather data with caching
 
-import { getUserLocation } from './location-service.js';
+import { getUserLocation } from './features/storage/location-service.js';
 
 const WEATHER_CACHE_KEY = 'tendai-weather-cache';
 const WEATHER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes

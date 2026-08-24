@@ -1,12 +1,21 @@
-// TendAI Mobile — Centralized State Management
+// TendAI Mobile — Persisted State (localStorage)
 // @owner: storage
 // @role: state
+//
+// This is the persisted store (profile, day, talk, feed, integrity). For UI/session state
+// (activeView, plan, checkins, demo) use app-state.js as the primary store. See core/state-bridge.js.
+// Master Record (StorageManager) syncs from profile on save.
+
+// In-memory cache — loaded once per session, never re-read from localStorage after init
+const __memory = {};
+const __loaded = {};
 
 const STATE_KEYS = {
   PROFILE: 'tendai-profile-state',
   DAY: 'tendai-day-state',
   FEED: 'tendai-feed-state',
-  TALK: 'tendai-talk-state'
+  TALK: 'tendai-talk-state',
+  INTEGRITY: 'tendai-integrity-state'
 };
 
 // Initial state structures
@@ -15,6 +24,7 @@ const initialState = {
     location: null, // {type: 'geo'|'manual', coords?: {lat, lon}, city?: string, zip?: string}
     body: {
       age: null,
+      birthYear: null,
       gender: null,
       height: null,
       weight: null,
@@ -56,14 +66,17 @@ const initialState = {
       stressLevel: 3,
       screenTime: null,
       mindGoal: null
-    }
+    },
+    /** Personal routines (vitamins, habits). Protocol Engine — see feed-updater renderProtocolCards */
+    protocols: []
   },
   day: {
     date: new Date().toISOString().split('T')[0],
     sleep: {
       hours: null,
       target: 7.5,
-      quality: null
+      quality: null,
+      sleepEndMinutes: null
     },
     water: {
       current: 0,
@@ -100,85 +113,115 @@ const initialState = {
   }
 };
 
+const SYSTEM_INTEGRITY_MAX = 100;
+/** `score` is a deprecated persisted alias retained for older builds. */
+const initialIntegrityState = { systemIntegrityScore: 0, score: 0 };
+
 /**
- * Get state from localStorage or return initial state
+ * Load state from localStorage once, then use in-memory cache.
  * @param {string} stateKey - Key from STATE_KEYS
  * @returns {Object} State object
  */
-export function getState(stateKey) {
+function loadFromLocalStorage(stateKey) {
+  if (__loaded[stateKey]) return __memory[stateKey];
+
+  const initialStateKey = stateKey === STATE_KEYS.PROFILE ? 'profile' :
+                          stateKey === STATE_KEYS.DAY ? 'day' :
+                          stateKey === STATE_KEYS.FEED ? 'feed' :
+                          stateKey === STATE_KEYS.TALK ? 'talk' :
+                          stateKey === STATE_KEYS.INTEGRITY ? null : null;
+  const initialIntegrity = stateKey === STATE_KEYS.INTEGRITY ? initialIntegrityState : null;
+
   try {
     const stored = localStorage.getItem(stateKey);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        // Merge with initial state to ensure all fields exist
-        // Map stateKey to initialState key
-        const initialStateKey = stateKey === STATE_KEYS.PROFILE ? 'profile' :
-                                stateKey === STATE_KEYS.DAY ? 'day' :
-                                stateKey === STATE_KEYS.FEED ? 'feed' :
-                                stateKey === STATE_KEYS.TALK ? 'talk' : null;
         let merged = parsed;
-        if (initialStateKey && initialState[initialStateKey]) {
+        if (stateKey === STATE_KEYS.INTEGRITY && initialIntegrity) {
+          const migratedScore = Math.max(
+            0,
+            Math.min(
+              SYSTEM_INTEGRITY_MAX,
+              Number(parsed.systemIntegrityScore ?? parsed.score) || 0
+            )
+          );
+          merged = {
+            ...initialIntegrity,
+            ...parsed,
+            systemIntegrityScore: migratedScore,
+            score: migratedScore,
+          };
+        } else if (initialStateKey && initialState[initialStateKey]) {
           merged = mergeState(initialState[initialStateKey], parsed);
         }
-        // Diagnostic log for profile state
+        __memory[stateKey] = merged;
+        __loaded[stateKey] = true;
         if (stateKey === STATE_KEYS.PROFILE) {
-          console.log('[STATE] loaded from localStorage', {
-            key: stateKey,
-            data: merged
-          });
+          console.log('[STATE] loaded from localStorage', { key: stateKey });
         }
         return merged;
       } catch (parseError) {
-        // If JSON.parse fails, clear corrupted data and return initial state
         try {
           localStorage.removeItem(stateKey);
-        } catch (clearError) {
-          // Could not clear corrupted state
-        }
+        } catch (_) {}
       }
     }
-  } catch (error) {
-    // Error loading state
+  } catch (_) {}
+
+  let fallback = {};
+  if (stateKey === STATE_KEYS.INTEGRITY && initialIntegrityState) {
+    fallback = JSON.parse(JSON.stringify(initialIntegrityState));
+  } else if (initialStateKey && initialState[initialStateKey]) {
+    fallback = JSON.parse(JSON.stringify(initialState[initialStateKey]));
   }
-  
-  // Return deep copy of initial state safely
-  try {
-    // Map stateKey to initialState key
-    const initialStateKey = stateKey === STATE_KEYS.PROFILE ? 'profile' :
-                            stateKey === STATE_KEYS.DAY ? 'day' :
-                            stateKey === STATE_KEYS.FEED ? 'feed' :
-                            stateKey === STATE_KEYS.TALK ? 'talk' : null;
-    if (initialStateKey && initialState[initialStateKey]) {
-      return JSON.parse(JSON.stringify(initialState[initialStateKey]));
-    }
-  } catch (copyError) {
-    // Error copying initial state
-  }
-  
-  // Fallback: return empty object if everything fails
-  return {};
+  __memory[stateKey] = fallback;
+  __loaded[stateKey] = true;
+  return fallback;
 }
 
 /**
- * Save state to localStorage
+ * Age in whole years. Prefer birthYear (source of truth) over a stored age field.
+ * @param {{ birthYear?: unknown, age?: unknown }|null|undefined} body
+ * @returns {number|null}
+ */
+export function resolveAgeYears(body) {
+  const b = body && typeof body === 'object' ? body : {};
+  const by = Number(b.birthYear);
+  const yearNow = new Date().getFullYear();
+  if (Number.isFinite(by) && by >= 1900 && by <= yearNow) {
+    const fromYear = yearNow - by;
+    if (fromYear >= 1 && fromYear <= 120) return fromYear;
+  }
+  const n = Number(b.age);
+  if (Number.isFinite(n) && n >= 1 && n <= 120) return Math.round(n);
+  return null;
+}
+
+/**
+ * Get state (from in-memory cache; load once on first access)
+ * @param {string} stateKey - Key from STATE_KEYS
+ * @returns {Object} State object
+ */
+export function getState(stateKey) {
+  if (!__loaded[stateKey]) {
+    return loadFromLocalStorage(stateKey);
+  }
+  return __memory[stateKey];
+}
+
+/**
+ * Save state to localStorage and in-memory cache
  * @param {string} stateKey - Key from STATE_KEYS
  * @param {Object} state - State object to save
  */
 export function saveState(stateKey, state) {
   try {
-    const serialized = JSON.stringify(state);
-    localStorage.setItem(stateKey, serialized);
-    // Diagnostic log for profile state
-    if (stateKey === STATE_KEYS.PROFILE) {
-      console.log('[STATE] saved to localStorage', {
-        key: stateKey,
-        data: state
-      });
-    }
+    __memory[stateKey] = state;
+    __loaded[stateKey] = true;
+    localStorage.setItem(stateKey, JSON.stringify(state));
     return true;
   } catch (error) {
-    console.error('[STATE] Error saving state', stateKey, error);
     return false;
   }
 }
@@ -255,7 +298,11 @@ export function mergeState(target, source) {
  */
 export function clearAllStates() {
   Object.values(STATE_KEYS).forEach(key => {
-    localStorage.removeItem(key);
+    delete __memory[key];
+    delete __loaded[key];
+    try {
+      localStorage.removeItem(key);
+    } catch (_) {}
   });
 }
 
@@ -264,13 +311,24 @@ export function clearAllStates() {
  * @param {string} stateKey - Key from STATE_KEYS
  */
 export function clearState(stateKey) {
-  localStorage.removeItem(stateKey);
+  delete __memory[stateKey];
+  delete __loaded[stateKey];
+  try {
+    localStorage.removeItem(stateKey);
+  } catch (_) {}
 }
 
 // Convenience functions for each state
 export const profileState = {
   get: () => getState(STATE_KEYS.PROFILE),
-  save: (state) => saveState(STATE_KEYS.PROFILE, state),
+  save: (state) => {
+    const ok = saveState(STATE_KEYS.PROFILE, state);
+    try {
+      const sm = typeof window !== 'undefined' && window.__storageManager;
+      if (ok && sm && typeof sm.syncFromProfile === 'function') sm.syncFromProfile(state);
+    } catch (_) {}
+    return ok;
+  },
   update: (path, value) => updateState(STATE_KEYS.PROFILE, path, value),
   getField: (path, defaultValue) => getStateField(STATE_KEYS.PROFILE, path, defaultValue),
   clear: () => clearState(STATE_KEYS.PROFILE)
@@ -300,7 +358,8 @@ export const dayState = {
         sleep: {
           hours: null,
           target: 7.5,
-          quality: null
+          quality: null,
+          sleepEndMinutes: null
         },
         water: {
           current: 0,
@@ -354,6 +413,43 @@ export const talkState = {
   clear: () => clearState(STATE_KEYS.TALK)
 };
 
-// Export STATE_KEYS for reference
-export { STATE_KEYS };
+/** System Integrity score (0–100). It is cumulative and never decreases. */
+export const systemIntegrityState = {
+  get() {
+    const s = getState(STATE_KEYS.INTEGRITY);
+    return Number(s?.systemIntegrityScore ?? s?.score) || 0;
+  },
+  save(state) {
+    const current = this.get();
+    const requested = Number(state?.systemIntegrityScore ?? state?.score) || 0;
+    const next = Math.min(SYSTEM_INTEGRITY_MAX, Math.max(current, requested));
+    return saveState(STATE_KEYS.INTEGRITY, {
+      ...state,
+      systemIntegrityScore: next,
+      score: next,
+    });
+  },
+  /** Add learned-context points; negative values cannot reduce System Integrity. */
+  increaseSystemIntegrity(value) {
+    const score = this.get();
+    const increment = Math.max(0, Number(value) || 0);
+    const next = Math.min(SYSTEM_INTEGRITY_MAX, score + increment);
+    this.save({ systemIntegrityScore: next });
+    if (typeof window.updateSystemIntegrityDisplay === 'function') {
+      window.updateSystemIntegrityDisplay();
+    }
+    return next;
+  },
+  /** @deprecated Use increaseSystemIntegrity(). */
+  increaseIntegrity(value) {
+    return this.increaseSystemIntegrity(value);
+  },
+};
+
+/** @deprecated Use systemIntegrityState. */
+export const integrityState = systemIntegrityState;
+
+// Deprecated constant alias retained during migration.
+const INTEGRITY_MAX = SYSTEM_INTEGRITY_MAX;
+export { STATE_KEYS, SYSTEM_INTEGRITY_MAX, INTEGRITY_MAX };
 

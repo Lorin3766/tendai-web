@@ -1,4 +1,4 @@
-// TendAI — AI Feed Advice Module
+// Serron — AI Feed Advice Module
 // @owner: feed
 // @role: utils
 // Unified AI advice for Feed blocks (Quick advice, Nutrition insight, Tips)

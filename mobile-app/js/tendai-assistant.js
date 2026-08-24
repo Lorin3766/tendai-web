@@ -1,4 +1,4 @@
-// TendAI — Living Assistant Core
+// Serron — Living Assistant Core
 // @owner: feed
 // @role: utils
 // Event-based, human-like, non-intrusive assistant behavior

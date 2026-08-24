@@ -1,0 +1,42 @@
+{
+  "name": "serron-pwa",
+  "version": "1.0.0",
+  "description": "Serron — personal wellbeing assistant (PWA + Capacitor native)",
+  "private": true,
+  "scripts": {
+    "start": "npx serve mobile-app -l 3000",
+    "dev": "concurrently \"cd tendai-backend && node server.js\" \"cd mobile-app && npx serve -p 5500\"",
+    "dev:brain": "cd tendai-backend && node server.js",
+    "dev:body": "cd mobile-app && npx serve -p 5500",
+    "weather-placeholders": "node mobile-app/scripts/generate-weather-placeholders.js",
+    "cap:init": "cap init",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android",
+    "cap:sync": "cap sync",
+    "cap:open:ios": "cap open ios",
+    "cap:open:android": "cap open android"
+  },
+  "capacitor": {
+    "disabled": false
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
+    "@capgo/capacitor-health": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0",
+    "concurrently": "^9.2.1",
+    "pngjs": "^7.0.0",
+    "sharp": "^0.33.0"
+  },
+  "capabilities": {
+    "ios": {
+      "minVersion": "14.0"
+    },
+    "android": {
+      "minSdkVersion": 22
+    }
+  }
+}

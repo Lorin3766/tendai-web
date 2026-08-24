@@ -1,31 +1,142 @@
-/* TendAI — Theme & Design Tokens */
+/* Serron — Theme & Design Tokens */
 
 :root {
-  /* Colors */
-  --bg: #070b19;
-  --bg-panel: #121832;
-  --surface-border: rgba(255, 255, 255, 0.08);
+  /* Warm humanist sans for all user-facing UI; mono only for incidental tech labels */
+  --font-ui: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+
+  /* Feed / protocol headers — same warmth as onboarding titles */
+  --instrument-header-font: var(--font-ui);
+  --instrument-header-size: 1.15rem;
+  --instrument-header-weight: 700;
+  --instrument-header-tracking: -0.01em;
+
+  /* Colors — warm graphite/charcoal (not cool navy) */
+  --bg: #141210;
+  --bg-elevated: #1c1a17;
+  --bg-panel: rgba(36, 33, 30, 0.94);
+  --surface-border: rgba(255, 248, 235, 0.08);
   --gold: #f6c36a;
+  --gold-primary: #f6c36a; /* Hardware UI gold (matches brand "A" reference) */
+  --gold-light: #FBF1C7;
+  --gold-dark: #A67C00;
+  --gold-gradient: linear-gradient(135deg, #A67C00 0%, #D4AF37 50%, #FBF1C7 100%);
+  --backdrop-blur: blur(15px);
+  --panel-border: 1px solid rgba(255, 248, 235, 0.08);
+  --card-radius: 16px;
+  --glow-gold: 0 0 15px rgba(212, 175, 55, 0.6);
+  --gold-muted: rgba(197, 163, 101, 0.4);
   --gold-soft: rgba(246, 195, 106, 0.24);
   --gold-glow: rgba(246, 195, 106, 0.35);
-  --fg: #f5f6ff;
-  --fg-soft: #c5cbe3;
-  --fg-muted: #9ba3c5;
+  --gold-aura: rgba(197, 163, 101, 0.12); /* faint warm gold glow */
+  --neon-color: #F6C36A;
+  --accent: #f6c36a; /* alias for interactive glow (same as --gold) */
+  /* Primary motion: viscous deceleration (snap → silky settle) */
+  --ease-human-os: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-premium: var(--ease-human-os);
+  --fg: #f7f3ee;
+  --fg-soft: #d4cdc4;
+  --fg-muted: #9e968c;
+  --text-bright: #fffaf3;
   --danger: #ff8a8a;
+  /* Agent feed / alerts — use with alpha in borders (matches desktop panels) */
+  --critical: #c85a5a;
+  --critical-border: rgba(200, 90, 90, 0.68);
+  --agent-card-bg: linear-gradient(155deg, rgba(34, 31, 28, 0.94), rgba(18, 16, 14, 0.96));
+  --agent-add-bar-border: rgba(197, 163, 101, 0.38);
+  /* Soft companion controls — rounded, low-contrast chrome */
+  --serron-control-border-width: 1px;
+  --serron-control-radius: 14px;
+  --serron-control-radius-nested: 10px; /* inner segments inside padded shells */
+  --serron-control-surface: rgba(28, 26, 23, 0.92);
+  --serron-control-border-strong: rgba(197, 163, 101, 0.42);
+  --serron-control-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(255, 248, 235, 0.04);
+  /* Legacy aliases (classes still reference --serron-capsule-*) */
+  --serron-capsule-border-width: var(--serron-control-border-width);
+  --serron-capsule-border-strong: var(--serron-control-border-strong);
+  --serron-capsule-surface: var(--serron-control-surface);
+  --serron-capsule-radius-pill: var(--serron-control-radius);
+  --serron-capsule-shadow: var(--serron-control-shadow);
   
   /* Shadows */
-  --shadow-card: 0 18px 45px rgba(5, 8, 20, 0.65);
+  --shadow-card: 0 16px 40px rgba(8, 6, 4, 0.55);
   --shadow-gold-glow: 0 0 18px rgba(246, 195, 106, 0.35);
   
-  /* Border Radius */
-  --radius-xl: 32px;
-  --radius-lg: 20px;
-  --radius-md: 14px;
-  --radius-sm: 10px;
+  /* Border Radius — softer companion shape language */
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  /* Agent feed panels (Weather Scout card + ADD AGENT) — single source for corner geometry */
+  --radius-agent-panel: 18px;
   
   /* Spacing */
   --layout-pad: 32px;
   --max-width: 1320px;
+
+  /* -------------------------------------------------------------------------
+     Interface aura (glow) — matte sand / warm gold “light dust” (not neon cyan).
+     body.stealth-mode clears these for flat industrial UI.
+     ------------------------------------------------------------------------- */
+  --serron-aura-sand-matte: rgba(246, 195, 106, 0.35);
+  --serron-aura-selected-border: #BFA785;
+  --serron-glow-primary: 0 14px 28px var(--serron-aura-sand-matte);
+  --serron-glow-accent: 0 22px 48px rgba(191, 167, 133, 0.22);
+  /* Knowledge list row + checkbox halo (legacy names; values are sand) */
+  --serron-aura-cyan-row: 0 14px 28px rgba(246, 195, 106, 0.35), 0 4px 20px rgba(191, 167, 133, 0.12);
+  --serron-aura-cyan-check: 0 10px 26px rgba(246, 195, 106, 0.28);
+  --serron-aura-sector-ring: 0 22px 52px rgba(246, 195, 106, 0.26), 0 12px 32px rgba(191, 167, 133, 0.14);
+  --serron-aura-sector-label: 0 2px 22px rgba(246, 195, 106, 0.3);
+  --serron-aura-deploy-btn: 0 14px 28px rgba(246, 195, 106, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  --serron-aura-hardware-gold:
+    inset 0 1px 1px rgba(255, 255, 255, 0.32),
+    0 6px 16px rgba(0, 0, 0, 0.38),
+    0 14px 28px rgba(246, 195, 106, 0.18);
+  --serron-filter-calendar-svg: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3));
+  --serron-filter-calendar-hover: drop-shadow(0 14px 28px rgba(246, 195, 106, 0.28));
+  --serron-filter-labs-marker: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  --serron-filter-agent-sparkline: drop-shadow(0 12px 26px rgba(246, 195, 106, 0.22));
+  --serron-filter-agent-icon-null: drop-shadow(0 10px 22px rgba(191, 167, 133, 0.28));
+  --serron-filter-agent-icon-active: drop-shadow(0 14px 30px rgba(246, 195, 106, 0.32));
+  --serron-filter-sensor-value: drop-shadow(0 0 4px var(--gold-aura));
+  --serron-filter-phai-icon-selected: saturate(0.88) brightness(1.02) drop-shadow(0 14px 28px rgba(246, 195, 106, 0.22));
+  --serron-filter-phai-text-selected: drop-shadow(0 18px 40px rgba(246, 195, 106, 0.22));
+  --serron-filter-phai-option-body: drop-shadow(0 18px 40px rgba(246, 195, 106, 0.2));
+  --serron-filter-feed-card-line: drop-shadow(0 12px 24px rgba(246, 195, 106, 0.22));
+}
+
+/* Dynamic mood accent (context engine): buttons, progress bars match atmospheric mood */
+body[data-weather-mood="cold"] { --accent: #7dd3fc; --gold-glow: rgba(125, 211, 252, 0.35); }
+body[data-weather-mood="cool"] { --accent: #93c5fd; --gold-glow: rgba(147, 197, 253, 0.35); }
+body[data-weather-mood="neutral"] { --accent: #f6c36a; --gold-glow: rgba(246, 195, 106, 0.35); }
+body[data-weather-mood="warm"] { --accent: #fb923c; --gold-glow: rgba(251, 146, 60, 0.35); }
+body[data-weather-mood="heat"] { --accent: #f97316; --gold-glow: rgba(249, 115, 22, 0.35); }
+body[data-weather-mood="storm"] { --accent: #94a3b8; --gold-glow: rgba(148, 163, 184, 0.35); }
+body[data-weather-mood="clear-night"] { --accent: #818cf8; --gold-glow: rgba(129, 140, 248, 0.35); }
+
+/* Stealth / industrial: strip emissive layers (after mood vars). */
+body.stealth-mode {
+  --serron-glow-primary: none;
+  --serron-glow-accent: none;
+  --serron-aura-cyan-row: none;
+  --serron-aura-cyan-check: none;
+  --serron-aura-sector-ring: none;
+  --serron-aura-sector-label: none;
+  --serron-aura-deploy-btn: none;
+  --serron-aura-hardware-gold: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px rgba(0, 0, 0, 0.35);
+  --serron-filter-calendar-svg: none;
+  --serron-filter-calendar-hover: none;
+  --serron-filter-labs-marker: none;
+  --serron-filter-agent-sparkline: none;
+  --serron-filter-agent-icon-null: none;
+  --serron-filter-agent-icon-active: none;
+  --serron-filter-sensor-value: none;
+  --serron-filter-phai-icon-selected: saturate(0.88) brightness(1.02);
+  --serron-filter-phai-text-selected: none;
+  --serron-filter-phai-option-body: none;
+  --serron-filter-feed-card-line: none;
 }
 
 *,
@@ -34,7 +145,15 @@
   box-sizing: border-box;
 }
 
-html,
+html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  width: 100%;
+  background: var(--bg); /* Единый фон: нет посторонних зон при отступах */
+}
+
 body {
   height: 100vh;
   height: 100dvh; /* Dynamic viewport height для mobile */
@@ -46,15 +165,69 @@ body {
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", sans-serif;
+  font-family: var(--font-ui);
   font-size: 16px;
   line-height: 1.5;
   color: var(--fg);
-  background: radial-gradient(1200px 600px at 50% -10%, #182450 0%, var(--bg) 55%, var(--bg) 100%);
+  background: radial-gradient(1100px 560px at 50% -12%, #2a241c 0%, var(--bg) 52%, #100e0c 100%);
   -webkit-font-smoothing: antialiased;
   overflow: hidden; /* Запрещаем скролл у body */
   display: flex;
   flex-direction: column;
 }
+
+/* Fresh-user onboarding: hide app shell so modal sits on solid warm bg */
+body.onboarding-active {
+  background: var(--bg) !important;
+  background-image: none !important;
+}
+body.onboarding-active .tendai-layout,
+body.onboarding-active .bottom-nav {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Theme toggle: Graphite — neutral gray (no blue). Override vars so all panels/cards use gray. */
+/* --bg / --bg-panel: purple uses #070b19 / #121832 (blue tint). Graphite: neutral only. */
+html[data-theme="graphite"] {
+  --bg: #12100e;
+  --bg-elevated: #1a1815;
+  --bg-panel: #1c1a17;
+
+  /* Text + icons: force pure white (no blue tint) */
+  --fg: #ffffff;
+  --fg-soft: #ffffff;
+  --fg-muted: #ffffff;
+  --text-bright: #ffffff;
+  --critical: #e07070;
+  --critical-border: rgba(220, 100, 100, 0.7);
+  --agent-add-bar-border: rgba(197, 163, 101, 0.42);
+  --agent-card-bg: linear-gradient(155deg, rgba(28, 30, 32, 0.9), rgba(16, 17, 20, 0.95));
+  --radius-agent-panel: 12px;
+
+  background: #12100e !important;
+}
+html[data-theme="graphite"] body {
+  background: #12100e !important;
+  background-image: none !important;
+}
+html[data-theme="graphite"] body::before,
+html[data-theme="graphite"] body::after {
+  background: none !important;
+}
+html[data-theme="graphite"] .tendai-layout {
+  background: #12100e !important;
+}
+
+/* ============================================================
+   GLOBAL RESPONSIVE: Dynamic root scaling for narrow mobile
+   All rem-based spacing/sizing scales down; desktop unchanged.
+   ============================================================ */
+@media (max-width: 480px) {
+  :root {
+    font-size: 14px;
+  }
+}
+
+/* Weather card uses local assets or sky-gradient-generator only (no external/portrait images) */
 

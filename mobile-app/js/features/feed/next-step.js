@@ -1,10 +1,9 @@
-// TendAI — Next Step Feature
+// Serron — Next Step Feature
 // @owner: feed
 // @role: init
 // Shows ONE next step at a time, always relevant and clickable
 
-import { profileState } from '../../state.js';
-import { dayState } from '../../state.js';
+import { profileState, dayState } from '../../state.js';
 
 /**
  * Determine the next step based on priority
@@ -142,7 +141,6 @@ export function handleNextStepClick(action, nextStepData = null) {
       break;
 
     case 'profile_body':
-      // Открыть Profile modal → Body
       if (window.openProfileModal) {
         window.openProfileModal('body');
       }
@@ -306,6 +304,9 @@ function checkDayChange() {
  * Initialize Next Step feature
  */
 export function initNextStep() {
+  if (initNextStep.initialized) return;
+  initNextStep.initialized = true;
+
   // Initialize last known date
   lastKnownDate = dayState.getTodayDate();
   

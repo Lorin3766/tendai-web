@@ -1,4 +1,4 @@
-// TendAI — Evening Check-In (Close the Loop)
+// Serron — Evening Check-In (Close the Loop)
 // @owner: feed
 // @role: ui
 // Shows a simple evening question once per day after 18:00

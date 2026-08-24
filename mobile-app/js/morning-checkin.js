@@ -1,4 +1,4 @@
-// TendAI — Morning Check-In (Living Assistant)
+// Serron — Morning Check-In (Living Assistant)
 // @owner: feed
 // @role: ui
 // Shows a simple morning question once per day (event-based, no spam)

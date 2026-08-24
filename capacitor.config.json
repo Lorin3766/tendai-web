@@ -1,0 +1,16 @@
+{
+  "appId": "com.tendai.app",
+  "appName": "Serron",
+  "webDir": "mobile-app",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHealth": {
+      "permissions": [
+        "activity",
+        "heart_rate"
+      ]
+    }
+  }
+}

@@ -1,4 +1,4 @@
-// TendAI — Unified Profile Modals (Mobile & Desktop)
+// Serron — Unified Profile Modals (Mobile & Desktop)
 // @owner: profile
 // @role: ui
 // ============================================================
@@ -29,7 +29,9 @@
 //
 // ============================================================
 
-import { profileState } from '../../state.js';
+import { profileState, resolveAgeYears } from '../../state.js';
+import { IS_VERBOSE_BOOT_LOGS } from '../../env-flags.js';
+import { getState, updateState } from '../../core/app-state.js';
 import { getProfileSchema, getSectionSchema, getSectionKeys } from './profile-schema.js';
 import { getSliderConfig } from '../storage/slider-config.js';
 
@@ -143,7 +145,7 @@ function countFilledFields(profile, structure) {
       en: {
         // Section titles
         sectionTitles: {
-    'body': 'Basic Information',
+    'body': 'Your body',
     'health': 'Health & Medical',
           'mind': 'Mind & Mental',
           'lifestyle': 'Lifestyle & Habits',
@@ -301,7 +303,7 @@ function countFilledFields(profile, structure) {
       const title = document.createElement('h3');
       title.className = 'card-title';
       title.id = 'profileModalTitle';
-      title.textContent = 'Basic Information';
+      title.textContent = 'Your body';
       
       const closeBtn = document.createElement('button');
       closeBtn.className = 'profile-modal-close';
@@ -326,8 +328,8 @@ function countFilledFields(profile, structure) {
       const footer = document.createElement('div');
       footer.className = 'profile-modal-footer';
       footer.innerHTML = `
-        <button class="btn profile-modal-save">Save</button>
-        <button class="btn profile-modal-cancel" style="background: rgba(255,255,255,0.1);">Cancel</button>
+        <button type="button" class="btn btn-initialize profile-modal-save">Save changes</button>
+        <button type="button" class="btn btn-abort profile-modal-cancel">Cancel</button>
       `;
       
       modal.appendChild(header);
@@ -435,8 +437,9 @@ function countFilledFields(profile, structure) {
             <div class="slider-controls-row">
               <button type="button" class="slider-btn-minus" data-slider-id="${card.id}" data-step="${step}" aria-label="Decrease">−</button>
               <div class="slider-wrapper">
-                <input type="range" id="${card.id}" min="${min}" max="${max}" 
+                <input type="range" id="${card.id}" class="slider-input-tech" min="${min}" max="${max}" 
                        step="${step}" value="${currentValue}" />
+                <div class="slider-scale" aria-hidden="true"></div>
                 <div class="slider-labels">
                   <span>${card.minLabel || min}</span>
                   <span class="slider-value" id="${card.id}-value">${displayValue}</span>
@@ -453,7 +456,7 @@ function countFilledFields(profile, structure) {
         html += `<div class="card-choice-group">`;
         card.options.forEach(opt => {
           html += `
-            <label class="card-choice">
+            <label class="card-choice status-tile">
               <input type="radio" name="${card.id}" value="${opt.value}" 
                      ${card.value === opt.value ? 'checked' : ''} />
               <span>${opt.label}</span>
@@ -1724,8 +1727,9 @@ function countFilledFields(profile, structure) {
       mobileProfileName.textContent = profileData.body.name;
     }
 
-    if (mobileProfileAge && profileData.body?.age) {
-      mobileProfileAge.textContent = `${profileData.body.age} yrs`;
+    if (mobileProfileAge) {
+      const age = resolveAgeYears(profileData.body);
+      if (age != null) mobileProfileAge.textContent = `${age} yrs`;
     }
 
     if (mobileProfileAvatar && mobileProfileName) {
@@ -1740,6 +1744,21 @@ function countFilledFields(profile, structure) {
   // Update profile UI (left panel in desktop, profile screen in mobile)
   function updateProfileUI() {
     const profileData = profileState.get();
+    
+    // Migration: Antony → Anton (if name exists and is "Antony")
+    if (profileData.body?.name === 'Antony') {
+      profileData.body.name = 'Anton';
+      profileState.save(profileData);
+    }
+
+    // Keep stored age aligned with birthYear (source of truth)
+    if (profileData.body) {
+      const derived = resolveAgeYears(profileData.body);
+      if (derived != null && profileData.body.age !== derived) {
+        profileData.body.age = derived;
+        profileState.save(profileData);
+      }
+    }
     
     // Update desktop left panel
     updateDesktopLeftPanel(profileData);
@@ -1758,27 +1777,38 @@ function countFilledFields(profile, structure) {
   function updateSectionProgress(profileData) {
     const schema = getProfileSchema();
     const sectionKeys = getSectionKeys();
-    
+
     sectionKeys.forEach(sectionKey => {
       const sectionSchema = getSectionSchema(sectionKey);
       if (!sectionSchema) return;
-      
+
       const sectionData = profileData[sectionKey] || {};
       const totalFields = countTotalFields(sectionSchema);
       const filledFields = countFilledFields(sectionData, sectionSchema);
-      
-      // Update all elements with data-profile-status="sectionKey"
+
       const statusElements = document.querySelectorAll(`[data-profile-status="${sectionKey}"]`);
       statusElements.forEach(el => {
-        el.textContent = `${filledFields} / ${totalFields}`;
-        el.style.color = 'var(--fg-soft)';
-        el.style.fontSize = '13px';
-        el.style.fontWeight = '400';
-        el.style.marginLeft = 'auto';
+        // Soft profile-area language — not a checklist fraction
+        let label = 'Not started';
+        let stateClass = 'is-empty';
+        if (totalFields > 0 && filledFields >= totalFields) {
+          label = 'Complete';
+          stateClass = 'is-complete';
+        } else if (filledFields > 0) {
+          label = 'In progress';
+          stateClass = 'is-partial';
+        }
+        el.textContent = label;
+        el.classList.remove('is-empty', 'is-partial', 'is-complete');
+        el.classList.add(stateClass);
+        el.removeAttribute('style');
+        el.title = `${filledFields} of ${totalFields} details filled`;
       });
-      
-      console.log(`[PROFILE SECTION] ${sectionKey}: ${filledFields} / ${totalFields}`);
     });
+
+    if (IS_VERBOSE_BOOT_LOGS && typeof console !== 'undefined' && console.log) {
+      console.log('[INIT] Profile UI updated (' + sectionKeys.length + ' sections).');
+    }
   }
 
   // Update desktop left panel profile display
@@ -1787,12 +1817,12 @@ function countFilledFields(profile, structure) {
     const profileAge = document.getElementById('profileAge');
     const profileAvatar = document.getElementById('profileAvatar');
 
-    // Update name (if we have a name field, otherwise keep default)
-    // For now, we'll keep the default name "Antony"
+    // Update name (if we have a name field, otherwise keep default "Anton")
     
-    // Update age
-    if (profileAge && profileData.body?.age) {
-      profileAge.textContent = `${profileData.body.age} yrs`;
+    // Update age (prefer birthYear-derived age)
+    if (profileAge) {
+      const age = resolveAgeYears(profileData.body);
+      if (age != null) profileAge.textContent = `${age} yrs`;
     }
     
     // Update avatar initial (first letter of name)
@@ -1965,6 +1995,15 @@ function countFilledFields(profile, structure) {
       }
       
       // Остальные действия в Settings (coming soon, etc.)
+      if (e.target.closest('#settingsSendLogToDev')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.sendLogToDev === 'function') {
+          window.sendLogToDev();
+        }
+        return;
+      }
+
       if (e.target.closest('#settingsConnectSources') ||
           e.target.closest('#settingsPrivacyPolicy') ||
           e.target.closest('#settingsTermsOfUse') ||
@@ -1972,7 +2011,6 @@ function countFilledFields(profile, structure) {
           e.target.closest('#settingsRateApp')) {
           e.preventDefault();
         e.stopPropagation();
-        // Логирование уже есть в отдельных обработчиках, но они не нужны
         return;
       }
       
@@ -2093,6 +2131,12 @@ function countFilledFields(profile, structure) {
     return !!overlay;
   }
 
+  function applyInterfaceAuraMode(enabled) {
+    document.body.classList.toggle('stealth-mode', !enabled);
+    document.documentElement.removeAttribute('data-aura-mode');
+  }
+  window.applyInterfaceAuraMode = applyInterfaceAuraMode;
+
   // Settings state management (вынесено наружу для глобального доступа)
   function getSettingsState() {
     try {
@@ -2107,7 +2151,8 @@ function countFilledFields(profile, structure) {
     return {
       dailyCheckinsEnabled: true,
       remindersEnabled: true,
-      language: 'en'
+      language: 'en',
+      interfaceGlowEnabled: true
     };
   }
   
@@ -2134,7 +2179,19 @@ function countFilledFields(profile, structure) {
     if (language) {
       language.value = settings.language || 'en';
     }
-    
+    var theme = localStorage.getItem('tendai-theme');
+    var graph = document.getElementById('settingsGraphiteTheme');
+    if (graph) graph.checked = (theme === 'graphite');
+
+    const demoMode = document.getElementById('settingsDemoMode');
+    if (demoMode) demoMode.checked = getState().demo?.isDemoMode === true;
+
+    const auraGlow = document.getElementById('settingsAuraGlow');
+    if (auraGlow) {
+      auraGlow.checked = settings.interfaceGlowEnabled !== false;
+    }
+    applyInterfaceAuraMode(settings.interfaceGlowEnabled !== false);
+
     // Restore location settings
     const profile = profileState.get();
     const location = profile.location;
@@ -2198,7 +2255,42 @@ function countFilledFields(profile, structure) {
         saveSettingsState(settings);
       });
     }
-    
+    const demoModeToggle = document.getElementById('settingsDemoMode');
+    if (demoModeToggle) {
+      demoModeToggle.addEventListener('change', function(e) {
+        const checked = !!e.target.checked;
+        updateState({ demo: { isDemoMode: checked } }, 'settings_demo_toggle');
+        import('../dev/mock-data-generator.js')
+          .then((mod) => {
+            if (mod && typeof mod.applyDemoAgentSimulation === 'function') {
+              mod.applyDemoAgentSimulation(checked);
+            }
+          })
+          .catch(() => {});
+        if (typeof window.refreshHumanOsFeed === 'function') window.refreshHumanOsFeed();
+      });
+    }
+    var graphToggle = document.getElementById('settingsGraphiteTheme');
+    if (graphToggle && typeof window.applyTheme === 'function' && !window.__themeToggleBound) {
+      window.__themeToggleBound = true;
+      graphToggle.addEventListener('change', function() {
+        var c = !!this.checked;
+        window.applyTheme(c ? 'graphite' : 'purple');
+      });
+    }
+
+    const auraGlowToggle = document.getElementById('settingsAuraGlow');
+    if (auraGlowToggle && !window.__auraGlowToggleBound) {
+      window.__auraGlowToggleBound = true;
+      auraGlowToggle.addEventListener('change', function (e) {
+        const checked = !!e.target.checked;
+        const next = getSettingsState();
+        next.interfaceGlowEnabled = checked;
+        saveSettingsState(next);
+        applyInterfaceAuraMode(checked);
+      });
+    }
+
     // Location settings handlers
     const locationSave = document.getElementById('settingsLocationSave');
     const locationUseGeo = document.getElementById('settingsLocationUseGeo');
@@ -2227,13 +2319,16 @@ function countFilledFields(profile, structure) {
             };
             
             window.setManualLocation(locationData);
-            
+
             if (locationStatus) {
               locationStatus.textContent = 'Location saved';
               locationStatus.style.color = 'var(--gold)';
             }
-            
-            // Refresh weather after saving
+
+            // Invalidate weather cache so next fetch uses new location; then refresh card
+            if (typeof window.invalidateWeatherCache === 'function') {
+              window.invalidateWeatherCache();
+            }
             if (window.updateFeedUI) {
               setTimeout(() => window.updateFeedUI(), 500);
             }
@@ -2314,17 +2409,14 @@ function countFilledFields(profile, structure) {
     // Экспортируем как именованную функцию для проверки typeof
     function openSettingsModal() {
       if (settingsModalOverlay) {
-        // Restore settings state before opening
+        var t = localStorage.getItem('tendai-theme');
+        if (typeof window.applyTheme === 'function') window.applyTheme(t === 'graphite' ? 'graphite' : 'purple');
         restoreSettingsState();
-        
         settingsModalOverlay.classList.add('is-active');
         document.body.style.overflow = 'hidden';
-        
-        // Setup handlers after modal is opened
         setTimeout(() => {
           setupSettingsHandlers();
         }, 50);
-        
       }
     }
     

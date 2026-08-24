@@ -1,16 +1,40 @@
-// TendAI — Feed UI Updater
+// LEGACY BLOCKED IN UNIFIED — do not edit logic here.
+// See: mobile-app/_audit/ARCHITECTURE_RUNTIME.md
+//
+// Serron — Feed UI Updater
 // @owner: feed
 // @role: init
 // Updates Feed UI elements based on dayState
 
+// DEPRECATED in unified-mode: Block legacy duplicate
+import { shouldBlockLegacy } from './_legacy_blocklist.js';
 import { dayState } from './state.js';
 import { addMessage } from './message-queue.js';
 import { getCurrentDailyAction, markActionAsDone, markActionAsSkipped } from './daily-action.js';
 
-/**
- * Update Feed header stats (Sleep, Water, Energy)
- */
-export function updateFeedHeaderStats() {
+// Block execution if legacy
+if (shouldBlockLegacy()) {
+  console.warn('[LEGACY][BLOCK]', 'feed-updater.js');
+  // Export empty stubs to prevent errors
+  export function updateFeedUI() {}
+  export function updateDailyFocus() {}
+  export function updateWellbeing() {}
+  export function updateDailyActionUI() {}
+  // Set window stubs
+  if (typeof window !== 'undefined') {
+    window.updateFeedUI = function() {};
+    window.updateDailyFocus = function() {};
+    window.updateWellbeing = function() {};
+    window.updateDailyActionUI = function() {};
+  }
+  // Block all execution - wrap rest of file in condition
+} else {
+  // Original code continues below (all code after this point)
+
+  /**
+   * Update Feed header stats (Sleep, Water, Energy)
+   */
+  export function updateFeedHeaderStats() {
   const todayState = dayState.loadDayStateForToday();
 
   // Update Sleep
@@ -86,10 +110,10 @@ export function updateFeedHeaderStats() {
   updateDayAdvice();
 }
 
-/**
- * Update day date display
- */
-function updateDayDate() {
+  /**
+   * Update day date display
+   */
+  function updateDayDate() {
   const dateElement = document.getElementById('dayHeaderDate');
   if (!dateElement) return;
 
@@ -105,10 +129,10 @@ function updateDayDate() {
   dateElement.textContent = `${dayName} · ${month} ${day} · ${year}`;
 }
 
-/**
- * Update weather display (real data from API with caching)
- */
-async function updateWeather() {
+  /**
+   * Update weather display (real data from API with caching)
+   */
+  async function updateWeather() {
   const weatherMainElement = document.getElementById('dayHeaderWeather');
   const weatherDetailsElement = document.getElementById('dayHeaderWeatherDetails');
   const weatherMobileElement = document.querySelector('#screen-feed .day-header-weather');
@@ -176,76 +200,23 @@ async function updateWeather() {
   }
 }
 
-/**
- * Update day advice text based on dayState and weather
- */
+/** FEED weather-card: no tip/advice (summary + details only). No "take/try/should". */
 function updateDayAdvice() {
-  const todayState = dayState.loadDayStateForToday();
   const adviceElement = document.getElementById('dayHeaderAdvice');
-  
   if (!adviceElement) return;
-
-  const sleepHours = todayState.sleep?.hours;
-  const waterCurrent = todayState.water?.current || 0;
-  const waterTarget = todayState.water?.target || 8;
-  const energy = todayState.energy;
-  const stressLevel = todayState.stressLevel || 3;
-
-  // Get real weather data from dayState
-  const weatherData = {
-    temp: todayState.weather?.temperature || null,
-    condition: todayState.weather?.condition || null,
-    wind: null, // Not stored in dayState, would need to fetch
-    pressure: todayState.pressure || null
-  };
-
-  let advice = '';
-
-  // Generate advice considering weather first, then state
-  // Холод / ветер → береги энергию
-  if (weatherData.temp < 50 || weatherData.wind > 15) {
-    advice = 'Cool and windy — take it easy and conserve your energy today.';
-  }
-  // Давление скачет → не перегружайся
-  else if (weatherData.pressure < 1000 || weatherData.pressure > 1020) {
-    advice = 'Pressure changes — keep your schedule light and avoid overloading.';
-  }
-  // Жара → вода и паузы
-  else if (weatherData.temp > 80) {
-    advice = 'Warm day — stay hydrated and take regular breaks.';
-  }
-  // Затем учитываем состояние
-  else if (sleepHours !== null && sleepHours < 6) {
-    advice = 'Low sleep — prioritize rest and recovery today.';
-  } else if (sleepHours !== null && sleepHours >= 6 && sleepHours < 7) {
-    advice = 'Moderate sleep — good day for balanced activities.';
-  } else if (sleepHours !== null && sleepHours >= 7) {
-    advice = 'Good sleep — great day for focused work.';
-  } else if (waterCurrent < waterTarget * 0.5) {
-    advice = 'Stay hydrated — aim for more water today.';
-  } else if (stressLevel >= 4) {
-    advice = 'High stress — take breaks and practice mindfulness.';
-  } else if (energy === 'Low') {
-    advice = 'Low energy — light activities and rest recommended.';
-  } else if (energy === 'Good' || energy === 'High') {
-    advice = 'Good energy — productive day ahead.';
-  } else {
-    advice = 'Stable day — maintain your routine.';
-  }
-
-  adviceElement.textContent = advice;
-
-  // Also update mobile version
+  adviceElement.textContent = '';
+  adviceElement.style.display = 'none';
   const mobileAdvice = document.querySelector('#screen-feed .day-header-advice');
   if (mobileAdvice) {
-    mobileAdvice.textContent = advice;
+    mobileAdvice.textContent = '';
+    mobileAdvice.style.display = 'none';
   }
 }
 
-/**
- * Update Daily Focus text based on dayState
- */
-export function updateDailyFocus() {
+  /**
+   * Update Daily Focus text based on dayState
+   */
+  export function updateDailyFocus() {
   const todayState = dayState.loadDayStateForToday();
   const focusElement = document.getElementById('dailyFocusText');
   
@@ -331,12 +302,12 @@ export function updateDailyFocus() {
   }
 }
 
-/**
- * Render daily action card HTML
- * @param {Object} action - Action object
- * @returns {string} HTML string
- */
-function renderDailyActionCard(action) {
+  /**
+   * Render daily action card HTML
+   * @param {Object} action - Action object
+   * @returns {string} HTML string
+   */
+  function renderDailyActionCard(action) {
   if (!action) return '';
   
   if (action.status === 'done') {
@@ -472,10 +443,10 @@ export function updateDailyActionUI() {
   }, 100);
 }
 
-/**
- * Update Wellbeing summary text based on dayState
- */
-export function updateWellbeing() {
+  /**
+   * Update Wellbeing summary text based on dayState
+   */
+  export function updateWellbeing() {
   const todayState = dayState.loadDayStateForToday();
   const wellbeingElement = document.getElementById('wellbeingSummaryText');
   
@@ -518,10 +489,10 @@ export function updateWellbeing() {
   wellbeingElement.textContent = summaryText;
 }
 
-/**
- * Update all Feed UI elements
- */
-export function updateFeedUI() {
+  /**
+   * Update all Feed UI elements
+   */
+  export function updateFeedUI() {
   updateDayDate();
   updateWeather();
   updateDayAdvice();
@@ -530,8 +501,8 @@ export function updateFeedUI() {
   updateWellbeing();
 }
 
-// Initialize Feed UI on load
-function initFeedUI() {
+  // Initialize Feed UI on load
+  function initFeedUI() {
   updateFeedUI();
   updateDailyActionUI();
   // Запрашиваем AI-советы при инициализации Feed
@@ -542,39 +513,40 @@ function initFeedUI() {
   }
 }
 
-// Initialize on DOM ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initFeedUI);
-} else {
-  initFeedUI();
-}
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFeedUI);
+  } else {
+    initFeedUI();
+  }
 
-// Re-update when switching to Feed screen (mobile)
-const feedScreen = document.getElementById('screen-feed');
-if (feedScreen) {
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-        const target = mutation.target;
-        if (target.id === 'screen-feed' && target.classList.contains('active')) {
-          setTimeout(() => {
-            updateFeedUI();
-            updateDailyActionUI();
-          }, 50);
+  // Re-update when switching to Feed screen (mobile)
+  const feedScreen = document.getElementById('screen-feed');
+  if (feedScreen) {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          const target = mutation.target;
+          if (target.id === 'screen-feed' && target.classList.contains('active')) {
+            setTimeout(() => {
+              updateFeedUI();
+              updateDailyActionUI();
+            }, 50);
+          }
         }
-      }
+      });
     });
-  });
-  
-  observer.observe(feedScreen, {
-    attributes: true,
-    attributeFilter: ['class']
-  });
-}
+    
+    observer.observe(feedScreen, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
 
-// Export for global use
-window.updateFeedUI = updateFeedUI;
-window.updateDailyFocus = updateDailyFocus;
-window.updateWellbeing = updateWellbeing;
-window.updateDailyActionUI = updateDailyActionUI;
+  // Export for global use
+  window.updateFeedUI = updateFeedUI;
+  window.updateDailyFocus = updateDailyFocus;
+  window.updateWellbeing = updateWellbeing;
+  window.updateDailyActionUI = updateDailyActionUI;
+}
 

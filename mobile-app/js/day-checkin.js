@@ -1,4 +1,4 @@
-// TendAI — Day Check-in Modal and Logic
+// Serron — Day Check-in Modal and Logic
 // @owner: feed
 // @role: ui
 // Unified daily check-in for mobile and desktop

@@ -1,0 +1,95 @@
+/* Feature: FEED Time-of-day Glow Cards (Morning/Day/Evening) */
+/* Toggle: set data-feed-glow="on" on #feed-view to enable. Remove this file or set data-feed-glow="off" to disable. */
+
+#feed-view[data-feed-glow="on"] {
+  --feed-glow-opacity: 0.88;
+  --feed-glow-opacity-morning: 0.82;
+  --feed-glow-opacity-day: 0.9;
+  --feed-glow-opacity-evening: 0.94;
+}
+
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card::before,
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Thin gold line (shared) */
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card::before {
+  inset: 10px 10px calc(100% - 2px) 10px;
+  background: linear-gradient(90deg, rgba(255, 202, 120, 0) 0%, rgba(255, 202, 120, 0.55) 50%, rgba(255, 202, 120, 0) 100%);
+  filter: var(--serron-filter-feed-card-line);
+}
+
+/* Glow layer */
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card::after {
+  opacity: var(--feed-glow-opacity);
+  mix-blend-mode: screen;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-size: cover, cover, cover;
+  background-position: center, center, center;
+}
+
+/* Morning: Champagne Dawn (warm, clean) */
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card.morning::after {
+  opacity: var(--feed-glow-opacity-morning);
+  background-image:
+    radial-gradient(82% 82% at 22% 20%, rgba(255, 230, 205, 0.7), rgba(255, 206, 160, 0.46) 44%, rgba(80, 48, 120, 0.12) 62%, rgba(20, 12, 32, 0) 72%),
+    radial-gradient(78% 78% at 70% 72%, rgba(210, 180, 255, 0.14), rgba(34, 20, 60, 0) 60%),
+    radial-gradient(120% 120% at 50% 52%, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0) 52%);
+  background-blend-mode: screen, screen, soft-light;
+}
+
+/* Day: Sapphire Focus (blue with soft cyan support) */
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card.day::after {
+  opacity: var(--feed-glow-opacity-day);
+  background-image:
+    radial-gradient(86% 86% at 24% 20%, rgba(132, 194, 255, 0.6), rgba(60, 138, 224, 0.44) 46%, rgba(18, 36, 72, 0.12) 64%, rgba(8, 16, 28, 0) 74%),
+    radial-gradient(80% 80% at 74% 70%, rgba(64, 196, 214, 0.2), rgba(14, 30, 52, 0) 60%),
+    radial-gradient(125% 125% at 50% 52%, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0) 54%);
+  background-blend-mode: screen, screen, soft-light;
+}
+
+/* Evening: Amethyst Night (indigo/violet, no warm inner tones) */
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card.evening::after {
+  opacity: var(--feed-glow-opacity-evening);
+  background-image:
+    radial-gradient(86% 86% at 72% 78%, rgba(92, 78, 184, 0.5), rgba(42, 28, 96, 0.5) 44%, rgba(10, 8, 18, 0.12) 64%, rgba(6, 4, 12, 0) 74%),
+    radial-gradient(78% 78% at 24% 28%, rgba(60, 72, 168, 0.2), rgba(8, 10, 24, 0) 60%),
+    radial-gradient(125% 125% at 52% 54%, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0) 52%);
+  background-blend-mode: screen, screen, soft-light;
+}
+
+/* Active time-of-day emphasis: boost glow only */
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card.is-active::after {
+  opacity: calc(var(--feed-glow-opacity) + 0.08);
+}
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card.morning.is-active::after {
+  opacity: calc(var(--feed-glow-opacity-morning) + 0.08);
+}
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card.day.is-active::after {
+  opacity: calc(var(--feed-glow-opacity-day) + 0.08);
+}
+#feed-view[data-feed-glow="on"] #feedStarterCards .feed-card.evening.is-active::after {
+  opacity: calc(var(--feed-glow-opacity-evening) + 0.08);
+}
+
+/* Hide legacy weather block when glow is on (to avoid duplicates) */
+#feed-view[data-feed-glow="on"] #myDayCard,
+#feed-view[data-feed-glow="on"] #dayHeaderCard {
+  display: none !important;
+}
+

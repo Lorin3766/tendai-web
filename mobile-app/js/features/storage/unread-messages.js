@@ -1,4 +1,4 @@
-// TendAI — Unread Messages Indicator
+// Serron — Unread Messages Indicator
 // @owner: storage
 // @role: init
 // Tracks unread messages from TendAI and shows indicator
@@ -52,59 +52,32 @@ export function checkUnreadMessages() {
 
 /**
  * Update unread indicator in UI
+ * DISABLED: Badge display is now handled by js/core/notifications.js (single source of truth).
+ * This legacy function only removes any orphan .unread-badge it finds (cleanup).
  */
 function updateUnreadIndicator() {
   try {
-    const unreadCount = parseInt(localStorage.getItem(UNREAD_KEY) || '0', 10);
-    
-    // Update desktop tab
+    // Remove any legacy .unread-badge — notifications.js owns badge display via .badge-container
     const tabTalk = document.getElementById('tab-talk');
     if (tabTalk) {
       const existingBadge = tabTalk.querySelector('.unread-badge');
-      if (unreadCount > 0) {
-        if (!existingBadge) {
-          const badge = document.createElement('span');
-          badge.className = 'unread-badge';
-          badge.textContent = unreadCount > 9 ? '9+' : unreadCount.toString();
-          tabTalk.appendChild(badge);
-        } else {
-          existingBadge.textContent = unreadCount > 9 ? '9+' : unreadCount.toString();
-        }
-      } else {
-        if (existingBadge) {
-          existingBadge.remove();
-        }
-      }
+      if (existingBadge) existingBadge.remove();
     }
-    
-    // Update mobile nav item
     const mobileTalkNav = document.querySelector('[data-screen="talk"]');
     if (mobileTalkNav) {
       const existingBadge = mobileTalkNav.querySelector('.unread-badge');
-      if (unreadCount > 0) {
-        if (!existingBadge) {
-          const badge = document.createElement('span');
-          badge.className = 'unread-badge';
-          badge.textContent = unreadCount > 9 ? '9+' : unreadCount.toString();
-          mobileTalkNav.appendChild(badge);
-        } else {
-          existingBadge.textContent = unreadCount > 9 ? '9+' : unreadCount.toString();
-        }
-      } else {
-        if (existingBadge) {
-          existingBadge.remove();
-        }
-      }
+      if (existingBadge) existingBadge.remove();
     }
-  } catch (error) {
-    // Could not update indicator
-  }
+  } catch (_) {}
 }
 
 /**
  * Initialize unread messages tracking
  */
 export function initUnreadTracking() {
+  if (initUnreadTracking.initialized) return;
+  initUnreadTracking.initialized = true;
+
   // Check on load
   checkUnreadMessages();
   

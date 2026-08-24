@@ -1,43 +1,103 @@
-// TendAI — Location Service (Unified Core)
+// Serron — Location Service (Unified Core)
 // @owner: storage
 // @role: utils
-// Handles geolocation and manual location input
+// Handles geolocation and manual location input. Geolocation requires a secure context (HTTPS or localhost).
 
 import { profileState } from '../../state.js';
 
 const LOCATION_CACHE_KEY = 'tendai-location';
 const LOCATION_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+/** Silent IP-based geo when GPS is blocked. No user prompt. Returns { type, coords, city?, country? } or null. */
+async function fetchIpGeo() {
+  try {
+    const res = await fetch('https://ipapi.co/json/');
+    if (!res.ok) return null;
+    const d = await res.json();
+    if (d.latitude == null || d.longitude == null) return null;
+    return { type: 'geo', coords: { lat: d.latitude, lon: d.longitude }, city: d.city || null, country: d.country_name || null };
+  } catch (_) { return null; }
+}
+
+/** True when on http: and not localhost — geolocation will be blocked; suggest Settings. */
+function isInsecureNonLocalhost() {
+  if (typeof window === 'undefined' || !window.location) return false;
+  const { protocol, hostname } = window.location;
+  return protocol === 'http:' && hostname !== 'localhost' && hostname !== '127.0.0.1';
+}
+
 /**
- * Get user location (PRIORITY: manual > geo > cache)
- * PRODUCT-GRADE: Manual location is source of truth
- * @returns {Promise<Object|null>} Location object {type, coords?, city?, zip?, country?} or null
+ * Get user location (PRIORITY: manual > cached > GPS > silent IP-geo > null)
+ * When GPS is blocked or denied, fetches city from ipapi.co (no user prompt).
+ * @returns {Promise<Object|null>} Location object {type, coords?, city?, country?} or null
  */
 export async function getUserLocation() {
-  // PRIORITY 1: Manual location from profile (HIGHEST PRIORITY)
   const manualLocation = getManualLocation();
-  if (manualLocation) {
-    console.log('[LOCATION] manual used');
-    return manualLocation;
+  if (manualLocation) return manualLocation;
+
+  const cached = getCachedLocation();
+  if (cached) return cached;
+
+  if (isInsecureNonLocalhost()) {
+    if (typeof window !== 'undefined') window.__serronLocationSuggestSettings = true;
+    return null;
   }
 
-  // PRIORITY 2: Cached location (could be geo or manual)
-  const cached = getCachedLocation();
-  if (cached) {
-    // Only use cached if it's not manual (manual already checked above)
-    if (cached.type !== 'manual') {
-      console.log('[LOCATION] cached location used');
-      return cached;
+  if (typeof window !== 'undefined' && window.isSecureContext && navigator.geolocation) {
+    try {
+      const geo = await getGeolocation();
+      if (geo && geo.coords) {
+        const withCity = await addCityToGeoLocation(geo);
+        saveLocation(withCity);
+        return withCity;
+      }
+    } catch (err) {
+      if (err.code === 1) setLocationDeniedFlag(true);
     }
   }
 
-  // PRIORITY 3: Auto-geolocation (ONLY if no manual location)
-  // Note: This should be called explicitly by user action, not automatically
-  // Returning null here - caller should request geo explicitly if needed
+  const ipLoc = await fetchIpGeo();
+  if (ipLoc && ipLoc.coords) {
+    saveLocation(ipLoc);
+    return ipLoc;
+  }
 
-  // No location available
-  console.log('[LOCATION] no location available');
   return null;
+}
+
+/** Set when user denied geolocation (so UI can show "Location denied"). */
+let _locationDenied = false;
+export function setLocationDeniedFlag(value) {
+  _locationDenied = value;
+}
+export function isLocationDenied() {
+  return _locationDenied;
+}
+
+/**
+ * Reverse geocode (lat, lon) to city name via Nominatim. Used to show city on weather card.
+ * @returns {Promise<string|null>} City name or null
+ */
+async function reverseGeocode(lat, lon) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', 'User-Agent': 'TendAI-PWA-Weather/1.0' }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const addr = data.address || {};
+    return addr.city || addr.town || addr.village || addr.municipality || addr.county || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/** Enrich geo location with city name (reverse geocode). */
+async function addCityToGeoLocation(geo) {
+  if (!geo || !geo.coords) return geo;
+  const city = await reverseGeocode(geo.coords.lat, geo.coords.lon);
+  return { ...geo, ...(city && { city }) };
 }
 
 /**
@@ -46,6 +106,10 @@ export async function getUserLocation() {
  */
 function getGeolocation() {
   return new Promise((resolve, reject) => {
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+      reject(new Error('Geolocation requires a secure context (HTTPS or localhost).'));
+      return;
+    }
     if (!navigator.geolocation) {
       reject(new Error('Geolocation not supported'));
       return;
@@ -53,12 +117,11 @@ function getGeolocation() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
         resolve({
           type: 'geo',
-          coords: {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-          }
+          coords: { lat, lon }
         });
       },
       (error) => {
@@ -89,26 +152,31 @@ function getManualLocation() {
 }
 
 /**
- * Save location to profile state and cache
- * @param {Object} location - Location object
+ * Save location to profile state and cache.
+ * Rule: after save, next getUserLocation() returns this location without reload.
  */
 export function saveLocation(location) {
   // Save to profile state
   const profile = profileState.get();
   profile.location = location;
   profileState.save(profile);
-  
-  // Update next step display
-  if (window.updateNextStepDisplay) {
-    window.updateNextStepDisplay();
-  }
 
-  // Save to cache
+  // Save to cache (getCachedLocation reads this; no in-memory cache)
   const cacheData = {
     location: location,
     timestamp: Date.now()
   };
   localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(cacheData));
+
+  if (typeof window !== 'undefined') window.__serronLocationSuggestSettings = false;
+
+  try {
+    document.dispatchEvent(new CustomEvent('serron:location-changed', { detail: { location } }));
+  } catch (_) {}
+
+  if (window.updateNextStepDisplay) {
+    window.updateNextStepDisplay();
+  }
 }
 
 /**
@@ -168,25 +236,27 @@ export function setManualLocation(locationData) {
  * @returns {Promise<Object|null>} Location object with coords or null
  */
 export async function requestGeolocation() {
+  console.log('[LOCATION] request started');
+  setLocationDeniedFlag(false);
   try {
     const geoLocation = await getGeolocation();
     if (geoLocation) {
-      // Only save if no manual location exists
       const manualLocation = getManualLocation();
       if (!manualLocation) {
-        saveLocation(geoLocation);
-        console.log('[LOCATION] geo used');
-        return geoLocation;
+        const withCity = await addCityToGeoLocation(geoLocation);
+        saveLocation(withCity);
+        console.log('[LOCATION] success saved');
+        return withCity;
       } else {
-        console.log('[LOCATION] geo requested but manual location exists, keeping manual');
-        return manualLocation; // Return manual, don't override
+        console.log('[LOCATION] manual location exists, keeping manual');
+        return manualLocation;
       }
     }
   } catch (error) {
-    console.log('[LOCATION] geolocation failed:', error.message);
+    if (error.code === 1) setLocationDeniedFlag(true);
+    console.log('[LOCATION] denied');
     throw error;
   }
-  
   return null;
 }
 

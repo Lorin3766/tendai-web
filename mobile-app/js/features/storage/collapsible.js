@@ -1,4 +1,4 @@
-// TendAI — Collapsible Sections Controller
+// Serron — Collapsible Sections Controller
 // @owner: storage
 // @role: utils
 // Управление сворачиванием/разворачиванием секций в левой и правой колонках
@@ -9,14 +9,13 @@
   // Дефолтные состояния (при первом запуске)
   const defaultStates = {
     left: {
-      profileMenu: true,  // open
-      dailyFocus: false,   // closed
-      wellbeing: false     // closed
+      profileMenu: true   // open
     },
     right: {
       onlineDoctor: false,  // closed (по умолчанию свернуто)
       labs: false,         // closed
-      miniPrograms: false  // closed
+      miniPrograms: false, // closed
+      agents: false
     },
     center: {
       weeklyGoals: false   // closed (по умолчанию свернуто)
@@ -25,7 +24,8 @@
       profileMenu: false,  // closed (по умолчанию свернуто)
       labs: false,         // closed
       onlineDoctor: false, // closed
-      miniPrograms: false // closed
+      miniPrograms: false, // closed
+      agents: false
     }
   };
 
@@ -38,9 +38,9 @@
       const mobileState = localStorage.getItem('tendai-collapse-mobile');
       
       const left = leftState ? JSON.parse(leftState) : defaultStates.left;
-      const right = rightState ? JSON.parse(rightState) : defaultStates.right;
+      const right = { ...defaultStates.right, ...(rightState ? JSON.parse(rightState) : {}) };
       const center = centerState ? JSON.parse(centerState) : defaultStates.center;
-      const mobile = mobileState ? JSON.parse(mobileState) : defaultStates.mobile;
+      const mobile = { ...defaultStates.mobile, ...(mobileState ? JSON.parse(mobileState) : {}) };
       
       return { left, right, center, mobile };
     } catch (e) {
@@ -70,19 +70,19 @@
   // Маппинг data-collapse → ключ состояния
   const collapseKeyMap = {
     'LEFT_PROFILE_MENU': { side: 'left', key: 'profileMenu' },
-    'LEFT_DAILY_FOCUS': { side: 'left', key: 'dailyFocus' },
-    'LEFT_WELLBEING': { side: 'left', key: 'wellbeing' },
     'RIGHT_LABS': { side: 'right', key: 'labs' },
     'RIGHT_ONLINE_DOCTOR': { side: 'right', key: 'onlineDoctor' },
     'RIGHT_MINI_PROGRAMS': { side: 'right', key: 'miniPrograms' },
+    'RIGHT_AGENTS': { side: 'right', key: 'agents' },
     'MOBILE_PROFILE_MENU': { side: 'mobile', key: 'profileMenu' },
     'MOBILE_LABS': { side: 'mobile', key: 'labs' },
     'MOBILE_ONLINE_DOCTOR': { side: 'mobile', key: 'onlineDoctor' },
-    'MOBILE_MINI_PROGRAMS': { side: 'mobile', key: 'miniPrograms' }
+    'MOBILE_MINI_PROGRAMS': { side: 'mobile', key: 'miniPrograms' },
+    'MOBILE_AGENTS': { side: 'mobile', key: 'agents' }
   };
 
   // Список mobile Services секций для логики "только одна открыта"
-  const mobileServiceSections = ['MOBILE_LABS', 'MOBILE_ONLINE_DOCTOR', 'MOBILE_MINI_PROGRAMS'];
+  const mobileServiceSections = ['MOBILE_LABS', 'MOBILE_ONLINE_DOCTOR', 'MOBILE_MINI_PROGRAMS', 'MOBILE_AGENTS'];
 
   // Переключение состояния секции
   function toggleSection(collapseId) {
@@ -136,6 +136,18 @@
       body.classList.remove('is-open');
       header.setAttribute('aria-expanded', 'false');
     }
+
+    document.querySelectorAll(`[data-collapse-trigger="${collapseId}"]`).forEach((hit) => {
+      hit.classList.toggle('is-open', isOpen);
+      hit.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    if (collapseId === 'MOBILE_PROFILE_MENU') {
+      const mCard = document.getElementById('mobileProfileCard');
+      if (mCard) {
+        mCard.classList.toggle('is-expanded', isOpen);
+      }
+    }
   }
 
   // Инициализация всех секций
@@ -156,12 +168,22 @@
   function setupEventHandlers() {
     // Клик
     document.addEventListener('click', (e) => {
+      const hit = e.target.closest('[data-collapse-trigger]');
+      if (hit) {
+        const collapseId = hit.getAttribute('data-collapse-trigger');
+        if (!collapseId) return;
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSection(collapseId);
+        return;
+      }
+
       const header = e.target.closest('.card-header-toggle');
       if (!header) return;
-      
+
       const collapseId = header.getAttribute('data-collapse');
       if (!collapseId) return;
-      
+
       e.preventDefault();
       e.stopPropagation();
       toggleSection(collapseId);
@@ -169,13 +191,23 @@
 
     // Клавиатура (Enter/Space)
     document.addEventListener('keydown', (e) => {
+      const hit = e.target.closest('[data-collapse-trigger]');
+      if (hit && (e.key === 'Enter' || e.key === ' ')) {
+        const collapseId = hit.getAttribute('data-collapse-trigger');
+        if (!collapseId) return;
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSection(collapseId);
+        return;
+      }
+
       const header = e.target.closest('.card-header-toggle');
       if (!header) return;
-      
+
       if (e.key === 'Enter' || e.key === ' ') {
         const collapseId = header.getAttribute('data-collapse');
         if (!collapseId) return;
-        
+
         e.preventDefault();
         e.stopPropagation();
         toggleSection(collapseId);

@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "blueprints": [
+    {
+      "id": "cardio_monitor",
+      "title": "Cardio Monitor",
+      "category": "health",
+      "description": "Publishes pulse and strain context for other agents. Alerts when heart rate crosses your threshold.",
+      "required_sensors": [
+        {
+          "key": "healthkit_heart",
+          "label": "Heart rate (Health / device)",
+          "type": "permission"
+        }
+      ],
+      "trigger_logic_schema": {
+        "numeric": [
+          {
+            "id": "pulse_gt",
+            "label": "Alert when pulse exceeds (BPM)",
+            "min": 40,
+            "max": 200,
+            "default": 100,
+            "unit": "bpm"
+          }
+        ],
+        "natural_language": true
+      }
+    },
+    {
+      "id": "weather_scout",
+      "title": "Weather Scout",
+      "category": "environmental",
+      "description": "OpenWeather-powered wind and conditions. Respects health context from the shared bus before warnings.",
+      "required_sensors": [
+        {
+          "key": "openweather_api_key",
+          "label": "OpenWeather API key",
+          "type": "secret"
+        },
+        {
+          "key": "location",
+          "label": "Location for forecast",
+          "type": "permission"
+        }
+      ],
+      "trigger_logic_schema": {
+        "numeric": [
+          {
+            "id": "wind_gt",
+            "label": "Warn when wind exceeds (mph)",
+            "min": 0,
+            "max": 80,
+            "default": 25,
+            "unit": "mph"
+          },
+          {
+            "id": "uv_gt",
+            "label": "Warn when UV index exceeds",
+            "min": 0,
+            "max": 12,
+            "default": 7,
+            "unit": "uv"
+          }
+        ],
+        "natural_language": true
+      }
+    },
+    {
+      "id": "github_scout",
+      "title": "GitHub Scout",
+      "category": "engineering",
+      "description": "Watches your GitHub activity (token required). Pushes feed cards only when your trigger fires.",
+      "required_sensors": [
+        {
+          "key": "github_token",
+          "label": "GitHub personal access token",
+          "type": "secret"
+        }
+      ],
+      "trigger_logic_schema": {
+        "numeric": [
+          {
+            "id": "open_issues_gt",
+            "label": "Alert when assigned open issues exceed",
+            "min": 0,
+            "max": 500,
+            "default": 10,
+            "unit": "count"
+          }
+        ],
+        "natural_language": true
+      }
+    }
+  ]
+}

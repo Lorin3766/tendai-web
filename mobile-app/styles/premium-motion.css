@@ -1,0 +1,189 @@
+/* Serron — Premium UI Motion (Apple-style fluidity: fast feedback, viscous finish) */
+
+/* ============================================================
+   GLOBAL: Viscous easing on interactive surfaces
+   ============================================================ */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+summary,
+select,
+.btn,
+.sensor-tile,
+.card-soft,
+.nav-item,
+.calendar-tab-btn,
+.calendar-header-btn,
+.profile-menu button,
+.settings-row,
+.settings-button,
+.talk-overflow-btn,
+.center-tab,
+.card-soft .card-header-toggle,
+.weather-details-toggle,
+.profile-modal-close,
+.slider-btn-minus,
+.slider-btn-plus,
+.service-row:not(.service-row--agent) {
+  transition: all 0.5s var(--ease-human-os);
+}
+
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+summary,
+select,
+.btn,
+.nav-item,
+.calendar-tab-btn,
+.calendar-header-btn,
+.profile-menu button,
+.settings-row,
+.settings-button,
+.talk-overflow-btn,
+.center-tab,
+.card-soft .card-header-toggle,
+.weather-details-toggle {
+  cursor: pointer;
+}
+
+/* ============================================================
+   INSTANT PRESS: scale(0.98) in 0.1s; release settles over 0.5s human-os
+   ============================================================ */
+.sensor-tile:active,
+.btn:active,
+.center-tab:active,
+.nav-item:active,
+.calendar-tab-btn:active,
+.calendar-header-btn:active,
+.profile-menu button:active,
+.card-header-toggle[role="button"]:active,
+.settings-row:active,
+.settings-button:active,
+.talk-overflow-btn:active,
+.profile-modal-close:active,
+.slider-btn-minus:active,
+.slider-btn-plus:active,
+.card-soft:active,
+.service-row:not(.service-row--agent):active {
+  transition: transform 0.1s ease-out, filter 0.1s ease-out, box-shadow 0.1s ease-out;
+  transform: scale(0.98);
+}
+
+/* ============================================================
+   HOVER: subtle specular lift (physical surface)
+   ============================================================ */
+.sensor-tile:hover,
+.btn:hover,
+.center-tab:hover,
+.nav-item:hover,
+.calendar-tab-btn:hover,
+.calendar-header-btn:hover,
+.profile-menu button:hover,
+.card-header-toggle[role="button"]:hover,
+.settings-row:hover,
+.settings-button:hover,
+.talk-overflow-btn:hover,
+.weather-details-toggle:hover,
+.service-row:not(.service-row--agent):hover {
+  filter: brightness(1.2);
+}
+
+.center-tabs-segment .center-tab.is-active:hover,
+.center-tabs-segment .center-tab[aria-selected="true"]:hover {
+  box-shadow: 0 0 20px rgba(246, 195, 106, 0.18);
+}
+
+/* ============================================================
+   COMPONENT-SPECIFIC: keep tactile glow language where defined
+   ============================================================ */
+.sensor-tile:hover {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 12px var(--gold-aura);
+}
+
+.sensor-tile:active {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 8px var(--gold-aura);
+}
+
+.btn:hover {
+  box-shadow: 0 16px 32px rgba(246, 195, 106, 0.4), 0 0 0 1px rgba(246, 195, 106, 0.15);
+}
+
+.btn:active {
+  box-shadow: 0 10px 20px rgba(246, 195, 106, 0.3), 0 0 0 1px rgba(246, 195, 106, 0.2);
+}
+
+/* ============================================================
+   ENTRY ANIMATION: FEED cards
+   ============================================================ */
+#feed-view.entry-ready .card-soft,
+#feed-view.entry-ready article.card-soft,
+#feed-view.entry-ready #myDayCard,
+#feed-view.entry-ready .sensor-grid,
+#feed-view.entry-ready .human-os-card,
+#feed-view.entry-ready .sensor-tile {
+  animation: entry-fade-up 0.5s var(--ease-human-os) backwards;
+}
+
+#feed-view.entry-ready #myDayCard                    { animation-delay: 0.02s; }
+#feed-view.entry-ready .sensor-grid                  { animation-delay: 0.05s; }
+#feed-view.entry-ready #operationalWindowCard        { animation-delay: 0.08s; }
+#feed-view.entry-ready #maintenanceSuggestedCard    { animation-delay: 0.1s; }
+#feed-view.entry-ready #dayHeaderCard               { animation-delay: 0.06s; }
+#feed-view.entry-ready .day-pulse-card               { animation-delay: 0.07s; }
+#feed-view.entry-ready #pinnedPlansCard             { animation-delay: 0.09s; }
+#feed-view.entry-ready #goalPanelCard               { animation-delay: 0.1s; }
+
+@keyframes entry-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+#feed-view.entry-ready .sensor-tile:nth-child(1) { animation-delay: 0.05s; }
+#feed-view.entry-ready .sensor-tile:nth-child(2) { animation-delay: 0.06s; }
+#feed-view.entry-ready .sensor-tile:nth-child(3) { animation-delay: 0.07s; }
+#feed-view.entry-ready .sensor-tile:nth-child(4) { animation-delay: 0.08s; }
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  [role="button"],
+  .btn,
+  .sensor-tile,
+  .center-tab,
+  .nav-item,
+  .card-soft,
+  .card-header-toggle,
+  .center-feed-talk-slider,
+  #feed-view.entry-ready .card-soft,
+  #feed-view.entry-ready article.card-soft,
+  #feed-view.entry-ready #myDayCard,
+  #feed-view.entry-ready .sensor-grid,
+  #feed-view.entry-ready .human-os-card,
+  #feed-view.entry-ready .sensor-tile {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  #feed-view.entry-ready .card-soft,
+  #feed-view.entry-ready article.card-soft {
+    opacity: 1;
+    transform: none;
+  }
+
+  .sidebar-panel-flat .card-body-collapsible > * {
+    transition: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}

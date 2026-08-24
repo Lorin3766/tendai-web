@@ -1,4 +1,4 @@
-// TendAI — Calendar UI Component
+// Serron — Calendar UI Component
 // @owner: calendar
 // @role: ui
 // Calendar Panel with month view and events list
@@ -22,9 +22,11 @@ let isPanelOpen = false;
  */
 export function ensureCalendarPanel() {
   if (calendarPanel) return calendarPanel;
+
   calendarPanel = document.createElement('div');
   calendarPanel.id = 'calendarPanel';
   calendarPanel.className = 'calendar-panel-overlay';
+  calendarPanel.setAttribute('data-cal', 'new');
   calendarPanel.style.display = 'none';
   document.body.appendChild(calendarPanel);
   return calendarPanel;
@@ -153,7 +155,7 @@ function renderEventsList(dateKey) {
         health: 'Health',
         program: 'Program',
         personal: 'Personal',
-        tendai: 'TendAI'
+        tendai: 'Serron'
       };
       
       html += `<div class="calendar-event-item" data-event-id="${event.id}">`;
@@ -176,13 +178,13 @@ function renderEventsList(dateKey) {
  * @param {string} source - Source of open ('feed' | 'talk' | 'nextstep' | etc)
  */
 function openPanel(initialDate = null) {
-  // If already open, close it (toggle behavior)
+  window.__calCleanup?.('before-open');
+
   if (isPanelOpen && calendarPanel) {
     closePanel();
     return;
   }
-  
-  // Create panel if doesn't exist
+
   if (!calendarPanel) {
     ensureCalendarPanel();
   }
@@ -222,24 +224,21 @@ function closePanel() {
   if (calendarPanel) {
     calendarPanel.style.display = 'none';
     isPanelOpen = false;
-    window.isCalendarPanelOpen = false; // Export for external check
-    document.body.classList.remove('calendar-open'); // Unlock background scroll
+    window.isCalendarPanelOpen = false;
+    document.body.classList.remove('calendar-open');
 
     const trigger = document.getElementById('calendarBtn');
     const triggerMobile = document.getElementById('calendarBtnMobile');
     if (trigger) trigger.setAttribute('aria-expanded', 'false');
     if (triggerMobile) triggerMobile.setAttribute('aria-expanded', 'false');
-    
-    // Remove ESC handler
     if (globalEscHandler) {
       document.removeEventListener('keydown', globalEscHandler);
       globalEscHandler = null;
     }
-    
-    // Debug log
     if (!window.IS_PRODUCTION_READY) {
       console.log('[CALENDAR] Panel closed');
     }
+    window.__calCleanup?.('after-close');
   }
 }
 

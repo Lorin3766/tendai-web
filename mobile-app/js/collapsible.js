@@ -1,4 +1,4 @@
-// TendAI — Collapsible Sections Controller
+// Serron — Collapsible Sections Controller
 // @owner: storage
 // @role: utils
 // Управление сворачиванием/разворачиванием секций в левой и правой колонках

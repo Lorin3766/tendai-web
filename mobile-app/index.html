@@ -1,20 +1,76 @@
 <!DOCTYPE html>
+<!--
+  Base Directory Rule: All resources (scripts, styles, manifest, favicon, service worker)
+  must use paths relative to this document so the PWA works regardless of hosting path
+  (e.g. served from / or /mobile-app/). Do not use absolute paths from origin root.
+-->
 <!-- CALENDAR_AUDIT_MARKER -->
 <html lang="en">
 <head>
+  <script>
+    window.addEventListener('error', function (e) {
+      var target = e && e.target;
+      if (!target || target.tagName !== 'IMG') return;
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof window.__serronApplyAssetFallback === 'function') {
+        window.__serronApplyAssetFallback(target, target.getAttribute('src') || '');
+      }
+    }, true);
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TendAI</title>
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#000000" />
+  <title>Serron</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles/theme.css" />
   <link rel="stylesheet" href="styles/layout.css" />
   <link rel="stylesheet" href="styles/components.css" />
+  <link rel="stylesheet" href="styles/premium-motion.css" />
+  <link rel="stylesheet" href="styles/mobile-responsive.css" />
   <link rel="manifest" href="manifest.json" />
 </head>
 <body>
+  <!-- Boot curtain: removed from JS after modular runtime + context bus + first feed render (see bootstrap.js). -->
+  <div id="tendai-gatekeeper" class="tendai-gatekeeper" aria-hidden="true"></div>
+  <script>
+  (function(){
+    window.applyTheme = function(nextTheme) {
+      var root = document.documentElement;
+      var val = (nextTheme === 'graphite') ? 'graphite' : 'purple';
+      if (val === 'graphite') {
+        root.setAttribute('data-theme', 'graphite');
+      } else {
+        root.removeAttribute('data-theme');
+      }
+      try { localStorage.setItem('tendai-theme', val); } catch (e) {}
+      window.debugThemeBg = function () {};
+    };
+    var t = localStorage.getItem('tendai-theme');
+    window.applyTheme(t === 'graphite' ? 'graphite' : 'purple');
+
+    try {
+      var rawSettings = localStorage.getItem('tendai_settings');
+      var auraGlow = true;
+      if (rawSettings) {
+        var parsed = JSON.parse(rawSettings);
+        if (parsed && parsed.interfaceGlowEnabled === false) auraGlow = false;
+      }
+      document.body.classList.toggle('stealth-mode', !auraGlow);
+    } catch (e2) {
+      document.body.classList.remove('stealth-mode');
+    }
+
+  })();
+  </script>
   <div class="tendai-layout">
     <!-- Brand Header -->
-    <header class="brand-header" aria-label="TendAI brand">
-      <h1 class="brand-title">TendAI</h1>
+    <header class="brand-header" aria-label="Serron brand">
+      <h1 class="brand-title">Serron</h1>
       <!-- Calendar button for mobile (visible on mobile, hidden on desktop where it's in tabs) -->
       <button
         type="button"
@@ -40,37 +96,91 @@
     </header>
 
     <!-- Main three-column layout -->
-    <main aria-label="TendAI main layout">
+    <main aria-label="Serron main layout">
       <div class="layout-grid">
         <!-- LEFT COLUMN -->
         <section id="col-left">
           <!-- Profile -->
-          <article class="card-soft" id="profileHeader">
-            <div class="profile-header">
-              <div class="profile-avatar" id="profileAvatar">A</div>
-              <div class="profile-info">
-                <p class="profile-name" id="profileName">Antony</p>
-                <p class="profile-meta">
-                  <span id="profileAge">42 yrs</span>
-                </p>
+          <article class="card-soft profile-header-card data-integrity-container" id="profileHeader">
+            <div class="profile-header-card__shell">
+              <div class="profile-header">
+                <div class="profile-avatar" id="profileAvatar">A</div>
+                <div class="profile-info">
+                  <p class="profile-name" id="profileName">
+                    Anton
+                    <span
+                      class="profile-core-dot"
+                      data-tendai-core-status
+                      role="status"
+                      aria-live="polite"
+                      title="Running on-device ledger for maximum privacy."
+                      hidden
+                    >
+                      <span class="sidebar-core-status__led" aria-hidden="true"></span>
+                    </span>
+                  </p>
+                  <p class="profile-meta">
+                    <span id="profileAge">—</span>
+                  </p>
+                </div>
+                <div class="profile-header-actions">
+                  <button
+                    type="button"
+                    class="profile-settings-toggle ui-system-icon-btn"
+                    id="profileSettingsButton"
+                    data-section="settings"
+                    aria-label="Open settings"
+                    title="Settings"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                    </svg>
+                  </button>
+                  <button
+                    class="profile-menu-toggle ui-system-icon-btn"
+                    id="profileMenuToggle"
+                    aria-label="Open profile menu"
+                  >
+                    ☰
+                  </button>
+                </div>
               </div>
-              <button
-                class="profile-menu-toggle"
-                id="profileMenuToggle"
-                aria-label="Open profile menu"
-              >
-                ☰
-              </button>
-            </div>
 
-            <div class="card-header-toggle" data-collapse="LEFT_PROFILE_MENU" role="button" tabindex="0" aria-expanded="false">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="card-subtitle" style="margin: 0;">Profile Progress</span>
-                <span class="profile-completeness-badge" id="profileCompletenessDesktop" title="More details → more personalized help.">0%</span>
-                <span class="profile-completeness-details" id="profileCompletenessDetailsDesktop">0 / 0</span>
+              <div class="card-header-toggle" data-collapse="LEFT_PROFILE_MENU" role="button" tabindex="0" aria-expanded="false">
+                <div class="profile-header-card__integrity">
+                  <div class="profile-header-card__integrity-stack">
+                    <div class="profile-header-card__integrity-readout-line">
+                      <span class="data-integrity-readout" id="profileCompletenessDesktop" title="How completely Serron understands you">System Integrity · 0%</span>
+                      <span class="profile-completeness-details" id="profileCompletenessDetailsDesktop" style="display:none;">0%</span>
+                    </div>
+                    <div class="data-integrity-bar profile-integrity-status" id="dataIntegrityBarDesktop" aria-hidden="true">
+                      <span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <span class="chevron">▼</span>
             </div>
+            <button
+              type="button"
+              class="profile-card-expand-hit"
+              data-collapse-trigger="LEFT_PROFILE_MENU"
+              aria-label="Show or hide profile details"
+              aria-expanded="false"
+              aria-controls="profileMenu"
+            >
+              <svg class="profile-card-expand-hit_chevron" width="20" height="20" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+                <path
+                  d="M2.5 4.25 L6 7.75 L9.5 4.25"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  vector-effect="non-scaling-stroke"
+                />
+              </svg>
+            </button>
             <div class="card-body-collapsible" data-collapse-body="LEFT_PROFILE_MENU">
               <div style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1);">
                 <div style="font-size: 12px; color: var(--fg-soft); margin-bottom: 4px;">Next step:</div>
@@ -97,31 +207,11 @@
                   <span>Goals & Intent</span>
                   <span class="profile-menu-status" data-profile-status="goals"></span>
                 </button>
+                <button type="button" data-section="settings">
+                  <span>Settings & Theme</span>
+                  <span class="profile-menu-status"></span>
+                </button>
               </div>
-            </div>
-          </article>
-
-          <!-- Daily focus -->
-          <article class="card-soft" id="dailyFocusCard">
-            <div class="card-header-toggle" data-collapse="LEFT_DAILY_FOCUS" role="button" tabindex="0" aria-expanded="false">
-              <h3 class="card-subtitle" style="margin: 0;">Daily Focus</h3>
-              <span class="chevron">▼</span>
-            </div>
-            <div class="card-body-collapsible" data-collapse-body="LEFT_DAILY_FOCUS">
-              <p class="card-line" id="dailyFocusText">Take time to reduce stress today.</p>
-            </div>
-          </article>
-
-          <!-- Wellbeing -->
-          <article class="card-soft" id="wellbeingCard">
-            <div class="card-header-toggle" data-collapse="LEFT_WELLBEING" role="button" tabindex="0" aria-expanded="false">
-              <h3 class="card-subtitle" style="margin: 0;">Wellbeing</h3>
-              <span class="chevron">▼</span>
-            </div>
-            <div class="card-body-collapsible" data-collapse-body="LEFT_WELLBEING">
-              <p class="card-line" id="wellbeingSummaryText">
-                Energy steady • Stress moderate.
-              </p>
             </div>
           </article>
 
@@ -131,27 +221,35 @@
         <section id="col-center">
           <div id="centerContent">
             <!-- Tabs FEED / TALK -->
-            <nav class="center-tabs" role="tablist" id="centerTabs">
-              <button
-                type="button"
-                class="center-tab is-active"
-                role="tab"
-                id="tab-feed"
-                aria-controls="feed-view"
-                aria-selected="true"
+            <nav class="center-tabs" id="centerTabs">
+              <div
+                class="center-tabs-segment"
+                role="tablist"
+                aria-label="Feed or Talk"
               >
-                Feed
-              </button>
-              <button
-                type="button"
-                class="center-tab"
-                role="tab"
-                id="tab-talk"
-                aria-controls="talk-view"
-                aria-selected="false"
-              >
-                Talk
-              </button>
+                <button
+                  type="button"
+                  class="center-tab is-active"
+                  role="tab"
+                  id="tab-feed"
+                  aria-controls="feed-view"
+                  aria-selected="true"
+                >
+                  <span>Feed</span>
+                  <div class="badge-container"></div>
+                </button>
+                <button
+                  type="button"
+                  class="center-tab"
+                  role="tab"
+                  id="tab-talk"
+                  aria-controls="talk-view"
+                  aria-selected="false"
+                >
+                  <span>Talk</span>
+                  <div class="badge-container"><span class="talk-advisory-badge" style="display: none;">!</span></div>
+                </button>
+              </div>
               <!-- Calendar icon button (reference: next to TALK) -->
               <!-- CRITICAL: Inline style as fallback to prevent pill appearance -->
               <button
@@ -179,29 +277,90 @@
 
             <!-- Center Body: scrollable content area (FEED/TALK views) -->
             <div id="centerBody" class="center-body">
+              <!-- FEED / TALK slider: horizontal translate3d for 60fps -->
+              <div class="center-feed-talk-slider" id="centerFeedTalkSlider">
               <!-- FEED VIEW -->
               <div class="feed-view" id="feed-view">
+              <!-- Screen-reader telemetry only (no visible strip); IDs for feed-updater.js / talk -->
+              <div id="feedCoreStack" class="feed-core-stack feed-core-stack--sr-only">
+                <div id="sensorGrid" class="feed-telemetry-hooks" aria-hidden="true">
+                  <span class="sr-only" id="sensorValueRecovery">—</span>
+                  <span class="sr-only" id="sensorValueStrain">—</span>
+                  <span class="sr-only" id="sensorValueScreen">—</span>
+                  <span class="sr-only" id="sensorValuePulse">—</span>
+                </div>
+              </div>
+
               <!-- My Day -->
               <article class="card-soft" id="myDayCard">
-                <!-- Date -->
-                <div class="my-day-date" id="dayHeaderDate">
-                  Thu · Nov 23 · 2025
+                <!-- Date (left) + Time (right) — one header row -->
+                <div class="my-day-header-row">
+                  <div class="my-day-date" id="dayHeaderDate">
+                    Thu · Nov 23 · 2025
+                  </div>
+                  <div class="my-day-time" id="dayHeaderTime">4:46 PM</div>
                 </div>
 
-                <!-- Weather -->
-                <div class="my-day-weather">
-                  <div class="my-day-weather-main" id="dayHeaderWeather">
-                    72°F · Sunny
-                  </div>
-                  <div class="my-day-weather-details" id="dayHeaderWeatherDetails">
-                    Wind: 5 mph · Pressure: 1013 hPa
+                <!-- Card 1: Core System Status (Human OS Dashboard) -->
+                <div class="human-os-system-status" id="humanOsSystemStatus" aria-live="polite">
+                  <span class="human-os-status-label">Today's balance</span>
+                  <span class="human-os-demo-badge" id="humanOsDemoBadge" aria-hidden="true" title="Simulation mode">DEMO</span>
+                  <span class="human-os-status-value" id="humanOsStatusValue">Optimal</span>
+                  <p class="human-os-status-subtext" id="humanOsStatusSubtext" style="display: none;"></p>
+                </div>
+
+                <!-- Card 2: Environmental Load (refactored weather) -->
+                <div class="human-os-env-label" id="environmentalLoadLabel">Environment</div>
+                <div class="my-day-weather weather-card--cinematic" id="weatherCard" data-weather-status="clear" data-time-of-day="day" data-weather-effect="none">
+                  <div class="weather-bg" id="weatherCardBg" aria-hidden="true"></div>
+                  <div class="weather-bg weather-bg-next" id="weatherCardBgNext" aria-hidden="true"></div>
+                  <div class="weather-overlay" aria-hidden="true"></div>
+                  <div class="weather-effects-layer" id="weatherEffectsLayer" aria-hidden="true"></div>
+                  <div class="weather-effect-overlay" id="weatherEffectOverlay" aria-hidden="true"></div>
+                  <div class="weather-rain-overlay" aria-hidden="true"></div>
+                  <div class="weather-glass">
+                    <div class="weather-main">
+                      <span class="weather-temp" id="dayHeaderWeatherNow">72°F</span>
+                      <span class="weather-condition" id="dayHeaderWeatherCondition">Sunny</span>
+                    </div>
+                    <div class="weather-line" id="dayHeaderWeatherToday">Today H 75 / L 68 · Wind 5 mph</div>
+                    <div class="weather-micro-tone" id="dayHeaderWeatherMicroTone">Still</div>
+                    <div class="weather-daytype daytype-block daytype-notice" id="weatherDaytype" aria-hidden="true">
+                      <div class="weather-daytype-badges" id="weatherDaytypeBadges"></div>
+                      <div class="daytype-row daytype-row--focus is-focus">
+                        <span class="daytype-k">FOCUS</span>
+                        <span class="daytype-v" id="weatherDaytypeFocus"></span>
+                      </div>
+                      <div class="daytype-row daytype-row--move is-move">
+                        <span class="daytype-k">MOVE</span>
+                        <span class="daytype-v" id="weatherDaytypeMove"></span>
+                      </div>
+                      <div class="daytype-row daytype-row--avoid is-avoid">
+                        <span class="daytype-k">AVOID</span>
+                        <span class="daytype-v" id="weatherDaytypeAvoid"></span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Advice from TendAI -->
-                <div class="my-day-advice" id="dayHeaderAdvice">
-                  Stable sleep and pressure — good day for focused work.
+                <div class="human-os-env-advice" id="environmentalLoadAdvice" aria-live="polite" style="display: none;"></div>
+
+                <!-- No tip/advice in FEED weather-card (summary + details only) -->
+                <div class="my-day-advice" id="dayHeaderAdvice" aria-hidden="true" style="display: none;">
                 </div>
+              </article>
+
+              <!-- Card 3: Operational Window (peak capacity) / Evening: RECHARGE PROTOCOL -->
+              <article class="card-soft human-os-card human-os-card--operational feed-card-glass" id="operationalWindowCard">
+                <h3 class="card-title" id="operationalWindowTitle">Focus window</h3>
+                <p class="human-os-window-text" id="operationalWindowText">Peak Capacity: — . Best for high-complexity tasks.</p>
+                <a href="#" class="human-os-window-link" id="operationalWindowLink" style="display: none;"></a>
+              </article>
+
+              <!-- Card 4: Predictive Maintenance (only when Drifting 2+ days) -->
+              <article class="card-soft human-os-card" id="maintenanceSuggestedCard" style="display: none;">
+                <h3 class="card-title">Suggested care</h3>
+                <a href="#" data-screen="services" class="human-os-maintenance-link" id="maintenanceSuggestedLink">Recommended: Baseline Bio-Marker check to recalibrate the system.</a>
               </article>
 
               <!-- Hidden elements (kept for JS compatibility) -->
@@ -224,8 +383,7 @@
                       <span class="day-stat-value" id="dayStatEnergy">Good</span>
                     </span>
                   </div>
-                  <div class="day-header-advice" id="dayHeaderAdvice">
-                    Stable sleep and pressure — good day for focused work.
+                  <div class="day-header-advice" id="dayHeaderAdvice" aria-hidden="true" style="display: none;">
                   </div>
                   <button
                     type="button"
@@ -309,73 +467,107 @@
 
               <!-- TALK VIEW -->
               <div class="talk-view hidden" id="talk-view">
-              <!-- TALK Header - скрыт, чтобы увеличить область сообщений -->
               <article class="card-soft" id="talkHeaderCard" style="display: none;">
                 <h2 class="talk-header-title" id="aiGreetingText">
                   How can I support you today?
                 </h2>
               </article>
 
-              <!-- TALK Conversation -->
+              <!-- TALK Conversation (overflow ⋯ is overlay inside, no height cost) -->
               <article class="card-soft conversation-card" id="conversationCard">
+                <div class="talk-overflow-overlay" aria-label="Talk options">
+                  <span class="talk-runtime-indicator" id="talkRuntimeIndicator" aria-live="polite"></span>
+                  <button type="button" class="talk-overflow-btn" id="talkOverflowBtn" aria-label="More options" aria-haspopup="true" aria-expanded="false">⋯</button>
+                  <div class="talk-overflow-menu" id="talkOverflowMenu" role="menu">
+                    <button type="button" role="menuitem" data-action="clear-selected">Clear…</button>
+                    <button type="button" role="menuitem" data-action="clear-chat">Clear chat</button>
+                    <button type="button" role="menuitem" data-action="report">Report an issue</button>
+                  </div>
+                </div>
+                <div class="talk-doctor-disclaimer" id="talkDoctorDisclaimer" aria-live="polite">
+                  Medical services are provided by independent licensed practitioners via our partners. Serron does not practice medicine.
+                </div>
                 <div class="chat-scroll-wrapper">
                   <div id="chatLog" class="conversation-area" aria-live="polite"></div>
                 </div>
 
+                <div id="system-advisory-block" class="system-advisory-block" style="display: none;" aria-live="assertive">
+                  <div class="system-advisory-header">Heads up</div>
+                  <div class="system-advisory-body" id="systemAdvisoryText"></div>
+                  <button type="button" class="system-advisory-ack-btn" id="systemAdvisoryAckBtn">Got it</button>
+                </div>
+
                 <div class="ai-input-row">
-                  <textarea
-                    id="chatInput"
-                    class="input chat-textarea"
-                    placeholder="Message"
-                    aria-label="Type a message"
-                    rows="1"
-                  ></textarea>
-                  <button id="sendBtn" class="btn">Send</button>
+                  <div class="talk-input-pill">
+                    <textarea
+                      id="chatInput"
+                      class="input chat-textarea"
+                      placeholder="Message"
+                      aria-label="Type a message"
+                      rows="1"
+                    ></textarea>
+                    <button type="button" id="sendBtn" class="btn talk-input-send">Send</button>
+                  </div>
                 </div>
                 <button id="scrollToBottomBtn" class="scroll-to-bottom-btn" aria-label="Scroll to bottom" hidden>
                   ↓
                 </button>
               </article>
             </div>
+            </div>
+            <!-- /center-feed-talk-slider -->
 
             <!-- SERVICES VIEW (Mobile only) -->
             <div class="services-view hidden" id="services-view">
               <div id="screen-services">
                 <!-- Labs Section -->
-                <article class="card-soft service-section" data-service-section="labs">
+                <article class="card-soft service-section sidebar-panel-flat" data-service-section="labs">
                   <div class="card-header-toggle" data-collapse="MOBILE_LABS" role="button" tabindex="0" aria-expanded="false">
                     <h3 class="card-title" style="margin: 0;">Labs</h3>
                     <span class="chevron">▼</span>
                   </div>
                   <div class="card-body-collapsible" data-collapse-body="MOBILE_LABS">
-                    <div class="chip-row" id="mobileLabsChipsContainer">
+                    <div class="service-options-list" id="mobileLabsList">
                       <!-- Labs will be rendered dynamically -->
                     </div>
                   </div>
                 </article>
 
                 <!-- Online Doctor Section -->
-                <article class="card-soft service-section" data-service-section="online-doctor">
+                <article class="card-soft service-section sidebar-panel-flat" data-service-section="online-doctor">
                   <div class="card-header-toggle" data-collapse="MOBILE_ONLINE_DOCTOR" role="button" tabindex="0" aria-expanded="false">
                     <h3 class="card-title" style="margin: 0;">Online doctor</h3>
                     <span class="chevron">▼</span>
                   </div>
                   <div class="card-body-collapsible" data-collapse-body="MOBILE_ONLINE_DOCTOR">
-                    <div class="service-section-content" id="mobileOnlineDoctorContainer">
+                    <div class="service-options-list service-section-content" id="mobileOnlineDoctorContainer">
                       <!-- Online doctor options will be rendered dynamically -->
                     </div>
                   </div>
                 </article>
 
-                <!-- Mini Programs Section -->
-                <article class="card-soft service-section" data-service-section="mini-programs">
+                <!-- Programs Section -->
+                <article class="card-soft service-section sidebar-panel-flat" data-service-section="mini-programs">
                   <div class="card-header-toggle" data-collapse="MOBILE_MINI_PROGRAMS" role="button" tabindex="0" aria-expanded="false">
-                    <h3 class="card-title" style="margin: 0;">Mini Programs</h3>
+                    <h3 class="card-title" style="margin: 0;">Programs</h3>
                     <span class="chevron">▼</span>
                   </div>
                   <div class="card-body-collapsible" data-collapse-body="MOBILE_MINI_PROGRAMS">
                     <div class="pinned-list" id="mobileMiniPlansList">
-                      <!-- Mini Programs will be rendered dynamically -->
+                      <!-- Programs: Create my plan rendered dynamically -->
+                    </div>
+                  </div>
+                </article>
+
+                <!-- Focus Areas Section (internal id: agents — see focus-areas.js tech debt note) -->
+                <article class="card-soft service-section sidebar-panel-flat" data-service-section="agents">
+                  <div class="card-header-toggle" data-collapse="MOBILE_AGENTS" role="button" tabindex="0" aria-expanded="false">
+                    <h3 class="card-title" style="margin: 0;">Focus Areas</h3>
+                    <span class="chevron">▼</span>
+                  </div>
+                  <div class="card-body-collapsible" data-collapse-body="MOBILE_AGENTS">
+                    <div class="pinned-list" id="mobileAgentsList">
+                      <!-- User agents + Create agent CTA -->
                     </div>
                   </div>
                 </article>
@@ -384,29 +576,83 @@
 
             <!-- PROFILE VIEW (Mobile only) -->
             <div class="profile-view hidden" id="profile-view">
+              <div class="profile-view-scroll">
               <!-- Profile Header Card -->
               <article class="card-soft" id="mobileProfileHeader">
                 <div class="profile-header">
                   <div class="profile-avatar" id="mobileProfileAvatar">A</div>
                   <div class="profile-info">
-                    <p class="profile-name" id="mobileProfileName">Antony</p>
+                    <p class="profile-name" id="mobileProfileName">
+                      Anton
+                      <span
+                        class="profile-core-dot"
+                        data-tendai-core-status
+                        role="status"
+                        aria-live="polite"
+                        title="Running on-device ledger for maximum privacy."
+                        hidden
+                      >
+                        <span class="sidebar-core-status__led" aria-hidden="true"></span>
+                      </span>
+                    </p>
                     <p class="profile-meta">
-                      <span id="mobileProfileAge">42 yrs</span>
+                      <span id="mobileProfileAge">—</span>
                     </p>
                   </div>
+                  <button
+                    type="button"
+                    class="profile-settings-toggle ui-system-icon-btn"
+                    id="mobileProfileSettingsButton"
+                    data-section="settings"
+                    aria-label="Open settings"
+                    title="Settings"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                    </svg>
+                  </button>
                 </div>
               </article>
 
               <!-- Your Profile Card -->
-              <article class="card-soft" id="mobileProfileCard">
-                <div class="card-header-toggle" data-collapse="MOBILE_PROFILE_MENU" role="button" tabindex="0" aria-expanded="false">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <h3 class="card-title" style="margin: 0;">Your Profile</h3>
-                    <span class="profile-completeness-badge" id="profileCompletenessMobile" title="More details → more personalized help.">0%</span>
-                    <span class="profile-completeness-details" id="profileCompletenessDetailsMobile">0 / 0</span>
+              <article class="card-soft profile-header-card profile-header-card--mobile data-integrity-container" id="mobileProfileCard">
+                <div class="profile-header-card__shell">
+                  <div class="card-header-toggle" data-collapse="MOBILE_PROFILE_MENU" role="button" tabindex="0" aria-expanded="false">
+                    <div class="profile-header-card__integrity">
+                      <div class="profile-header-card__integrity-stack">
+                        <h3 class="card-title profile-header-card__profile-title">Your Profile</h3>
+                        <div class="profile-header-card__integrity-readout-line">
+                          <span class="data-integrity-readout" id="profileCompletenessMobile" title="How completely Serron understands you">System Integrity · 0%</span>
+                          <span class="profile-completeness-details" id="profileCompletenessDetailsMobile" style="display:none;">0%</span>
+                        </div>
+                        <div class="data-integrity-bar profile-integrity-status" id="dataIntegrityBarMobile" aria-hidden="true">
+                          <span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span><span class="data-integrity-segment"></span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <span class="chevron">▼</span>
                 </div>
+                <button
+                  type="button"
+                  class="profile-card-expand-hit"
+                  data-collapse-trigger="MOBILE_PROFILE_MENU"
+                  aria-label="Show or hide profile details"
+                  aria-expanded="false"
+                  aria-controls="mobileProfileMenu"
+                >
+                  <svg class="profile-card-expand-hit_chevron" width="20" height="20" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+                    <path
+                      d="M2.5 4.25 L6 7.75 L9.5 4.25"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      vector-effect="non-scaling-stroke"
+                    />
+                  </svg>
+                </button>
                 <div class="card-body-collapsible" data-collapse-body="MOBILE_PROFILE_MENU">
                   <div style="padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1);">
                     <div style="font-size: 12px; color: var(--fg-soft); margin-bottom: 4px;">Next step:</div>
@@ -433,16 +679,12 @@
                     <span>Goals & Intent</span>
                     <span class="profile-menu-status" data-profile-status="goals"></span>
                   </button>
+                  <button type="button" data-section="settings">
+                    <span>Settings & Theme</span>
+                    <span class="profile-menu-status"></span>
+                  </button>
                   </div>
                 </div>
-              </article>
-
-              <!-- Settings Card -->
-              <article class="card-soft" id="mobileSettingsCard">
-                <button type="button" class="settings-button" id="mobileSettingsButton" data-section="settings">
-                  <span>Settings</span>
-                  <span>→</span>
-                </button>
               </article>
               </div>
             </div>
@@ -452,22 +694,22 @@
         </section>
 
         <!-- RIGHT COLUMN -->
-        <aside id="col-right">
+        <aside id="col-right" class="layout-sidebar-right">
           <!-- Labs -->
-          <article class="card-soft quick-help-card" id="labsCard">
+          <article class="card-soft quick-help-card sidebar-panel-flat" id="labsCard">
             <div class="card-header-toggle" data-collapse="RIGHT_LABS" role="button" tabindex="0" aria-expanded="false">
               <h3 class="card-title" style="margin: 0;">Labs</h3>
               <span class="chevron">▼</span>
             </div>
             <div class="card-body-collapsible" data-collapse-body="RIGHT_LABS">
-              <div class="chip-row" id="labsChipsContainer">
+              <div class="service-options-list" id="labsList">
                 <!-- Labs will be rendered dynamically -->
               </div>
             </div>
           </article>
 
           <!-- Online doctor -->
-          <article class="card-soft quick-help-card" id="onlineDoctorCard">
+          <article class="card-soft quick-help-card sidebar-panel-flat" id="onlineDoctorCard">
             <div class="card-header-toggle" data-collapse="RIGHT_ONLINE_DOCTOR" role="button" tabindex="0" aria-expanded="false">
               <h3 class="card-title" style="margin: 0;">Online doctor</h3>
               <span class="chevron">▼</span>
@@ -479,28 +721,32 @@
             </div>
           </article>
 
-          <!-- Mini Programs -->
-          <article class="card-soft" id="miniPlansCard">
+          <!-- Programs -->
+          <article class="card-soft sidebar-panel-flat" id="miniPlansCard">
             <div class="card-header-toggle" data-collapse="RIGHT_MINI_PROGRAMS" role="button" tabindex="0" aria-expanded="false">
-              <h3 class="card-title" style="margin: 0;">Mini Programs</h3>
+              <h3 class="card-title" style="margin: 0;">Programs</h3>
               <span class="chevron">▼</span>
             </div>
             <div class="card-body-collapsible" data-collapse-body="RIGHT_MINI_PROGRAMS">
               <div class="pinned-list" id="miniPlansList">
-                <!-- Mini Programs will be rendered dynamically -->
+                <!-- Programs: Create my plan rendered dynamically -->
               </div>
             </div>
           </article>
 
-          <!-- Tips -->
-          <article class="card-soft compact-card" id="inspirationCard">
-            <h3 class="card-title">Tips</h3>
-            <p class="card-text" id="inspirationText">
-              TendAI will show helpful notes here later.
-            </p>
+          <!-- Focus Areas (internal id: agents — see focus-areas.js tech debt note) -->
+          <article class="card-soft sidebar-panel-flat" id="agentsCard">
+            <div class="card-header-toggle" data-collapse="RIGHT_AGENTS" role="button" tabindex="0" aria-expanded="false">
+              <h3 class="card-title" style="margin: 0;">Focus Areas</h3>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="card-body-collapsible" data-collapse-body="RIGHT_AGENTS">
+              <div class="pinned-list" id="agentsList">
+                <!-- User agents + Create agent CTA -->
+              </div>
+            </div>
           </article>
 
-          <a href="#" class="settings-link" id="settingsLink" data-section="settings">⚙ Settings</a>
         </aside>
       </div>
     </main>
@@ -510,10 +756,12 @@
       <button class="nav-item active" data-screen="feed" aria-label="Feed">
         <span class="nav-item-icon">📊</span>
         <span class="nav-item-label">Feed</span>
+        <div class="badge-container"></div>
       </button>
       <button class="nav-item" data-screen="talk" aria-label="Talk">
         <span class="nav-item-icon">💬</span>
         <span class="nav-item-label">Talk</span>
+        <div class="badge-container"><span class="talk-advisory-badge" style="display: none;">!</span></div>
       </button>
       <button class="nav-item" data-screen="services" aria-label="Services">
         <span class="nav-item-icon">🔬</span>
@@ -526,11 +774,25 @@
     </nav>
   </div>
 
+  <!-- Hidden Debug Panel: biometric payload injector -->
+  <section id="debugBiometricsPanel" class="debug-biometrics-panel" hidden aria-hidden="true">
+    <label class="debug-biometrics-field" for="debug-steps">
+      Steps
+      <input type="number" id="debug-steps" />
+    </label>
+    <label class="debug-biometrics-field" for="debug-sleep">
+      Sleep (hours)
+      <input type="number" id="debug-sleep" step="0.1" />
+    </label>
+    <button id="debug-inject-btn" type="button">Inject Payload</button>
+  </section>
+
+  <!-- Profile / settings / day-checkin shells (required; driven by profile-modals.js). No static Agent Creator markup. -->
   <!-- Profile Modal Overlay -->
   <div class="profile-modal-overlay" id="profileModalOverlay">
     <div class="profile-modal" id="profileModal">
       <div class="profile-modal-header">
-        <h3 class="card-title" id="profileModalTitle">Basic Information</h3>
+        <h3 class="card-title" id="profileModalTitle">HARDWARE SPECIFICATIONS</h3>
         <button class="profile-modal-close" id="profileModalClose" aria-label="Close">×</button>
       </div>
       <div class="profile-modal-tabs">
@@ -541,8 +803,8 @@
         <!-- Content will be dynamically generated -->
       </div>
       <div class="profile-modal-footer">
-        <button class="btn profile-modal-save">Save</button>
-        <button class="btn profile-modal-cancel" style="background: rgba(255,255,255,0.1);">Cancel</button>
+        <button type="button" class="btn btn-initialize profile-modal-save">Save changes</button>
+        <button type="button" class="btn btn-abort profile-modal-cancel">Cancel</button>
       </div>
     </div>
   </div>
@@ -590,7 +852,60 @@
                 <span class="settings-toggle-slider"></span>
               </label>
             </div>
-            <div class="settings-field-hint">Allow TendAI to remind you about check-ins and mini programs.</div>
+            <div class="settings-field-hint">Allow Serron to remind you about check-ins and programs.</div>
+          </div>
+
+          <div class="settings-field">
+            <div class="settings-field-label">
+              <span>Developer Demo Mode</span>
+              <label class="settings-toggle" for="settingsDemoMode">
+                <input type="checkbox" id="settingsDemoMode">
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-field-hint">Simulate live sensor data and system status.</div>
+          </div>
+
+          <div class="settings-field">
+            <div class="settings-field-label">
+              <span>Graphite</span>
+              <label class="settings-toggle" for="settingsGraphiteTheme">
+                <input type="checkbox" id="settingsGraphiteTheme">
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-field">
+            <div class="settings-field-label">
+              <span class="settings-aura-label">INTERFACE GLOW (AURA MODE)</span>
+              <div class="settings-aura-glow-widget">
+                <input type="checkbox" id="settingsAuraGlow" class="settings-hw-toggle-input" checked />
+                <label for="settingsAuraGlow" class="settings-hw-toggle settings-hw-toggle--aura" aria-label="Interface glow (aura mode)">
+                  <span class="settings-hw-toggle-frame" aria-hidden="true"></span>
+                  <span class="settings-hw-toggle-thumb" aria-hidden="true"></span>
+                </label>
+              </div>
+            </div>
+            <div class="settings-field-hint">Neon rim lighting on tiles and controls. Off for a flat monolith look.</div>
+          </div>
+
+          <div class="settings-field settings-core-tools">
+            <div
+              class="sidebar-core-status settings-core-status"
+              id="coreBackendStrip"
+              data-tendai-core-status
+              role="status"
+              aria-live="polite"
+              title="Running on-device ledger for maximum privacy."
+              hidden
+            >
+              <span class="sidebar-core-status__led" aria-hidden="true"></span>
+              <span class="sidebar-core-status__text">Core: local</span>
+            </div>
+            <button type="button" class="sidebar-core-retry settings-core-retry" data-tendai-core-retry hidden>
+              RECONNECT
+            </button>
           </div>
         </div>
 
@@ -635,7 +950,7 @@
           </button>
 
           <div class="settings-info-text">
-            Your data is stored locally on your device. TendAI is not a medical service.
+            Your data is stored locally on your device. Serron is not a medical service.
           </div>
 
           <button class="settings-row settings-row-danger" id="settingsDeleteData">
@@ -646,12 +961,12 @@
           </button>
         </div>
 
-        <!-- About TendAI -->
+        <!-- About Serron -->
         <div class="settings-section">
-          <h4 class="settings-section-title">About TendAI</h4>
+          <h4 class="settings-section-title">About Serron</h4>
           
           <div class="settings-info-text">
-            TendAI is a personal wellbeing assistant.
+            Serron is a personal wellbeing assistant.
           </div>
           <div class="settings-info-text">
             It helps you understand your body, mind and habits step by step.
@@ -685,6 +1000,14 @@
           <button class="settings-row" id="settingsSendFeedback">
             <div class="settings-row-content">
               <span class="settings-row-label">Send feedback</span>
+            </div>
+            <span class="settings-row-arrow">→</span>
+          </button>
+
+          <button class="settings-row" id="settingsSendLogToDev" type="button">
+            <div class="settings-row-content">
+              <span class="settings-row-label">Send Log to Dev</span>
+              <span class="settings-row-hint">Bug report or UX thoughts from the app.</span>
             </div>
             <span class="settings-row-arrow">→</span>
           </button>
@@ -791,12 +1114,73 @@
   </footer>
 
   <!-- Calendar must load BEFORE app-unified.js -->
-  <script type="module" src="js/calendar-init.js"></script>
+  <script type="module" src="js/calendar-init.js?v=20260402-uac-ghost"></script>
   
   <!-- Bootstrap: centralized module initialization -->
-  <script type="module" src="js/bootstrap.js"></script>
+  <script type="module" src="js/bootstrap.js?v=20260402-uac-ghost"></script>
   
   <!-- App unified: main app logic -->
-  <script type="module" src="app-unified.js"></script>
+  <script type="module" src="app-unified.js?v=20260402-uac-ghost"></script>
+
+  <!-- Global bulletproof asset loader for <img> tags -->
+  <script>
+    (function () {
+      function buildWarningNode(path) {
+        var warning = document.createElement('span');
+        warning.className = 'asset-fallback-symbol';
+        warning.setAttribute('role', 'img');
+        warning.setAttribute('aria-label', 'Missing resource');
+        warning.title = path ? 'Missing resource: ' + path : 'Missing resource';
+        warning.textContent = '⚠';
+        return warning;
+      }
+
+      function applyAssetFallback(img, path) {
+        if (!img || img.dataset && img.dataset.fallbackApplied === 'true') return;
+        if (img.dataset) img.dataset.fallbackApplied = 'true';
+
+        var resolvedPath = String(path || img.getAttribute('src') || '').trim();
+        if (typeof console !== 'undefined') {
+          if (console.error) console.error('[PATH ERROR]: Missing file at ' + resolvedPath);
+          if (console.warn) console.warn('[SYSTEM ERROR]: Resource Missing at ' + resolvedPath);
+        }
+
+        var warning = buildWarningNode(resolvedPath);
+        var parent = img.parentElement;
+        if (parent) {
+          if (parent.querySelector && parent.querySelector('.asset-fallback-symbol')) return;
+          if (img.style) img.style.display = 'none';
+          parent.appendChild(warning);
+        } else if (img.insertAdjacentElement) {
+          img.insertAdjacentElement('afterend', warning);
+          if (img.style) img.style.display = 'none';
+        }
+      }
+
+      window.__serronApplyAssetFallback = applyAssetFallback;
+
+      window.addEventListener(
+        'error',
+        function (event) {
+          var img = event && event.target;
+          if (!img || img.tagName !== 'IMG') return;
+          if (typeof event.preventDefault === 'function') event.preventDefault();
+          applyAssetFallback(img, img.getAttribute('src') || '');
+        },
+        true
+      );
+    })();
+  </script>
+
+  <!-- Service Worker: single registration, relative path (Base Directory Rule) -->
+  <script>
+    (function() {
+      if (!('serviceWorker' in navigator)) return;
+      var swPath = 'service-worker.js';
+      navigator.serviceWorker.register(swPath, { scope: './' })
+        .then(function(reg) { console.log('[SW] Registered', reg.scope); })
+        .catch(function(err) { console.warn('[SW] Registration failed:', err); });
+    })();
+  </script>
 </body>
 </html>

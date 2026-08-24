@@ -1,4 +1,4 @@
-// TendAI — Calendar Event Add/Edit Form
+// Serron — Calendar Event Add/Edit Form
 // @owner: calendar
 // @role: ui
 // Handles event creation and editing

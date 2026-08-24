@@ -1,0 +1,109 @@
+/* FEED Nebula Cards — EXACT screenshot theme — removable */
+
+/* Base card styling - ONLY PNG backgrounds, NO gradient fallbacks */
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  /* Thin light glowing border (exactly like screenshot) */
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 0 14px rgba(255, 255, 255, 0.06),
+    0 2px 10px rgba(0, 0, 0, 0.22);
+}
+
+/* STRICT MVP: No images — gradients only. 0 network errors. */
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card.nebula-morning {
+  background-image: linear-gradient(180deg, #1e1b4b 0%, #312e81 100%);
+}
+
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card.nebula-day {
+  background-image: linear-gradient(180deg, #111827 0%, #374151 100%);
+}
+
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card.nebula-evening {
+  background-image: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+}
+
+/* Gold highlight - TOP center (small highlight as on screenshot) */
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 42%;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 215, 140, 0.45) 20%,
+    rgba(255, 215, 140, 0.95) 50%,
+    rgba(255, 215, 140, 0.45) 80%,
+    transparent 100%);
+  box-shadow: 0 0 8px rgba(255, 215, 140, 0.45);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Bottom gold highlight element (added via JS) */
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card .nebula-gold-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 42%;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 215, 140, 0.45) 20%,
+    rgba(255, 215, 140, 0.95) 50%,
+    rgba(255, 215, 140, 0.45) 80%,
+    transparent 100%);
+  box-shadow: 0 0 8px rgba(255, 215, 140, 0.45);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Text styling - ensure readability and proper z-index */
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card h3,
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card p,
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card button,
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card .card-meta {
+  position: relative;
+  z-index: 10;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 0 8px rgba(0,0,0,0.3);
+}
+
+/* Status borders */
+#feedStarterCards .feed-card {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+#feedStarterCards .feed-card.is-unread {
+  border-color: rgba(255, 180, 60, 0.8);
+  box-shadow: 0 0 0 1px rgba(255, 180, 60, 0.25);
+}
+#feedStarterCards .feed-card.is-done {
+  border-color: rgba(80, 200, 120, 0.9);
+  box-shadow: 0 0 0 1px rgba(80, 200, 120, 0.25);
+}
+
+/* "Today's focus" title - slightly golden tint (as on screenshot) */
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card.nebula-morning h3.card-title {
+  color: #FFE5B4;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 0 10px rgba(255,215,140,0.4);
+}
+
+/* Other titles remain white */
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card.nebula-day h3.card-title,
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card.nebula-evening h3.card-title {
+  color: #FFFFFF;
+}
+
+/* Body text stays white/cream */
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card p,
+#feed-view[data-feed-theme="nebula"] #feedStarterCards .feed-card .card-meta {
+  color: rgba(255,255,255,0.95);
+}

@@ -1,9 +1,10 @@
-// TendAI — AI Feed Advice Module
+// Serron — AI Feed Advice Module
 // @owner: feed
 // @role: utils
 // Unified AI advice for Feed blocks (Quick advice, Nutrition insight, Tips)
 
-const BACKEND_URL = 'http://localhost:3000';
+import { getBackendURL, buildBackendHeaders } from '../talk/llm.js';
+import { fetchBackend } from '../../core/backend-fetch.js';
 
 // Дефолтные тексты для fallback
 const DEFAULT_FEED_TEXTS = {
@@ -122,12 +123,10 @@ async function fetchAIAdvice() {
     aiAdviceLoading = true;
     const state = collectStateForAI();
 
-    const response = await fetch(`${BACKEND_URL}/api/feed-advice`, {
+    const response = await fetchBackend(`${getBackendURL()}/api/feed-advice`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(state)
+      headers: buildBackendHeaders(),
+      body: JSON.stringify(state),
     });
 
     if (!response.ok) {
@@ -155,10 +154,9 @@ export async function updateFeedWithAIAdvice() {
   // Получаем элементы
   const quickAdviceText = document.getElementById('quickAdviceText');
   const feedNutritionText = document.getElementById('feedNutritionText');
-  const inspirationText = document.getElementById('inspirationText');
+  const inspirationText = document.getElementById('inspirationText'); // optional (Tips block removed in Clean Slate)
 
-  // Проверяем, что все элементы существуют
-  if (!quickAdviceText || !feedNutritionText || !inspirationText) {
+  if (!quickAdviceText || !feedNutritionText) {
     return;
   }
 

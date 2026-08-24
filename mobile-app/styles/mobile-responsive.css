@@ -1,0 +1,454 @@
+/* Serron — Global Responsive Architecture (Mobile)
+   Keeps desktop identical; makes mobile feel native and polished.
+   Breakpoints: 480px (narrow), 899px (mobile). */
+
+/* ============================================================
+   WEATHER & CARDS — width 100%, flex-wrap, no overflow
+   ============================================================ */
+@media (max-width: 899px) {
+  #weatherCard,
+  #feed-view #weatherCard,
+  .my-day-weather.weather-card--cinematic {
+    width: 100% !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #weatherCard .weather-glass {
+    flex-wrap: wrap;
+    width: 100%;
+    min-width: 0;
+  }
+
+  #weatherCard .weather-main {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  #weatherCard .weather-temp,
+  #weatherCard .weather-condition {
+    word-break: break-word;
+  }
+
+  /* "Weather: location not set" and long text — scale down, no layout break */
+  #weatherCard .weather-main .weather-temp,
+  #dayHeaderWeatherNow {
+    font-size: clamp(0.9rem, 4vw, 1.6rem);
+    word-break: break-word;
+    max-width: 100%;
+  }
+
+  .weather-line,
+  #dayHeaderWeatherToday {
+    font-size: 0.75rem;
+    word-break: break-word;
+  }
+
+  .human-os-env-label,
+  .human-os-system-status {
+    word-break: break-word;
+  }
+}
+
+@media (max-width: 480px) {
+  #weatherCard,
+  .my-day-weather.weather-card--cinematic {
+    min-height: 140px;
+  }
+
+  #weatherCard .weather-glass {
+    padding: 10px 12px !important;
+    gap: 8px;
+  }
+
+  #weatherCard .weather-temp {
+    font-size: 1.25rem !important;
+  }
+
+  #weatherCard .weather-condition {
+    font-size: 0.8rem !important;
+  }
+
+  /* Sensor grid: full width, wrap-friendly */
+  .sensor-grid {
+    width: 100%;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+  }
+
+  .sensor-tile {
+    min-width: 0;
+    padding: 12px 10px;
+    min-height: 64px;
+  }
+
+  .sensor-tile-value {
+    font-size: 1.25rem;
+  }
+
+  .sensor-tile-label {
+    font-size: 0.5rem;
+  }
+
+  .sensor-grid-caption {
+    font-size: 0.7rem;
+  }
+}
+
+/* ============================================================
+   TALK VIEW — Response options (Great, Good, etc.) as 2-column grid
+   ============================================================ */
+@media (max-width: 899px) {
+  .talk-view .sleep-flow-chips {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .talk-view .sleep-flow-chips-quality,
+  .talk-view .sleep-flow-chips-duration {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .talk-view .sleep-flow-chip.talk-status-tile {
+    width: 100%;
+    max-width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .talk-view .sleep-flow-chips {
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .talk-view .sleep-flow-chip.talk-status-tile {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================================================
+  PROFILE — unified mobile positioning (no extra top settings bar)
+   ============================================================ */
+@media (max-width: 899px) {
+  /* Remove redundant mobile top chrome; Feed/Talk are in bottom nav */
+  #centerTabs.center-tabs {
+    display: none !important;
+    border-bottom: none;
+    background: transparent;
+    padding: 0;
+    gap: 0;
+  }
+
+  #centerContent {
+    padding-top: 0;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  #centerBody {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .ui-system-icon-btn {
+    transition: none;
+  }
+
+  .ui-system-icon-btn svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+    stroke: currentColor;
+    stroke-width: 2;
+    color: rgba(255, 255, 255, 0.95);
+    fill: none;
+  }
+
+  /* Outer profile shell does not scroll; inner scroll for profile content */
+  #profile-view.profile-view {
+    padding: 12px 16px 0;
+    gap: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .profile-view:not(#profile-view) {
+    padding: 12px 16px;
+    box-sizing: border-box;
+  }
+
+  .profile-view-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* Bottom nav + safe area */
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+  }
+
+  #mobileProfileCard,
+  #mobileProfileHeader {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .profile-view .card-header-toggle,
+  #mobileProfileCard .card-header-toggle {
+    padding: 12px 16px;
+  }
+
+  #mobileProfileCard.data-integrity-container .card-header-toggle {
+    padding: 12px 0;
+  }
+
+  .profile-view .profile-completeness-badge,
+  .profile-view .profile-completeness-details {
+    flex-shrink: 0;
+  }
+
+  #mobileProfileCard {
+    transition: all 0.3s ease-in-out;
+  }
+
+  #mobileProfileCard .card-body-collapsible {
+    transition: all 0.3s ease-in-out;
+  }
+
+  #mobileProfileCard.is-expanded .card-body-collapsible.is-open {
+    max-height: calc(100vh - 180px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    padding-bottom: 24px;
+  }
+
+  #mobileProfileCard.is-expanded .card-body-collapsible.is-open::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    margin-top: -40px;
+    background: linear-gradient(to top, var(--bg-panel), transparent);
+    pointer-events: none;
+    display: block;
+    z-index: 1;
+  }
+
+  /* Profile integrity card: compact layout, smaller segments, 16px chevron */
+  #mobileProfileCard.data-integrity-container.card-soft {
+    height: auto;
+    min-height: 0;
+    align-self: stretch;
+    /* ~30% less vertical padding vs 16px; horizontal kept readable */
+    padding: 11px 16px;
+    box-sizing: border-box;
+  }
+
+  #mobileProfileCard .profile-header-card__profile-title {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  #mobileProfileCard.data-integrity-container .data-integrity-readout {
+    margin-top: 0;
+    line-height: 1.2;
+  }
+
+  #mobileProfileCard .profile-integrity-status {
+    justify-content: flex-start;
+    gap: 2px;
+    margin-top: 4px;
+    min-height: 10px;
+    padding-right: 48px;
+  }
+
+  #mobileProfileCard .profile-integrity-status .data-integrity-segment {
+    flex: 0 0 4px;
+    width: 4px;
+    min-width: 4px;
+    max-width: 4px;
+    height: 10px;
+  }
+
+  #mobileProfileCard .profile-card-expand-hit_chevron {
+    width: 16px;
+    height: 16px;
+  }
+
+}
+
+@media (max-width: 767px) {
+  .ui-system-icon-btn {
+    transform: scale(0.9);
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-view .profile-header,
+  #mobileProfileHeader .profile-header {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .profile-view .profile-avatar,
+  #mobileProfileHeader .profile-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  .profile-view .profile-name,
+  #mobileProfileHeader .profile-name {
+    font-size: 1rem;
+  }
+
+  .profile-view .profile-meta,
+  #mobileProfileHeader .profile-meta {
+    font-size: 0.8rem;
+  }
+
+  .profile-view .card-body-collapsible,
+  #mobileProfileCard .card-body-collapsible {
+    padding: 12px 16px;
+  }
+
+  .profile-view .profile-menu,
+  #mobileProfileCard .profile-menu {
+    gap: 8px;
+  }
+
+  .profile-view .profile-menu button,
+  #mobileProfileCard .profile-menu button {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+/* FEED must never show chat input (input lives only inside #talk-view) */
+#feed-view .ai-input-row,
+#feed-view .chat-textarea,
+#feed-view #chatInput {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ============================================================
+   BOTTOM NAV — Safe area insets for home bar / notch
+   ============================================================ */
+@media (max-width: 899px) {
+  .bottom-nav {
+    z-index: 1000;
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+    padding-top: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    min-height: calc(70px + env(safe-area-inset-bottom));
+  }
+
+  .nav-item {
+    padding: 8px 6px;
+    min-height: 44px;
+    font-size: 0.7rem;
+  }
+
+  .nav-item-icon {
+    font-size: 1.25rem;
+  }
+
+  .nav-item-label {
+    font-size: 0.65rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-item {
+    padding: 6px 4px;
+    min-height: 40px;
+  }
+
+  .nav-item-icon {
+    font-size: 1.1rem;
+  }
+
+  .nav-item-label {
+    font-size: 0.6rem;
+  }
+}
+
+/* ============================================================
+   CENTER TABS & BUTTONS — Prevent overflow on narrow
+   ============================================================ */
+@media (max-width: 480px) {
+  .center-tabs {
+    gap: 8px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .center-tab {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    min-width: 0;
+  }
+
+  #centerContent {
+    padding: 12px 16px;
+  }
+}
+
+/* ============================================================
+   FEED (mission control) — mobile-only visual tweaks; flex/scroll live in components.css
+   ============================================================ */
+@media (max-width: 899px) {
+  .tendai-layout {
+    padding-bottom: 0;
+  }
+
+  /* Adaptive agent feed — align title edge with card stack (no extra inset) */
+  #feed-view.feed-mission-control-mode .agent-reports-header--cyber {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+  }
+
+  #feed-view.feed-mission-control-mode .agent-reports-title--cyber {
+    padding-left: 0;
+    margin-left: 0;
+  }
+
+  /* Agent cards: warm elevated surface (matches onboarding cards) */
+  #feed-view.feed-mission-control-mode .agent-report-card--panel {
+    background: var(--bg-elevated, #1c1a17);
+  }
+
+  /* Flat accordion header typography + title color: components.css (.card-header-toggle .card-title) */
+
+  .services-view .sidebar-panel-flat .pinned-list,
+  .services-view .sidebar-panel-flat .service-options-list {
+    font-family: var(--font-ui);
+  }
+}

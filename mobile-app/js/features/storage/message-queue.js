@@ -1,4 +1,4 @@
-// TendAI — Message Queue (Unread Queue like Telegram)
+// Serron — Message Queue (Unread Queue like Telegram)
 // @owner: storage
 // @role: state
 // Stores and manages unread messages for Feed and Talk
