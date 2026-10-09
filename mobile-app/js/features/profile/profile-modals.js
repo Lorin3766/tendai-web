@@ -2178,6 +2178,14 @@ function countFilledFields(profile, structure) {
     if (language) {
       language.value = settings.language || 'en';
     }
+    const autoProfileQuestions = document.getElementById('settingsAutoProfileQuestions');
+    if (autoProfileQuestions) {
+      autoProfileQuestions.checked = settings.autoProfileQuestionsEnabled !== false;
+    }
+    const autoHealthChecks = document.getElementById('settingsAutoHealthChecks');
+    if (autoHealthChecks) {
+      autoHealthChecks.checked = settings.autoHealthChecksEnabled !== false;
+    }
     var theme = localStorage.getItem('tendai-theme');
     var graph = document.getElementById('settingsGraphiteTheme');
     if (graph) graph.checked = (theme === 'graphite');
@@ -2251,6 +2259,22 @@ function countFilledFields(profile, structure) {
       language.addEventListener('change', function(e) {
         const settings = getSettingsState();
         settings.language = e.target.value;
+        saveSettingsState(settings);
+      });
+    }
+    const autoProfileQuestions = document.getElementById('settingsAutoProfileQuestions');
+    if (autoProfileQuestions) {
+      autoProfileQuestions.addEventListener('change', function(e) {
+        const settings = getSettingsState();
+        settings.autoProfileQuestionsEnabled = e.target.checked;
+        saveSettingsState(settings);
+      });
+    }
+    const autoHealthChecks = document.getElementById('settingsAutoHealthChecks');
+    if (autoHealthChecks) {
+      autoHealthChecks.addEventListener('change', function(e) {
+        const settings = getSettingsState();
+        settings.autoHealthChecksEnabled = e.target.checked;
         saveSettingsState(settings);
       });
     }

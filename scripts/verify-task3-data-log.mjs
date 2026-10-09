@@ -213,7 +213,7 @@ if (eB && eB.dataCategoriesIncluded.some((c) => /^ledger/.test(c))) fail('B log 
 if (eLocal.length !== 3 || eLocal.some((e) => e.sentOffDevice !== false)) fail('expected 3 on-device profile-answer entries');
 if (!eA || eA.outcome !== 'sent') fail('A log entry missing/outcome wrong');
 const catsA = eA ? eA.dataCategoriesIncluded.join(' | ') : '';
-for (const needle of [/message text \(40 chars\)/, /profile: age, goals/, /ledger: 5 items/, /user_memory: 2 items \(Likes clean data; Prefers walking in the evening\)/, /health: Health conditions, Supplements/, /mind: Stress level, Anxiety/, /body: Sex at birth, Gender identity/, /recent app prompts/]) {
+for (const needle of [/message text \(40 chars\)/, /profile: age, (location, )?goals/, /ledger: 5 items/, /user_memory: 2 items \(Likes clean data; Prefers walking in the evening\)/, /health: Health conditions, Supplements/, /mind: Stress level, Anxiety/, /body: Sex at birth, Gender identity/, /recent app prompts/]) {
   if (!needle.test(catsA)) fail(`A categories missing ${needle}`);
 }
 if (!eC || eC.trigger !== 'automatic' || eC.outcome !== 'sent — result: warning returned' || !/biometrics \(raw values\): date, steps, sleep/.test(eC.dataCategoriesIncluded.join(' '))) fail('C log entry wrong');

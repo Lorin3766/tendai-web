@@ -8,6 +8,7 @@ import { fetchBackend, publishBackendStatus } from '../../core/backend-fetch.js'
 import { NetworkController } from '../../infrastructure/network-controller.js';
 import { saveMetrics, getMetricsByDate } from '../../core/biometrics-db.js';
 import { getUserProfile } from './talk-context.js';
+import { isAutoHealthChecksEnabled } from '../settings/auto-requests.js';
 import { recordDataSent, updateDataSentOutcome, DATA_SENT_REQUEST_TYPES } from './data-sent-log.js';
 
 /**
@@ -541,7 +542,7 @@ export async function sendMessageToLLM(text, context) {
 
   const logEntry = recordDataSent({
     requestType,
-    trigger: 'user',
+    trigger: requestType === DATA_SENT_REQUEST_TYPES.PROFILE_GREETING ? 'automatic' : 'user',
     dataCategoriesIncluded: describeTalkPayload(body, {
       requestType,
       biometricKeys: snapshot.biometricKeys,
@@ -777,6 +778,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('biometricsUpdated', (ev) => {
     const detail = /** @type {CustomEvent} */ (ev).detail;
     if (!detail || typeof detail !== 'object') return;
+    if (!isAutoHealthChecksEnabled()) return;
     triggerProactiveAnalysis(detail);
   });
 }

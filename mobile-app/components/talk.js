@@ -5,6 +5,7 @@ import { sendMessageToLLM } from '../js/features/talk/llm.js';
 import { getCommonLedger } from '../js/features/human-os/common-ledger.js';
 import { getSystemContextDetails, getUserProfile } from '../js/features/talk/talk-context.js';
 import { recordDataSent, DATA_SENT_REQUEST_TYPES } from '../js/features/talk/data-sent-log.js';
+import { isAutoProfileQuestionsEnabled } from '../js/features/settings/auto-requests.js';
 import { talkState, profileState } from '../js/state.js';
 import { getNextProfileQuestion } from '../js/features/profile/profile-schema.js';
 import {
@@ -944,6 +945,7 @@ export class TalkComponent {
     this._proactiveAnswersThisSession = 0;
     this._awaitingPaceChoice = false;
     this._proactivePassiveThisSession = false;
+    if (!isAutoProfileQuestionsEnabled()) return;
     const question = getNextProfileQuestion(profileState.get());
     if (!question) return;
 

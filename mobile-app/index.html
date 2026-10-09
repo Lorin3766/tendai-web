@@ -943,7 +943,29 @@
         <!-- Privacy & Security -->
         <div class="settings-section">
           <h4 class="settings-section-title">Privacy & Security</h4>
-          
+
+          <div class="settings-field">
+            <div class="settings-field-label">
+              <span>Ask me profile questions automatically when I open Talk</span>
+              <label class="settings-toggle" for="settingsAutoProfileQuestions">
+                <input type="checkbox" id="settingsAutoProfileQuestions" checked>
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-field-hint">On: opening Talk sends your profile to Google's Gemini API to phrase the next question. Off: Talk won't ask about your profile on its own; you can still fill it in via Edit profile data or ask Talk directly.</div>
+          </div>
+
+          <div class="settings-field">
+            <div class="settings-field-label">
+              <span>Run automatic health checks on new biometric data</span>
+              <label class="settings-toggle" for="settingsAutoHealthChecks">
+                <input type="checkbox" id="settingsAutoHealthChecks" checked>
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-field-hint">On: newly logged steps or sleep are sent to Google's Gemini API to check for a significant shortfall. Off: nothing is sent; values still save on this device, and nothing checks them for shortfalls.</div>
+          </div>
+
           <button class="settings-row" id="settingsPrivacyPolicy">
             <div class="settings-row-content">
               <span class="settings-row-label">Privacy Policy</span>
@@ -959,7 +981,7 @@
           </button>
 
           <div class="settings-info-text">
-            Your data is stored on your device. To write Talk replies and run health checks, your messages and relevant profile and health data are sent to Google's Gemini API, sometimes automatically (when you open Talk, or when new steps or sleep are logged) — see the Privacy Policy. Obrium is not a medical service.
+            Your data is stored on your device. To write Talk replies and run health checks, your messages and relevant profile and health data are sent to Google's Gemini API, sometimes automatically (when you open Talk, or when new steps or sleep are logged — both can be switched off above) — see the Privacy Policy. Obrium is not a medical service.
           </div>
 
           <button class="settings-row settings-row-danger" id="settingsDeleteData">
