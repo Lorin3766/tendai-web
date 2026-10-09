@@ -9626,6 +9626,42 @@ button.sidebar-core-retry[hidden] {
   margin-top: 0;
 }
 
+.feed-advice-card[hidden] {
+  display: none !important;
+}
+
+.feed-advice-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  border-radius: 14px;
+  background: rgba(246, 195, 106, 0.06);
+}
+
+.feed-advice-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(246, 195, 106, 0.95);
+}
+
+.feed-advice-text {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--fg);
+  margin: 0;
+}
+
+.feed-advice-source {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--fg-muted);
+  margin: 10px 0 0;
+}
+
 .human-os-maintenance-link {
   font-size: 13px;
   color: rgba(246, 195, 106, 0.95);

@@ -357,6 +357,20 @@
                 <a href="#" class="human-os-window-link" id="operationalWindowLink" style="display: none;"></a>
               </article>
 
+              <!-- AI advice: hidden until a real Gemini reply arrives (ai-feed-advice.js) -->
+              <article class="card-soft human-os-card feed-card-glass feed-advice-card" id="feedAdviceCard" hidden aria-live="polite">
+                <h3 class="card-title">Today's advice</h3>
+                <div class="feed-advice-row">
+                  <span class="feed-advice-label">Quick advice</span>
+                  <p class="feed-advice-text" id="quickAdviceText"></p>
+                </div>
+                <div class="feed-advice-row">
+                  <span class="feed-advice-label">Nutrition</span>
+                  <p class="feed-advice-text" id="feedNutritionText"></p>
+                </div>
+                <p class="feed-advice-source" id="feedAdviceSource">Written by Google's Gemini from what you've logged today.</p>
+              </article>
+
               <!-- Card 4: Predictive Maintenance (only when Drifting 2+ days) -->
               <article class="card-soft human-os-card" id="maintenanceSuggestedCard" style="display: none;">
                 <h3 class="card-title">Suggested care</h3>
@@ -981,7 +995,7 @@
           </button>
 
           <div class="settings-info-text">
-            Your data is stored on your device. To write Talk replies and run health checks, your messages and relevant profile and health data are sent to Google's Gemini API, sometimes automatically (when you open Talk, or when new steps or sleep are logged — both can be switched off above) — see the Privacy Policy. Obrium is not a medical service.
+            Your data is stored on your device. To write Talk replies and Feed advice and run health checks, your messages and relevant profile and health data are sent to Google's Gemini API, sometimes automatically (when you open Talk or Feed, or when new steps or sleep are logged — the Talk and health-check requests can be switched off above) — see the Privacy Policy. Obrium is not a medical service.
           </div>
 
           <button class="settings-row settings-row-danger" id="settingsDeleteData">

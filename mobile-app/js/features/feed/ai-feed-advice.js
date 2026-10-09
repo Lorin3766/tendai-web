@@ -5,15 +5,11 @@
 
 import { getBackendURL, buildBackendHeaders } from '../talk/llm.js';
 import { fetchBackend } from '../../core/backend-fetch.js';
+import { NetworkController } from '../../infrastructure/network-controller.js';
+import { getMetricsByDate } from '../../core/biometrics-db.js';
+import { getUserProfile } from '../talk/talk-context.js';
 import { recordDataSent, updateDataSentOutcome, DATA_SENT_REQUEST_TYPES } from '../talk/data-sent-log.js';
 import { dayState } from '../../state.js';
-
-// Дефолтные тексты для fallback
-const DEFAULT_FEED_TEXTS = {
-  quickAdvice: 'Aim for 7–8h sleep tonight.',
-  nutritionInsight: 'Add protein to breakfast for a steadier morning.',
-  tip: 'Obrium will show helpful notes here later.'
-};
 
 // Состояние загрузки AI-советов
 let aiAdviceLoading = false;
@@ -21,21 +17,47 @@ let lastAiAdviceTime = null;
 let cachedAdvice = null;
 const AI_ADVICE_CACHE_MS = 5 * 60 * 1000; // Кэш на 5 минут
 
+function getTodayLocalIsoDate() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 /**
- * Собирает profileState и dayState для отправки в AI
+ * Only values the user actually provided; anything missing is omitted, never defaulted.
+ * Profile is limited to the fields useful for daily advice (no name or location).
  */
-function collectStateForAI() {
+async function collectStateForAI() {
+  const profile = {};
+  const provided = getUserProfile() || {};
+  if (provided.age != null) profile.age = provided.age;
+  if (Array.isArray(provided.goals) && provided.goals.length) profile.goals = provided.goals;
+  if (Array.isArray(provided.diet) && provided.diet.length) profile.diet = provided.diet;
+  if (Array.isArray(provided.habits) && provided.habits.length) profile.habits = provided.habits;
+
   let today = null;
   try {
     today = dayState.loadDayStateForToday();
   } catch (_) {
     // Day state unavailable — send nothing for today.
   }
+  let biometrics = null;
+  try {
+    const record = await getMetricsByDate(getTodayLocalIsoDate());
+    biometrics = record && record.metrics ? record.metrics : null;
+  } catch (_) {
+    // IndexedDB unavailable — no steps/sleep from it.
+  }
 
-  // Only values the user actually logged today; anything missing is omitted, never defaulted.
   const day = {};
-  const sleepHours = Number(today?.sleep?.hours);
-  if (today?.sleep?.hours != null && Number.isFinite(sleepHours) && sleepHours > 0) day.sleepLastNight = sleepHours;
+  const steps = Number(biometrics?.steps);
+  if (Number.isFinite(steps) && steps > 0) day.stepsToday = Math.round(steps);
+  const daySleep = Number(today?.sleep?.hours);
+  const dbSleep = Number(biometrics?.sleep);
+  if (today?.sleep?.hours != null && Number.isFinite(daySleep) && daySleep > 0) day.sleepLastNight = daySleep;
+  else if (Number.isFinite(dbSleep) && dbSleep > 0) day.sleepLastNight = Math.round(dbSleep * 10) / 10;
   const water = Number(today?.water?.current);
   if (Number.isFinite(water) && water > 0) day.hydrationLogged = water;
   if (typeof today?.energy === 'string' && today.energy.trim()) {
@@ -47,7 +69,7 @@ function collectStateForAI() {
   }
 
   return {
-    profileState: {},
+    profileState: profile,
     dayState: day,
   };
 }
@@ -68,15 +90,22 @@ async function fetchAIAdvice() {
     return null; // Уже загружается
   }
 
+  // Relay gatekeeper would reject the request anyway; nothing is sent, so nothing is logged.
+  if (!NetworkController.isBackendReachable) {
+    return null;
+  }
+
+  let logEntry = null;
   try {
     aiAdviceLoading = true;
-    const state = collectStateForAI();
+    const state = await collectStateForAI();
+    const profileKeys = Object.keys(state.profileState);
     const dayKeys = Object.keys(state.dayState);
-    const logEntry = recordDataSent({
+    logEntry = recordDataSent({
       requestType: DATA_SENT_REQUEST_TYPES.FEED_ADVICE,
       trigger: 'automatic',
       dataCategoriesIncluded: [
-        'profile: none',
+        profileKeys.length ? `profile: ${profileKeys.join(', ')}` : 'profile: none',
         dayKeys.length
           ? `today: ${dayKeys.map((k) => `${k} ${state.dayState[k]}`).join(', ')}`
           : 'today: nothing logged (no values sent)',
@@ -94,20 +123,32 @@ async function fetchAIAdvice() {
       updateDataSentOutcome(logEntry.id, 'not sent — request failed');
       throw err;
     }
-    updateDataSentOutcome(logEntry.id, response.ok ? 'sent' : `sent — relay returned HTTP ${response.status}`);
 
     if (!response.ok) {
+      updateDataSentOutcome(logEntry.id, `sent — relay returned HTTP ${response.status}`);
       const errorText = await response.text().catch(() => 'No error details');
       throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
     }
 
     const data = await response.json();
+    if (!data || data.fallback || !data.quickAdvice || !data.nutritionInsight) {
+      updateDataSentOutcome(logEntry.id, 'sent — no usable AI reply (nothing shown)');
+      return null;
+    }
+    updateDataSentOutcome(logEntry.id, 'sent — advice shown in Feed');
+    data.sourceNote = profileKeys.length && dayKeys.length
+      ? "Written by Google's Gemini from your profile and what you've logged today."
+      : dayKeys.length
+        ? "Written by Google's Gemini from what you've logged today."
+        : profileKeys.length
+          ? "Written by Google's Gemini from your profile. You haven't logged anything today."
+          : "Written by Google's Gemini. You haven't added profile details or logged anything today, so this is general advice.";
     lastAiAdviceTime = now;
     cachedAdvice = data; // Сохраняем в кэш
 
     return data;
   } catch (error) {
-    return null; // Вернём null, чтобы использовать дефолтные тексты
+    return null;
   } finally {
     aiAdviceLoading = false;
   }
@@ -115,95 +156,30 @@ async function fetchAIAdvice() {
 
 /**
  * Обновляет блоки Feed с AI-советами
- * Показывает loading состояние и обрабатывает ошибки
+ * Card stays hidden unless a real AI reply is available (no canned defaults shown as advice).
  */
 export async function updateFeedWithAIAdvice() {
-  // Получаем элементы
+  const card = document.getElementById('feedAdviceCard');
   const quickAdviceText = document.getElementById('quickAdviceText');
   const feedNutritionText = document.getElementById('feedNutritionText');
   const inspirationText = document.getElementById('inspirationText'); // optional (Tips block removed in Clean Slate)
+  const sourceText = document.getElementById('feedAdviceSource');
 
   if (!quickAdviceText || !feedNutritionText) {
     return;
   }
 
-  const loadingText = 'Loading...';
-
-  // Сохраняем оригинальные тексты только если они ещё не сохранены
-  if (quickAdviceText && !quickAdviceText.dataset.loading && !quickAdviceText.dataset.originalText) {
-    quickAdviceText.dataset.originalText = quickAdviceText.textContent || DEFAULT_FEED_TEXTS.quickAdvice;
-  }
-  if (quickAdviceText && !quickAdviceText.dataset.loading) {
-    quickAdviceText.textContent = loadingText;
-    quickAdviceText.dataset.loading = 'true';
-  }
-
-  if (feedNutritionText && !feedNutritionText.dataset.loading && !feedNutritionText.dataset.originalText) {
-    feedNutritionText.dataset.originalText = feedNutritionText.textContent || DEFAULT_FEED_TEXTS.nutritionInsight;
-  }
-  if (feedNutritionText && !feedNutritionText.dataset.loading) {
-    feedNutritionText.textContent = loadingText;
-    feedNutritionText.dataset.loading = 'true';
-  }
-
-  if (inspirationText && !inspirationText.dataset.loading && !inspirationText.dataset.originalText) {
-    inspirationText.dataset.originalText = inspirationText.textContent || DEFAULT_FEED_TEXTS.tip;
-  }
-  if (inspirationText && !inspirationText.dataset.loading) {
-    inspirationText.textContent = loadingText;
-    inspirationText.dataset.loading = 'true';
-  }
-
-  // Получаем AI-советы
   const advice = await fetchAIAdvice();
-
-  // Обновляем тексты
-  if (advice) {
-    const finalQuickAdvice = advice.quickAdvice || DEFAULT_FEED_TEXTS.quickAdvice;
-    const finalNutritionInsight = advice.nutritionInsight || DEFAULT_FEED_TEXTS.nutritionInsight;
-    const finalTip = advice.tip || DEFAULT_FEED_TEXTS.tip;
-
-    if (quickAdviceText) {
-      quickAdviceText.textContent = finalQuickAdvice;
-      delete quickAdviceText.dataset.loading;
-      delete quickAdviceText.dataset.originalText;
-    }
-
-    if (feedNutritionText) {
-      feedNutritionText.textContent = finalNutritionInsight;
-      delete feedNutritionText.dataset.loading;
-      delete feedNutritionText.dataset.originalText;
-    }
-
-    if (inspirationText) {
-      inspirationText.textContent = finalTip;
-      delete inspirationText.dataset.loading;
-      delete inspirationText.dataset.originalText;
-    }
-  } else {
-    // Используем дефолтные тексты или восстанавливаем оригинальные
-
-    if (quickAdviceText) {
-      const fallbackText = quickAdviceText.dataset.originalText || DEFAULT_FEED_TEXTS.quickAdvice;
-      quickAdviceText.textContent = fallbackText;
-      delete quickAdviceText.dataset.loading;
-      delete quickAdviceText.dataset.originalText;
-    }
-
-    if (feedNutritionText) {
-      const fallbackText = feedNutritionText.dataset.originalText || DEFAULT_FEED_TEXTS.nutritionInsight;
-      feedNutritionText.textContent = fallbackText;
-      delete feedNutritionText.dataset.loading;
-      delete feedNutritionText.dataset.originalText;
-    }
-
-    if (inspirationText) {
-      const fallbackText = inspirationText.dataset.originalText || DEFAULT_FEED_TEXTS.tip;
-      inspirationText.textContent = fallbackText;
-      delete inspirationText.dataset.loading;
-      delete inspirationText.dataset.originalText;
-    }
+  if (!advice) {
+    if (card && !cachedAdvice) card.hidden = true;
+    return;
   }
+
+  quickAdviceText.textContent = advice.quickAdvice;
+  feedNutritionText.textContent = advice.nutritionInsight;
+  if (inspirationText && advice.tip) inspirationText.textContent = advice.tip;
+  if (sourceText && advice.sourceNote) sourceText.textContent = advice.sourceNote;
+  if (card) card.hidden = false;
 }
 
 /**
@@ -214,7 +190,16 @@ export function resetAIAdviceCache() {
   cachedAdvice = null;
 }
 
+// Boot and Feed-open calls are skipped while the relay is offline; run once when it comes online.
+if (typeof window !== 'undefined') {
+  window.addEventListener('serron:server-status', (ev) => {
+    const status = ev && ev.detail ? ev.detail.status : null;
+    if (status === 'Online' && !cachedAdvice && !aiAdviceLoading) {
+      void updateFeedWithAIAdvice();
+    }
+  });
+}
+
 // Экспорт для глобального использования
 window.updateFeedWithAIAdvice = updateFeedWithAIAdvice;
 window.resetAIAdviceCache = resetAIAdviceCache;
-

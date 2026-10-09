@@ -44,7 +44,8 @@ const newPage = async () => {
   if (!/Automatic Analysis/.test(text) || !/without you sending a message/.test(text)) fail('automatic analysis not disclosed');
   if (!/When you open Talk while profile questions are still unanswered/.test(text)) fail('greeting request not disclosed');
   if (!/sends only those values \(date, steps, sleep\)/.test(text)) fail('background biometric check not disclosed');
-  if (/Feed advice|may show an alert/.test(text)) fail('policy claims behavior that does not happen');
+  if (/may show an alert/.test(text)) fail('policy claims behavior that does not happen');
+  if (!/Feed advice<\/strong> is a separate, smaller request|Feed advice is a separate, smaller request/.test(text)) fail('Feed advice request not disclosed');
   if (/may be sent to our servers/.test(text)) fail('old vague "our servers" wording still present');
   await page.screenshot({ path: path.join(outDir, 'task4-privacy-policy-390.png'), fullPage: true });
   await page.context().close();
@@ -138,16 +139,6 @@ await page.evaluate(async () => {
   const mod = await import('/js/features/talk/data-sent-log.js');
   mod.clearDataSentLog();
   if (window.resetAIAdviceCache) window.resetAIAdviceCache();
-  // The Feed no longer renders these blocks, so updateFeedWithAIAdvice() exits early in the real app.
-  // Add them here only to exercise the request path.
-  for (const id of ['quickAdviceText', 'feedNutritionText']) {
-    if (!document.getElementById(id)) {
-      const el = document.createElement('p');
-      el.id = id;
-      el.hidden = true;
-      document.body.appendChild(el);
-    }
-  }
 });
 await page.evaluate(() => window.updateFeedWithAIAdvice && window.updateFeedWithAIAdvice());
 await page.waitForFunction(() => {

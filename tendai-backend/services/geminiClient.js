@@ -94,6 +94,10 @@ export async function generateJsonText(systemPrompt, userPrompt, maxOutputTokens
   });
 
   const result = await model.generateContent(userPrompt);
+  const finishReason = result.response?.candidates?.[0]?.finishReason;
+  if (finishReason && finishReason !== 'STOP') {
+    console.warn(`⚠️ [GEMINI-JSON] finishReason=${finishReason} (maxOutputTokens=${maxOutputTokens}) — reply may be cut off`);
+  }
   const text = result.response.text();
   return text != null ? String(text).trim() : null;
 }
