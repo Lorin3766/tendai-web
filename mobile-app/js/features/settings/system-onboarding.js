@@ -25,6 +25,8 @@ import {
 const ONBOARDING_KEY = 'tendai_system_onboarding_v1';
 const GREETING_KEY = 'tendai_onboarding_greeting';
 const OPEN_TALK_KEY = 'tendai_open_talk_after_onboarding';
+const AI_CONSENT_KEY = 'tendai_ai_consent_v1';
+const CONSENT_STEP = 'consent';
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -40,6 +42,20 @@ function markOnboardingComplete() {
   try {
     localStorage.setItem(ONBOARDING_KEY, '1');
     localStorage.setItem('tendai_welcome_accepted', '1');
+  } catch (_) {}
+}
+
+function hasAcknowledgedAiProcessing() {
+  try {
+    return !!localStorage.getItem(AI_CONSENT_KEY);
+  } catch (_) {
+    return false;
+  }
+}
+
+function markAiProcessingAcknowledged() {
+  try {
+    localStorage.setItem(AI_CONSENT_KEY, new Date().toISOString());
   } catch (_) {}
 }
 
@@ -272,6 +288,13 @@ export function initSystemOnboarding() {
         <p class="welcome-modal-text system-onboarding-subtitle">Not from forms — from your data and conversation.</p>
       `;
       footer = `<button type="button" class="btn btn-initialize profile-modal-save" data-os-next>Get Started</button>`;
+    } else if (step === CONSENT_STEP) {
+      body = `
+        <h2 class="card-title system-onboarding-title">How Obrium uses AI</h2>
+        <p class="welcome-modal-text">Talk's replies, Feed advice and automatic health checks are written by Google's Gemini. To do that, Obrium sends the relevant profile and health data you've provided to Google's Gemini API through its relay server. You can switch off automatic profile questions and health checks in Settings → Privacy &amp; Security.</p>
+        <p class="welcome-modal-text"><a href="privacy-policy.html" target="_blank" rel="noopener" class="system-onboarding-link" data-os-privacy-link>Read the Privacy Policy</a></p>
+      `;
+      footer = `<button type="button" class="btn btn-initialize profile-modal-save" data-os-ack-ai>I understand</button>`;
     } else if (step === 2) {
       body = `
         <h2 class="card-title system-onboarding-title">Connect your health data</h2>
@@ -364,7 +387,7 @@ export function initSystemOnboarding() {
 
     overlay.querySelector('[data-os-next]')?.addEventListener('click', () => {
       if (step === 1) {
-        step = 2;
+        step = hasAcknowledgedAiProcessing() ? 2 : CONSENT_STEP;
         render();
         return;
       }
@@ -385,6 +408,12 @@ export function initSystemOnboarding() {
         step = 5;
         render();
       }
+    });
+
+    overlay.querySelector('[data-os-ack-ai]')?.addEventListener('click', () => {
+      markAiProcessingAcknowledged();
+      step = 2;
+      render();
     });
 
     overlay.querySelector('[data-os-allow-health]')?.addEventListener('click', async () => {

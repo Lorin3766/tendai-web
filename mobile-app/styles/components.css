@@ -6210,6 +6210,11 @@ button.sidebar-core-retry[hidden] {
   line-height: 1.55;
   color: var(--fg-soft);
 }
+.system-onboarding-link {
+  color: rgba(246, 195, 106, 0.95);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .system-onboarding-footer {
   display: flex;
   gap: 10px;
