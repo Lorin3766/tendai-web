@@ -9,7 +9,7 @@ const BACKEND_URL = 'http://localhost:3000';
 const DEFAULT_FEED_TEXTS = {
   quickAdvice: 'Aim for 7–8h sleep tonight.',
   nutritionInsight: 'Add protein to breakfast for a steadier morning.',
-  tip: 'TendAI will show helpful notes here later.'
+  tip: 'Obrium will show helpful notes here later.'
 };
 
 // Состояние загрузки AI-советов

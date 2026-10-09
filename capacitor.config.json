@@ -1,6 +1,6 @@
 {
   "appId": "com.tendai.app",
-  "appName": "Serron",
+  "appName": "Obrium",
   "webDir": "mobile-app",
   "server": {
     "androidScheme": "https"

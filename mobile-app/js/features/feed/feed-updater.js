@@ -536,7 +536,7 @@ async function updateWeather() {
       badgesEl.appendChild(badge);
     }
     if (focusEl) focusEl.textContent = 'Safe Mode active — weather strategy fallback loaded.';
-    if (moveEl) moveEl.textContent = 'Baseline protocol: lecithin / gelatin / 10k steps.';
+    if (moveEl) moveEl.textContent = 'Movement guidance unavailable until weather strategy loads.';
     if (avoidEl) avoidEl.textContent = 'Avoid overcorrection until data sync completes.';
     console.warn('[FEED][DAYTYPE] Safe Mode fallback active', e);
   }
@@ -716,8 +716,8 @@ async function updateHumanOsDashboard(weatherOrNull) {
     const historySync = window.__serronHistorySync || { isSyncing: false, gapDays: 0 };
     const isSyncingHistory = historySync.isSyncing === true && Number(historySync.gapDays || 0) > 0;
     if (isSyncingHistory) {
-      // Resilience mode: inactivity gap should not produce "Drifting".
-      status = 'Optimal';
+      // Inactivity gap is missing data, not evidence of drift (or of being optimal).
+      status = 'Awaiting data';
       driftingDays = 0;
     }
 
@@ -738,10 +738,10 @@ async function updateHumanOsDashboard(weatherOrNull) {
       if (status === 'Optimal') statusBlock.classList.add('human-os-status--optimal');
       else if (status === 'Drifting') statusBlock.classList.add('human-os-status--drifting');
     }
-    if (statusValueEl) statusValueEl.textContent = isSyncingHistory ? 'Optimal (Syncing History)' : status;
+    if (statusValueEl) statusValueEl.textContent = status;
     if (statusSubtextEl) {
       if (isSyncingHistory) {
-        statusSubtextEl.textContent = `History gap detected (${historySync.gapDays} day${historySync.gapDays === 1 ? '' : 's'}). Backfilling with baseline protocol.`;
+        statusSubtextEl.textContent = `No data logged for the last ${historySync.gapDays} day${historySync.gapDays === 1 ? '' : 's'}. Status resumes once new data arrives.`;
         statusSubtextEl.style.display = '';
       } else if (status === 'Drifting') {
         statusSubtextEl.textContent = 'Minor rhythm deviation detected. Monitoring active.';
@@ -843,8 +843,32 @@ export async function showDriftRecoveryPromptInTalk(conversationArea) {
     content.className = 'message-content';
     const textP = document.createElement('p');
     textP.className = 'message-text';
-    textP.textContent = `Welcome back, Anton. I've noted a ${historySync.gapDays}-day gap. I've filled it with your baseline protocol (lecithin/gelatin/10k steps). Let me know if we need to adjust anything.`;
+    const days = Number(historySync.gapDays);
+    const rawName = profileState.get()?.body?.name;
+    const name = typeof rawName === 'string' && rawName.trim() ? `, ${rawName.trim()}` : '';
+    textP.textContent = `Welcome back${name}. Nothing was logged for the last ${days} day${days === 1 ? '' : 's'}, so those days are empty in your history. Want to tell me roughly how they went, or start fresh from today?`;
     content.appendChild(textP);
+    const actions = document.createElement('div');
+    actions.className = 'drift-recovery-actions';
+    const tellBtn = document.createElement('button');
+    tellBtn.type = 'button';
+    tellBtn.className = 'btn drift-recovery-btn';
+    tellBtn.textContent = 'Tell you about it';
+    const freshBtn = document.createElement('button');
+    freshBtn.type = 'button';
+    freshBtn.className = 'btn drift-recovery-btn';
+    freshBtn.textContent = 'Start fresh from today';
+    tellBtn.addEventListener('click', () => {
+      actions.remove();
+      const input = document.getElementById('chatInput');
+      if (input) input.focus();
+    });
+    freshBtn.addEventListener('click', () => {
+      actions.remove();
+    });
+    actions.appendChild(tellBtn);
+    actions.appendChild(freshBtn);
+    content.appendChild(actions);
     wrap.appendChild(content);
     conversationArea.insertBefore(wrap, conversationArea.firstChild);
     return;

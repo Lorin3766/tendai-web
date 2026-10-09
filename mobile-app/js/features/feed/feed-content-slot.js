@@ -144,7 +144,7 @@ const GROUNDED_SCIENCE_BANK = {
 };
 
 const FOCUS_AREA_FALLBACK_SCIENCE = {
-  body: 'Evidence-based health guidance is most useful when it is matched to your age, goals, and what you have already asked about. As personal data accumulates for this Focus Area, TendAI will prefer insights grounded in your own signals over general science.',
+  body: 'Evidence-based health guidance is most useful when it is matched to your age, goals, and what you have already asked about. As personal data accumulates for this Focus Area, Obrium will prefer insights grounded in your own signals over general science.',
   sourceLabel: 'General preventive-health consensus',
 };
 

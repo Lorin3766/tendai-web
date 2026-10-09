@@ -5,7 +5,7 @@
 // BUILD: 2026-04-02-uac-ghost-debug-cachebust
 
 // Utilities (must load first - no init needed, just imports)
-import './state.js';
+import { profileState } from './state.js';
 import './core/shared-context-bus.js';
 import { storageManager } from './core/storage.js';
 import './features/storage/units.js';
@@ -51,6 +51,7 @@ import './features/feed/daily-action.js'; // Just exports, no init
 import './features/storage/soft-streak.js'; // Just exports, no init
 import { initSystemOnboarding, ensureOnboardingFocusAreasInFeed } from './features/settings/system-onboarding.js';
 import './features/settings/send-log-to-dev.js'; // Send Log to Dev (Settings)
+import { initInferredNotesView } from './features/settings/inferred-notes.js';
 import './features/storage/health-sync.js'; // HealthSync: steps + heart rate (native); fallback in browser
 import './features/dev/system-vision-debug.js'; // Hidden System Vision debug overlay
 import { initDebugPanel } from './features/dev/debug-panel.js'; // Hidden biometric payload injector
@@ -72,6 +73,10 @@ async function initModules() {
   // StorageManager: load Master Record, migrate legacy data if needed
   storageManager.load();
   if (typeof window !== 'undefined') window.__storageManager = storageManager;
+  try {
+    storageManager.syncFromProfileIfStale(profileState.get());
+  } catch (_) {}
+  initInferredNotesView();
 
   await performBootHealthProbe(() => `${getBackendURL()}/api/health`);
   initBackendRetryButtons();

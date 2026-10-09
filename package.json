@@ -1,7 +1,7 @@
 {
   "name": "serron-pwa",
   "version": "1.0.0",
-  "description": "Serron — personal wellbeing assistant (PWA + Capacitor native)",
+  "description": "Obrium — personal wellbeing assistant (PWA + Capacitor native)",
   "private": true,
   "scripts": {
     "start": "npx serve mobile-app -l 3000",

@@ -14,7 +14,11 @@ function extractUserData(body) {
         name: body.userProfile.name,
         age: body.userProfile.age,
         location: body.userProfile.location,
-        goals: body.userProfile.goals
+        goals: body.userProfile.goals,
+        wantFromObrium: body.userProfile.wantFromObrium,
+        motivationLevel: body.userProfile.motivationLevel,
+        diet: body.userProfile.diet,
+        habits: body.userProfile.habits
       }
     : null;
 

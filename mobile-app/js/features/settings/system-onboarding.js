@@ -268,14 +268,14 @@ export function initSystemOnboarding() {
 
     if (step === 1) {
       body = `
-        <h2 class="card-title system-onboarding-title">TendAI learns you.</h2>
+        <h2 class="card-title system-onboarding-title">Obrium learns you.</h2>
         <p class="welcome-modal-text system-onboarding-subtitle">Not from forms — from your data and conversation.</p>
       `;
       footer = `<button type="button" class="btn btn-initialize profile-modal-save" data-os-next>Get Started</button>`;
     } else if (step === 2) {
       body = `
         <h2 class="card-title system-onboarding-title">Connect your health data</h2>
-        <p class="welcome-modal-text">This helps TendAI understand you faster — no extra typing needed.</p>
+        <p class="welcome-modal-text">This helps Obrium understand you faster — no extra typing needed.</p>
       `;
       footer = `
         <button type="button" class="btn ghost profile-modal-cancel" data-os-skip-health>Skip for now</button>

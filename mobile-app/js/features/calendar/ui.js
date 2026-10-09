@@ -155,7 +155,7 @@ function renderEventsList(dateKey) {
         health: 'Health',
         program: 'Program',
         personal: 'Personal',
-        tendai: 'Serron'
+        tendai: 'Obrium'
       };
       
       html += `<div class="calendar-event-item" data-event-id="${event.id}">`;

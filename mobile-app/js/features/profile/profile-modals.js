@@ -32,8 +32,20 @@
 import { profileState, resolveAgeYears } from '../../state.js';
 import { IS_VERBOSE_BOOT_LOGS } from '../../env-flags.js';
 import { getState, updateState } from '../../core/app-state.js';
-import { getProfileSchema, getSectionSchema, getSectionKeys } from './profile-schema.js';
+import { getProfileSchema, getSectionSchema, getSectionKeys, getProfileQuestionCatalog, isProfileFieldAnswered } from './profile-schema.js';
 import { getSliderConfig } from '../storage/slider-config.js';
+
+const PROFILE_NAME_PLACEHOLDER = 'Guest';
+
+/**
+ * Checked values of a rendered checkbox group; [] when the user unticked everything,
+ * null when the group is not on screen (leave the stored value alone).
+ */
+function readCheckboxGroup(name) {
+  const inputs = document.querySelectorAll(`input[name="${name}"]`);
+  if (!inputs.length) return null;
+  return Array.from(inputs).filter((input) => input.checked).map((input) => input.value);
+}
 
 // Import helper functions from profile-completeness.js
 // We'll duplicate the logic here to avoid circular dependencies
@@ -227,7 +239,7 @@ function countFilledFields(profile, structure) {
         // Goals module
         goals: {
           purpose: {
-            title: 'Why are you using TendAI?',
+            title: 'Why are you using Obrium?',
             description: 'Main motivation',
             whyMatters: 'AI will suggest recommendations aligned with your goals'
           },
@@ -261,7 +273,7 @@ function countFilledFields(profile, structure) {
               whyMatters: 'AI will adjust the intensity of recommendations'
             },
             constraints: {
-              title: 'Anything TendAI must consider?',
+              title: 'Anything Obrium must consider?',
               description: 'Preferences and safety notes',
               whyMatters: 'AI will tailor communication style and content'
             }
@@ -472,7 +484,7 @@ function countFilledFields(profile, structure) {
           const isChecked = Array.isArray(card.value) && card.value.includes(opt.value);
           html += `
             <label class="card-checkbox">
-              <input type="checkbox" value="${opt.value}" ${isChecked ? 'checked' : ''} />
+              <input type="checkbox" name="${card.id}" value="${opt.value}" ${isChecked ? 'checked' : ''} />
               <span>${opt.label}</span>
             </label>
           `;
@@ -557,7 +569,7 @@ function countFilledFields(profile, structure) {
         // Card C: Constraints / safety
         html += generateCard({
           id: 'healthGoalsConstraints',
-          title: 'Anything TendAI must consider?',
+          title: 'Anything Obrium must consider?',
           description: 'Preferences and safety notes',
           type: 'multi-select',
           options: [
@@ -1197,7 +1209,7 @@ function countFilledFields(profile, structure) {
         // What you want from TendAI (multi-select)
         html += generateCard({
           id: 'goalsWantFromTendAI',
-          title: 'What you want from TendAI',
+          title: 'What you want from Obrium',
           type: 'multi-select',
           options: [
             { value: 'gentle-guidance', label: 'Gentle guidance' },
@@ -1414,7 +1426,7 @@ function countFilledFields(profile, structure) {
           const bodyBuild = document.querySelector('input[name="bodyBuild"]:checked');
           const bloodType = document.getElementById('bodyBloodType');
           const physicalActivity = document.querySelector('input[name="bodyPhysicalActivity"]:checked');
-          const regularDiscomfort = document.querySelectorAll('input[name="bodyRegularDiscomfort"]:checked');
+          const regularDiscomfort = readCheckboxGroup('bodyRegularDiscomfort');
           
           if (sexAtBirth) profileData.body.sexAtBirth = sexAtBirth.value;
           if (genderIdentity) profileData.body.genderIdentity = genderIdentity.value;
@@ -1433,9 +1445,7 @@ function countFilledFields(profile, structure) {
           if (bodyBuild) profileData.body.bodyBuild = bodyBuild.value;
           if (bloodType) profileData.body.bloodType = bloodType.value || null;
           if (physicalActivity) profileData.body.physicalActivity = physicalActivity.value;
-          if (regularDiscomfort) {
-            profileData.body.regularDiscomfort = Array.from(regularDiscomfort).map(cb => cb.value);
-          }
+          if (regularDiscomfort) profileData.body.regularDiscomfort = regularDiscomfort;
           
           // Legacy fields (kept for backward compatibility)
           const ageInput = document.getElementById('editAge');
@@ -1488,20 +1498,16 @@ function countFilledFields(profile, structure) {
 
         case 'health':
           // New questionnaire fields
-          const healthConditions = document.querySelectorAll('input[name="healthConditions"]:checked');
+          const healthConditions = readCheckboxGroup('healthConditions');
           const prescriptionMedications = document.querySelector('input[name="healthPrescriptionMedications"]:checked');
-          const supplements = document.querySelectorAll('input[name="healthSupplements"]:checked');
+          const supplements = readCheckboxGroup('healthSupplements');
           const healthSmoking = document.querySelector('input[name="healthSmoking"]:checked');
           const healthAlcohol = document.querySelector('input[name="healthAlcohol"]:checked');
           const lastCheckup = document.querySelector('input[name="healthLastCheckup"]:checked');
           
-          if (healthConditions && healthConditions.length > 0) {
-            profileData.health.healthConditions = Array.from(healthConditions).map(cb => cb.value);
-          }
+          if (healthConditions) profileData.health.healthConditions = healthConditions;
           if (prescriptionMedications) profileData.health.prescriptionMedications = prescriptionMedications.value;
-          if (supplements && supplements.length > 0) {
-            profileData.health.supplements = Array.from(supplements).map(cb => cb.value);
-          }
+          if (supplements) profileData.health.supplements = supplements;
           if (healthSmoking) profileData.health.smoking = healthSmoking.value;
           if (healthAlcohol) profileData.health.alcohol = healthAlcohol.value;
           if (lastCheckup) profileData.health.lastCheckup = lastCheckup.value;
@@ -1524,7 +1530,7 @@ function countFilledFields(profile, structure) {
           // Goals tab cards
           const healthGoalsFocus = document.querySelector('input[name="healthGoalsFocus"]:checked');
           const healthGoalsPriority = document.getElementById('healthGoalsPriority');
-          const healthGoalsConstraints = document.querySelectorAll('#healthGoalsConstraints input[type="checkbox"]:checked');
+          const healthGoalsConstraints = readCheckboxGroup('healthGoalsConstraints');
           const healthGoalsNotes = document.getElementById('healthGoalsNotes');
           
           if (healthGoalsFocus) profileData.health.goalsFocus = healthGoalsFocus.value;
@@ -1532,9 +1538,7 @@ function countFilledFields(profile, structure) {
             const healthPriorityConfig = getSliderConfig('healthGoalsPriority');
             profileData.health.goalsPriority = healthPriorityConfig ? healthPriorityConfig.normalize(parseFloat(healthGoalsPriority.value)) : (parseInt(healthGoalsPriority.value) || 2);
           }
-          if (healthGoalsConstraints) {
-            profileData.health.goalsConstraints = Array.from(healthGoalsConstraints).map(cb => cb.value);
-          }
+          if (healthGoalsConstraints) profileData.health.goalsConstraints = healthGoalsConstraints;
           if (healthGoalsNotes) profileData.health.goalsNotes = healthGoalsNotes.value || '';
           
           // Legacy fields for backward compatibility
@@ -1649,20 +1653,16 @@ function countFilledFields(profile, structure) {
           
         case 'goals':
           // New questionnaire fields
-          const primaryGoals = document.querySelectorAll('input[name="goalsPrimaryGoals"]:checked');
+          const primaryGoals = readCheckboxGroup('goalsPrimaryGoals');
           const motivationLevel = document.getElementById('goalsMotivationLevel');
-          const wantFromTendAI = document.querySelectorAll('input[name="goalsWantFromTendAI"]:checked');
+          const wantFromTendAI = readCheckboxGroup('goalsWantFromTendAI');
           
-          if (primaryGoals && primaryGoals.length > 0) {
-            profileData.goals.primaryGoals = Array.from(primaryGoals).map(cb => cb.value);
-          }
+          if (primaryGoals) profileData.goals.primaryGoals = primaryGoals;
           if (motivationLevel) {
             const motivationConfig = getSliderConfig('goalsMotivationLevel');
             profileData.goals.motivationLevel = motivationConfig ? motivationConfig.normalize(parseFloat(motivationLevel.value)) : parseInt(motivationLevel.value, 10);
           }
-          if (wantFromTendAI && wantFromTendAI.length > 0) {
-            profileData.goals.wantFromTendAI = Array.from(wantFromTendAI).map(cb => cb.value);
-          }
+          if (wantFromTendAI) profileData.goals.wantFromTendAI = wantFromTendAI;
           
           // Legacy fields (kept for backward compatibility)
           const goalsPurpose = document.querySelector('input[name="goalsPurpose"]:checked');
@@ -1723,18 +1723,11 @@ function countFilledFields(profile, structure) {
     const mobileProfileAge = document.getElementById('mobileProfileAge');
     const mobileProfileAvatar = document.getElementById('mobileProfileAvatar');
 
-    if (mobileProfileName && profileData.body?.name) {
-      mobileProfileName.textContent = profileData.body.name;
-    }
+    renderProfileName(mobileProfileName, mobileProfileAvatar, profileData);
 
     if (mobileProfileAge) {
       const age = resolveAgeYears(profileData.body);
       if (age != null) mobileProfileAge.textContent = `${age} yrs`;
-    }
-
-    if (mobileProfileAvatar && mobileProfileName) {
-      const name = mobileProfileName.textContent || 'A';
-      mobileProfileAvatar.textContent = name.charAt(0).toUpperCase();
     }
 
     // Section progress is now handled by updateSectionProgress()
@@ -1744,12 +1737,6 @@ function countFilledFields(profile, structure) {
   // Update profile UI (left panel in desktop, profile screen in mobile)
   function updateProfileUI() {
     const profileData = profileState.get();
-    
-    // Migration: Antony → Anton (if name exists and is "Antony")
-    if (profileData.body?.name === 'Antony') {
-      profileData.body.name = 'Anton';
-      profileState.save(profileData);
-    }
 
     // Keep stored age aligned with birthYear (source of truth)
     if (profileData.body) {
@@ -1771,22 +1758,22 @@ function countFilledFields(profile, structure) {
   }
   
   /**
-   * Update section-level progress (X / Y) for each section
+   * Update section-level progress for each System Integrity area.
+   * Uses the same askable fields as Talk (`getProfileQuestionCatalog`), so Complete
+   * means Talk has nothing left to ask in that section.
    * @param {Object} profileData - Current profile data
    */
   function updateSectionProgress(profileData) {
-    const schema = getProfileSchema();
-    const sectionKeys = getSectionKeys();
+    const catalog = getProfileQuestionCatalog();
 
-    sectionKeys.forEach(sectionKey => {
-      const sectionSchema = getSectionSchema(sectionKey);
-      if (!sectionSchema) return;
+    catalog.forEach((section) => {
+      const sectionData = profileData[section.key] || {};
+      const totalFields = section.fields.length;
+      const filledFields = section.fields.filter((field) =>
+        isProfileFieldAnswered(sectionData[field.key], field.key)
+      ).length;
 
-      const sectionData = profileData[sectionKey] || {};
-      const totalFields = countTotalFields(sectionSchema);
-      const filledFields = countFilledFields(sectionData, sectionSchema);
-
-      const statusElements = document.querySelectorAll(`[data-profile-status="${sectionKey}"]`);
+      const statusElements = document.querySelectorAll(`[data-profile-status="${section.key}"]`);
       statusElements.forEach(el => {
         // Soft profile-area language — not a checklist fraction
         let label = 'Not started';
@@ -1807,7 +1794,7 @@ function countFilledFields(profile, structure) {
     });
 
     if (IS_VERBOSE_BOOT_LOGS && typeof console !== 'undefined' && console.log) {
-      console.log('[INIT] Profile UI updated (' + sectionKeys.length + ' sections).');
+      console.log('[INIT] Profile UI updated (' + catalog.length + ' sections).');
     }
   }
 
@@ -1817,19 +1804,31 @@ function countFilledFields(profile, structure) {
     const profileAge = document.getElementById('profileAge');
     const profileAvatar = document.getElementById('profileAvatar');
 
-    // Update name (if we have a name field, otherwise keep default "Anton")
+    renderProfileName(profileName, profileAvatar, profileData);
     
     // Update age (prefer birthYear-derived age)
     if (profileAge) {
       const age = resolveAgeYears(profileData.body);
       if (age != null) profileAge.textContent = `${age} yrs`;
     }
-    
-    // Update avatar initial (first letter of name)
-    if (profileAvatar && profileName) {
-      const name = profileName.textContent || 'A';
-      profileAvatar.textContent = name.charAt(0).toUpperCase();
+  }
+
+  /**
+   * Show the user's real name (or a neutral placeholder) without wiping the
+   * status-dot <span> that lives inside the name element.
+   */
+  function renderProfileName(nameEl, avatarEl, profileData) {
+    const raw = profileData?.body?.name;
+    const name = typeof raw === 'string' && raw.trim() ? raw.trim() : PROFILE_NAME_PLACEHOLDER;
+    if (nameEl) {
+      let textNode = Array.from(nameEl.childNodes).find((n) => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
+      if (!textNode) {
+        textNode = document.createTextNode('');
+        nameEl.insertBefore(textNode, nameEl.firstChild);
+      }
+      textNode.textContent = `${name} `;
     }
+    if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
   }
 
   // Setup modal handlers

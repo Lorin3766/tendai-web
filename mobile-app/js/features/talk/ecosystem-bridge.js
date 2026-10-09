@@ -2,13 +2,25 @@
 // @owner: talk / services
 // Connects Sidebar (Create my plan, Labs, Online Doctor) to TALK and FEED
 
-const USER_NAME = 'Anton';
+import { profileState } from '../../state.js';
 
+const RECOVERY_DIP_THRESHOLD = 60;
+
+function getUserName() {
+  try {
+    const name = profileState.get()?.body?.name;
+    return typeof name === 'string' && name.trim() ? name.trim() : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+/** @returns {number|null} Real recovery % from the Feed sensor tile, or null when there is no reading. */
 function getRecoveryFromFeed() {
   const el = document.getElementById('sensorValueRecovery');
-  if (!el || el.classList.contains('sensor-tile-value--empty')) return 78;
-  const raw = (el.textContent || '').replace(/%/g, '').trim();
-  return raw ? parseInt(raw, 10) || 78 : 78;
+  if (!el || el.classList.contains('sensor-tile-value--empty')) return null;
+  const n = parseInt((el.textContent || '').replace(/%/g, '').trim(), 10);
+  return Number.isFinite(n) ? n : null;
 }
 
 /** Daily tasks for Intense Training mode (Action Steps checklist) */
@@ -44,8 +56,12 @@ const PLAN_TEMPLATES = {
 export function startPlanGenerationFlow(talkComponent) {
   if (!talkComponent || !talkComponent.conversationArea) return;
   const recovery = getRecoveryFromFeed();
-  const header = '[ ANALYZING CURRENT BIOMETRICS ]';
-  const body = `${USER_NAME}, based on your Recovery (${recovery}%) and Stress levels, I am ready to build your strategy.`;
+  const name = getUserName();
+  const greet = name ? `${name}, ` : '';
+  const header = recovery != null ? '[ ANALYZING CURRENT BIOMETRICS ]' : '[ BUILD YOUR PLAN ]';
+  const body = recovery != null
+    ? `${greet}based on your current Recovery reading (${recovery}%), I am ready to build your strategy.`
+    : `${greet}I don't have a Recovery reading yet, so this plan is a general template rather than one tuned to your data. Pick a focus:`;
   talkComponent.addSystemMessage(header, body, false);
 
   const buttons = [
@@ -63,11 +79,12 @@ export function startPlanGenerationFlow(talkComponent) {
       talkComponent.addSystemMessage('[ PLAN FOR TODAY ]', planText, true, true);
       if (id === 'intense-training' && talkComponent.appendChecklist) {
         talkComponent.appendChecklist(DAILY_TASKS_INTENSE_TRAINING);
-        // User Autonomy: anomaly hint — offer to prepare a brief for doctor
+      }
+      if (id === 'intense-training' && recovery != null && recovery < RECOVERY_DIP_THRESHOLD) {
         setTimeout(() => {
           talkComponent.addSystemMessage(
-            '[ TENDAI NOTICE ]',
-            'TendAI noticed a recovery dip. Would you like to prepare a brief for your doctor before proceeding?',
+            '[ OBRIUM NOTICE ]',
+            `Your current Recovery reading is ${recovery}%, which is low for intense training. Would you like to prepare a brief for your doctor before proceeding?`,
             true
           );
           talkComponent.scrollToBottom();
@@ -94,11 +111,11 @@ export function startSecureMedicalChannel(talkComponent) {
   if (!talkComponent) return;
   talkComponent.addSystemMessage(
     'SYSTEM',
-    'Connecting to a certified specialist... (Secure Channel Active)',
+    'Obrium is not connected to any doctors or specialists yet. You are chatting with Doctor AI, an automated assistant.',
     true
   );
-  const header = '[ SECURE MEDICAL CHANNEL ]';
-  const body = 'Doctor AI is online. I have access to your Labs and Vital Signs. What is your concern?';
+  const header = '[ DOCTOR AI ]';
+  const body = 'Doctor AI is online. I can only see lab results and vital signs you have added to Obrium, and I cannot diagnose or replace a clinician. What is your concern?';
   talkComponent.addSystemMessage(header, body, true);
 }
 
@@ -148,19 +165,19 @@ export function openLabsReportModal(labId, labName) {
           <span class="labs-choice-icon labs-choice-icon-shield" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
           <span class="labs-choice-label">Generate Medical Brief</span>
         </button>
-        <p class="labs-choice-subtext">Get a PDF summary of your trends to show your doctor.</p>
+        <p class="labs-choice-subtext">View a summary of your trends to show your doctor.</p>
       </div>
       <div class="labs-choice-card">
         <button type="button" class="labs-choice-btn" id="labsChoiceOnlineMD" data-action="online-md">
           <span class="labs-choice-label">Consult Online MD</span>
         </button>
-        <p class="labs-choice-subtext">Quick 10-min sync with our partner specialist ($29).</p>
+        <p class="labs-choice-subtext">Coming soon: 10-min sync with a partner specialist ($29). Not bookable yet.</p>
       </div>
       <div class="labs-choice-card labs-choice-secondary">
         <button type="button" class="labs-choice-btn labs-choice-btn-secondary" id="labsChoiceHomeLab" data-action="home-lab">
           <span class="labs-choice-label">Schedule Home Lab</span>
         </button>
-        <p class="labs-choice-subtext">Professional nurse visit for sample collection ($149).</p>
+        <p class="labs-choice-subtext">Coming soon: nurse visit for sample collection ($149). Not bookable yet.</p>
       </div>
     </div>
   `;
@@ -173,7 +190,7 @@ export function openLabsReportModal(labId, labName) {
     if (typeof window.switchView === 'function') window.switchView('talk');
     const talkComponent = window.__serronTalkComponent;
     if (talkComponent) {
-      talkComponent.addSystemMessage('[ CONSULT ]', 'You chose Consult Online MD ($29). Our partner will reach out to schedule your 10-min sync.', true);
+      talkComponent.addSystemMessage('[ CONSULT ]', 'Online MD consults are not available yet: Obrium has no booking partner connected, so no request was sent and nobody will contact you. Until then, please book with your own doctor or a telehealth service directly.', true);
     }
   });
   overlay.querySelector('#labsChoiceHomeLab').addEventListener('click', () => {
@@ -181,7 +198,7 @@ export function openLabsReportModal(labId, labName) {
     if (typeof window.switchView === 'function') window.switchView('talk');
     const talkComponent = window.__serronTalkComponent;
     if (talkComponent) {
-      talkComponent.addSystemMessage('[ HOME LAB ]', 'You chose Schedule Home Lab ($149). A nurse will contact you to arrange the visit.', true);
+      talkComponent.addSystemMessage('[ HOME LAB ]', 'Home lab visits are not available yet: Obrium has no lab partner connected, so no request was sent and nobody will contact you. Until then, please arrange testing through your doctor or a local lab directly.', true);
     }
   });
 
@@ -206,15 +223,15 @@ const MEDICAL_BRIEF_HTML = `
   <div class="labs-medical-brief-doc" id="labsMedicalBriefDoc">
     <div class="labs-brief-header">
       <span class="labs-brief-shield" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
-      <h4 class="labs-brief-title">TendAI Biometric Summary | Confidential</h4>
+      <h4 class="labs-brief-title">Obrium Biometric Summary | Confidential</h4>
     </div>
     <section class="labs-brief-section">
       <h5 class="labs-brief-section-title">Observations</h5>
-      <p class="labs-brief-section-body">Detected 22% drop in HRV and 15% increase in Resting HR over the last 72 hours.</p>
+      <p class="labs-brief-section-body">No HRV or Resting HR trend data is on record yet. Connect a wearable or add readings to include observations here.</p>
     </section>
     <section class="labs-brief-section">
       <h5 class="labs-brief-section-title">Context</h5>
-      <p class="labs-brief-section-body">User reported 'Poor' energy levels. Activity load remained constant.</p>
+      <p class="labs-brief-section-body">No self-reported energy or activity notes are on record for this period.</p>
     </section>
     <section class="labs-brief-section labs-brief-physician-note">
       <h5 class="labs-brief-section-title">Physician Note</h5>

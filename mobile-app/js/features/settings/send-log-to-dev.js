@@ -4,11 +4,11 @@
 // Builds a short log (version, platform, health status) and opens mailto or copies to clipboard.
 
 const DEV_EMAIL = 'dev@tendai.app';
-const SUBJECT = 'TendAI Log Report (Dogfooding)';
+const SUBJECT = 'Obrium Log Report (Dogfooding)';
 
 function buildLogBody() {
   const lines = [];
-  lines.push('--- TendAI Log Report ---');
+  lines.push('--- Obrium Log Report ---');
   lines.push('Date: ' + new Date().toISOString());
   lines.push('Version: v1.0.0 (PWA)');
   const Cap = typeof window !== 'undefined' && window.Capacitor;

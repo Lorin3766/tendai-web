@@ -23,8 +23,87 @@ const DEFAULT_SCHEMA = {
   Clinical: { diagnoses: [], allergies: [], surgeries: [], medications: [] },
   Lifestyle: { dietRules: [], habits: [], restrictions: [], activityLevel: null },
   Vitals: { currentWeight: null, height: null, lastBloodWork: {} },
+  Mind: {},
+  Sleep: {},
+  Goals: {},
   Signals: { eventLog: [] }
 };
+
+/**
+ * Every profile-schema field (profile-schema.js catalog) → its Master Record key.
+ * [recordPath, profileSection, profileField]
+ */
+const PROFILE_FIELD_TO_RECORD = [
+  ['Registry.sexAtBirth', 'body', 'sexAtBirth'],
+  ['Registry.genderIdentity', 'body', 'genderIdentity'],
+  ['Vitals.bodyBuild', 'body', 'bodyBuild'],
+  ['Vitals.bloodType', 'body', 'bloodType'],
+  ['Lifestyle.physicalActivity', 'body', 'physicalActivity'],
+  ['Lifestyle.regularDiscomfort', 'body', 'regularDiscomfort'],
+  ['Clinical.healthConditions', 'health', 'healthConditions'],
+  ['Clinical.prescriptionMedications', 'health', 'prescriptionMedications'],
+  ['Clinical.supplements', 'health', 'supplements'],
+  ['Clinical.lastCheckup', 'health', 'lastCheckup'],
+  ['Lifestyle.smoking', 'health', 'smoking'],
+  ['Lifestyle.alcohol', 'health', 'alcohol'],
+  ['Mind.stressLevel', 'mind', 'stressLevel'],
+  ['Mind.mentalEnergy', 'mind', 'mentalEnergy'],
+  ['Mind.anxietyFrequency', 'mind', 'anxietyFrequency'],
+  ['Mind.moodChanges', 'mind', 'moodChanges'],
+  ['Mind.wantToImproveFocus', 'mind', 'wantToImproveFocus'],
+  ['Lifestyle.eatingPattern', 'lifestyle', 'eatingPattern'],
+  ['Lifestyle.dietType', 'lifestyle', 'dietType'],
+  ['Lifestyle.enoughProtein', 'lifestyle', 'enoughProtein'],
+  ['Lifestyle.sugarSweets', 'lifestyle', 'sugarSweets'],
+  ['Lifestyle.lateEating', 'lifestyle', 'lateEating'],
+  ['Lifestyle.hydration', 'lifestyle', 'hydration'],
+  ['Sleep.duration', 'lifestyle', 'sleepDuration'],
+  ['Sleep.quality', 'lifestyle', 'sleepQuality'],
+  ['Goals.primaryGoals', 'goals', 'primaryGoals'],
+  ['Goals.motivationLevel', 'goals', 'motivationLevel'],
+  ['Goals.wantFromObrium', 'goals', 'wantFromTendAI'],
+  ['Goals.constraints', 'health', 'goalsConstraints'],
+  ['Goals.notes', 'health', 'goalsNotes'],
+];
+
+/** Sections whose modal has a "Primary goal" + "Priority level" Goals tab. */
+const SECTION_GOAL_KEYS = ['body', 'health', 'mind', 'lifestyle'];
+
+/** Option values of the Lifestyle diet-type field (now stored at Lifestyle.dietType, not dietRules). */
+const DIET_TYPE_OPTIONS = ['balanced', 'low-carb', 'high-protein', 'vegetarian', 'vegan', 'not-sure'];
+
+const PROFILE_SYNC_VERSION = 2;
+
+/** Schema defaults that are placeholders, not user answers (mirrors profile-schema isProfileFieldAnswered). */
+function isProvidedProfileValue(value, key) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') {
+    const t = value.trim().toLowerCase();
+    return !(t === '' || t === 'select...' || t === 'not set' || t === '—' || t === '-');
+  }
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) return false;
+    if ((key === 'stressLevel' || key === 'stress') && value === 3) return false;
+    if (key === 'goalsPriority' && value === 2) return false;
+    return true;
+  }
+  if (typeof value === 'boolean') return value === true;
+  if (Array.isArray(value)) return value.some((v) => isProvidedProfileValue(v));
+  if (typeof value === 'object') return Object.keys(value).length > 0;
+  return true;
+}
+
+function isEmptyRecordValue(value) {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string') return value.trim() === '';
+  if (Array.isArray(value)) return value.filter((v) => !isEmptyRecordValue(v)).length === 0;
+  if (typeof value === 'object') return Object.keys(value).length === 0;
+  return false;
+}
+
+function splitList(text) {
+  return String(text || '').split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+}
 
 /** Learned context used to grow the profile-level System Integrity score. */
 const SYSTEM_INTEGRITY_FIELDS = [
@@ -72,6 +151,18 @@ function setValueAtPath(obj, path, value) {
   current[keys[keys.length - 1]] = value;
 }
 
+/** Reset a schema field to its empty default, or delete a non-schema key entirely. */
+function clearValueAtPath(obj, path) {
+  const defaultValue = getValueAtPath(DEFAULT_SCHEMA, path);
+  if (defaultValue !== undefined) {
+    setValueAtPath(obj, path, JSON.parse(JSON.stringify(defaultValue)));
+    return;
+  }
+  const keys = path.split('.');
+  const parent = getValueAtPath(obj, keys.slice(0, -1).join('.'));
+  if (parent && typeof parent === 'object') delete parent[keys[keys.length - 1]];
+}
+
 function isValidDate(val) {
   if (val == null) return true;
   const d = new Date(val);
@@ -93,6 +184,7 @@ export class StorageManager {
   constructor() {
     this._record = null;
     this._loaded = false;
+    this._deferSave = false;
   }
 
   /** Load Master Record from localStorage */
@@ -155,7 +247,7 @@ export class StorageManager {
             this._record.Clinical.diagnoses = [...health.chronicDiseases];
           }
           if (lifestyle.dietType) {
-            this._record.Lifestyle.dietRules = [lifestyle.dietType];
+            this._record.Lifestyle.dietType = lifestyle.dietType;
           }
           if (lifestyle.activeDays != null) {
             this._record.Lifestyle.activityLevel = String(lifestyle.activeDays);
@@ -167,6 +259,7 @@ export class StorageManager {
   }
 
   _save() {
+    if (this._deferSave) return true;
     try {
       localStorage.setItem(MASTER_RECORD_KEY, JSON.stringify(this._record));
       return true;
@@ -195,8 +288,12 @@ export class StorageManager {
    */
   updateRecord(path, value) {
     const record = this.getRecord();
-    const keys = path.split('.');
-    const lastKey = keys[keys.length - 1];
+
+    // Cleared / deleted values are removed so they never reach the LLM payload.
+    if (isEmptyRecordValue(value)) {
+      clearValueAtPath(record, path);
+      return this._save();
+    }
 
     if (path.startsWith('Vitals.currentWeight') || path === 'Vitals.currentWeight') {
       if (!isValidNumber(value, 0, 1000)) return false;
@@ -331,14 +428,44 @@ export class StorageManager {
     }
   }
 
-  /** Sync from profileState (call when profile is saved) */
+  /**
+   * Sync from profileState (call when profile is saved).
+   * Every profile field is re-derived on each save: answered values are written,
+   * cleared values are removed from the Master Record.
+   */
   syncFromProfile(profile) {
     if (!profile || typeof profile !== 'object') return;
+    this._deferSave = true;
+    try {
+      this._syncFromProfileFields(profile);
+    } finally {
+      this._deferSave = false;
+      this._save();
+    }
+  }
+
+  /** Boot catch-up: profiles answered before the current sync version never reached the Master Record. */
+  syncFromProfileIfStale(profile) {
+    const record = this.getRecord();
+    if (record.System?.profileSyncVersion === PROFILE_SYNC_VERSION) return;
+    this.syncFromProfile(profile || {});
+  }
+
+  _syncFromProfileFields(profile) {
     const body = profile.body || {};
     const health = profile.health || {};
     const lifestyle = profile.lifestyle || {};
-    this.load();
-    if (body.name) this.updateRecord('Registry.name', body.name);
+    const record = this.getRecord();
+    record.System = record.System || {};
+    const firstSyncOfThisVersion = record.System.profileSyncVersion !== PROFILE_SYNC_VERSION;
+
+    const provided = (section, key) => {
+      const value = (profile[section] || {})[key];
+      return isProvidedProfileValue(value, key) ? value : null;
+    };
+
+    this.updateRecord('Registry.name', typeof body.name === 'string' ? body.name.trim() : null);
+
     // Prefer birthYear-derived age when available
     {
       const by = Number(body.birthYear);
@@ -348,29 +475,67 @@ export class StorageManager {
         const fromYear = yearNow - by;
         if (fromYear >= 1 && fromYear <= 120) age = fromYear;
       }
-      if (age == null && body.age != null) {
+      if (age == null && body.age != null && body.age !== '') {
         const n = Number(body.age);
         if (Number.isFinite(n) && n >= 1 && n <= 120) age = Math.round(n);
       }
-      if (age != null) this.updateRecord('Registry.age', age);
+      this.updateRecord('Registry.age', age);
     }
-    if (body.gender) this.updateRecord('Registry.gender', body.gender);
+
+    this.updateRecord('Registry.gender', provided('body', 'gender'));
+    // Location is also written by the location service, so only overwrite when the profile has one.
     if (profile.location) this.updateRecord('Registry.location', profile.location);
-    if (body.weight != null) this.updateRecord('Vitals.currentWeight', body.weight);
-    if (body.height != null) this.updateRecord('Vitals.height', body.height);
-    if (health.allergiesDetails) {
-      const arr = health.allergiesDetails.split(/[,;]/).map(s => s.trim()).filter(Boolean);
-      if (arr.length) this.updateRecord('Clinical.allergies', arr);
+    this.updateRecord('Vitals.currentWeight', provided('body', 'weight'));
+    this.updateRecord('Vitals.height', provided('body', 'height'));
+
+    for (const [recordPath, section, key] of PROFILE_FIELD_TO_RECORD) {
+      this.updateRecord(recordPath, provided(section, key));
     }
-    if (health.medications) {
-      this.updateRecord('Clinical.medications', [health.medications]);
+
+    const sectionGoals = {};
+    for (const section of SECTION_GOAL_KEYS) {
+      const focus = provided(section, 'goalsFocus');
+      if (!focus) continue;
+      const priority = provided(section, 'goalsPriority');
+      sectionGoals[section] = priority != null ? { focus, priority } : { focus };
     }
-    if (lifestyle.dietType) {
-      this.updateRecord('Lifestyle.dietRules', [lifestyle.dietType]);
+    this.updateRecord('Goals.sectionGoals', sectionGoals);
+
+    // Lists shared with Talk signals: replace only the items that came from the profile.
+    const allergiesFromProfile = health.hasAllergies === false ? [] : splitList(health.allergiesDetails);
+    const medicationsFromProfile = splitList(health.medications);
+    this._syncProfileOwnedItems('Clinical.allergies', allergiesFromProfile);
+    this._syncProfileOwnedItems('Clinical.medications', medicationsFromProfile);
+
+    if (firstSyncOfThisVersion) {
+      // Diet type used to be copied into dietRules; it now lives at Lifestyle.dietType.
+      const dietRules = this.get('Lifestyle.dietRules');
+      if (Array.isArray(dietRules)) {
+        this.updateRecord('Lifestyle.dietRules', dietRules.filter((r) => !DIET_TYPE_OPTIONS.includes(String(r))));
+      }
+      record.System.profileSyncVersion = PROFILE_SYNC_VERSION;
+      this._save();
     }
-    if (lifestyle.activeDays != null) {
+
+    if (lifestyle.activeDays != null && lifestyle.activeDays !== '') {
       this.updateRecord('Lifestyle.activityLevel', String(lifestyle.activeDays));
     }
+  }
+
+  /**
+   * Update a list that both the profile and Talk signals write to.
+   * Items previously synced from the profile but no longer present are removed;
+   * items logged from Talk are kept.
+   */
+  _syncProfileOwnedItems(path, nextItems) {
+    const record = this.getRecord();
+    record.System.profileOwned = record.System.profileOwned || {};
+    const owned = record.System.profileOwned;
+    const prevItems = Array.isArray(owned[path]) ? owned[path] : nextItems;
+    const current = Array.isArray(this.get(path)) ? this.get(path) : [];
+    const kept = current.filter((item) => !prevItems.includes(item));
+    owned[path] = [...nextItems];
+    this.updateRecord(path, [...kept, ...nextItems]);
   }
 }
 

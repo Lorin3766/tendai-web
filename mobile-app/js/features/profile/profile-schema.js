@@ -193,7 +193,7 @@ const PROFILE_QUESTION_CATALOG = [
       { key: 'lastCheckup', label: 'Last general checkup' },
       { key: 'goalsFocus', label: 'Primary goal' },
       { key: 'goalsPriority', label: 'Priority level' },
-      { key: 'goalsConstraints', label: 'Anything Serron must consider' },
+      { key: 'goalsConstraints', label: 'Anything Obrium must consider' },
     ],
   },
   {
@@ -228,7 +228,7 @@ const PROFILE_QUESTION_CATALOG = [
     fields: [
       { key: 'primaryGoals', label: 'Primary goals' },
       { key: 'motivationLevel', label: 'Motivation level' },
-      { key: 'wantFromTendAI', label: 'What you want from Serron' },
+      { key: 'wantFromTendAI', label: 'What you want from Obrium' },
     ],
   },
 ];

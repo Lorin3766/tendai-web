@@ -5,12 +5,14 @@
 
 import { getBackendURL, buildBackendHeaders } from '../talk/llm.js';
 import { fetchBackend } from '../../core/backend-fetch.js';
+import { recordDataSent, updateDataSentOutcome, DATA_SENT_REQUEST_TYPES } from '../talk/data-sent-log.js';
+import { dayState } from '../../state.js';
 
 // Дефолтные тексты для fallback
 const DEFAULT_FEED_TEXTS = {
   quickAdvice: 'Aim for 7–8h sleep tonight.',
   nutritionInsight: 'Add protein to breakfast for a steadier morning.',
-  tip: 'TendAI will show helpful notes here later.'
+  tip: 'Obrium will show helpful notes here later.'
 };
 
 // Состояние загрузки AI-советов
@@ -23,84 +25,31 @@ const AI_ADVICE_CACHE_MS = 5 * 60 * 1000; // Кэш на 5 минут
  * Собирает profileState и dayState для отправки в AI
  */
 function collectStateForAI() {
-  // Импортируем state динамически
-  let dayStateData = null;
-  let userProfile = null;
-  let userMetrics = null;
-
+  let today = null;
   try {
-    // Пытаемся получить данные из state.js
-    if (window.dayState) {
-      dayStateData = window.dayState.loadDayStateForToday();
-    }
-    if (window.userProfile) {
-      userProfile = window.userProfile;
-    }
-    if (window.userMetrics) {
-      userMetrics = window.userMetrics;
-    }
-  } catch (e) {
-    // Could not access state
+    today = dayState.loadDayStateForToday();
+  } catch (_) {
+    // Day state unavailable — send nothing for today.
   }
 
-  // Пытаемся получить hydration из UI (dayStatWater показывает "6 / 8")
-  let hydrationLogged = 6; // Дефолтное значение
-  try {
-    const waterEl = document.getElementById('dayStatWater');
-    if (waterEl && waterEl.textContent) {
-      const match = waterEl.textContent.match(/(\d+)\s*\/\s*\d+/);
-      if (match) {
-        hydrationLogged = parseInt(match[1], 10);
-      }
-    }
-  } catch (e) {
-    // Could not parse hydration from UI
+  // Only values the user actually logged today; anything missing is omitted, never defaulted.
+  const day = {};
+  const sleepHours = Number(today?.sleep?.hours);
+  if (today?.sleep?.hours != null && Number.isFinite(sleepHours) && sleepHours > 0) day.sleepLastNight = sleepHours;
+  const water = Number(today?.water?.current);
+  if (Number.isFinite(water) && water > 0) day.hydrationLogged = water;
+  if (typeof today?.energy === 'string' && today.energy.trim()) {
+    const energy = today.energy.toLowerCase();
+    if (energy.includes('great') || energy.includes('very high')) day.moodToday = 'Great';
+    else if (energy.includes('good') || energy.includes('high')) day.moodToday = 'Good';
+    else if (energy.includes('normal') || energy.includes('medium')) day.moodToday = 'Normal';
+    else day.moodToday = 'Low';
   }
 
-  // Собираем dayState из текущих данных
-  const dayState = {
-    sleepLastNight: dayStateData?.sleep?.hours || userProfile?.sleepHours || 7.2,
-    hydrationLogged: dayStateData?.water?.current || hydrationLogged,
-    moodToday: (() => {
-      if (dayStateData?.energy) {
-        const energy = dayStateData.energy.toLowerCase();
-        if (energy.includes('great') || energy.includes('very high')) return 'Great';
-        if (energy.includes('good') || energy.includes('high')) return 'Good';
-        if (energy.includes('normal') || energy.includes('medium')) return 'Normal';
-        return 'Low';
-      }
-      if (userMetrics) {
-        const avgScore = (userMetrics.sleepScore + userMetrics.stressScore + userMetrics.activityScore) / 3;
-        if (avgScore >= 75) return 'Great';
-        if (avgScore >= 50) return 'Good';
-        if (avgScore >= 25) return 'Normal';
-        return 'Low';
-      }
-      return 'Good';
-    })()
+  return {
+    profileState: {},
+    dayState: day,
   };
-
-  // profileState - собираем из доступных данных
-  const profileState = userProfile || {
-    age: null,
-    gender: null,
-    sleepHours: dayStateData?.sleep?.hours || null,
-    sleepQuality: null,
-    stressLevel: dayStateData?.stressLevel || null,
-    foodQuality: null,
-    activeDays: null,
-    stepCategory: null,
-    bodyGoal: null,
-    healthGoal: null,
-    mindGoal: null
-  };
-
-  const state = {
-    profileState: profileState,
-    dayState: dayState
-  };
-
-  return state;
 }
 
 /**
@@ -122,12 +71,30 @@ async function fetchAIAdvice() {
   try {
     aiAdviceLoading = true;
     const state = collectStateForAI();
-
-    const response = await fetchBackend(`${getBackendURL()}/api/feed-advice`, {
-      method: 'POST',
-      headers: buildBackendHeaders(),
-      body: JSON.stringify(state),
+    const dayKeys = Object.keys(state.dayState);
+    const logEntry = recordDataSent({
+      requestType: DATA_SENT_REQUEST_TYPES.FEED_ADVICE,
+      trigger: 'automatic',
+      dataCategoriesIncluded: [
+        'profile: none',
+        dayKeys.length
+          ? `today: ${dayKeys.map((k) => `${k} ${state.dayState[k]}`).join(', ')}`
+          : 'today: nothing logged (no values sent)',
+      ],
     });
+
+    let response;
+    try {
+      response = await fetchBackend(`${getBackendURL()}/api/feed-advice`, {
+        method: 'POST',
+        headers: buildBackendHeaders(),
+        body: JSON.stringify(state),
+      });
+    } catch (err) {
+      updateDataSentOutcome(logEntry.id, 'not sent — request failed');
+      throw err;
+    }
+    updateDataSentOutcome(logEntry.id, response.ok ? 'sent' : `sent — relay returned HTTP ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'No error details');

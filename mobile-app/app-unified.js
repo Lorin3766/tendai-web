@@ -82,10 +82,20 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
   }
 
   /**
-   * Sync history gaps so inactivity does not mark user as drifting.
-   * Creates placeholder records for missing days.
+   * Detect history gaps so inactivity does not mark user as drifting.
+   * Missing days stay empty: nothing may be written on the user's behalf.
    */
   function syncHistory() {
+    // Earlier builds wrote invented "baseline protocol" rows for missing days; purge them.
+    try { localStorage.removeItem(HISTORY_SYNC_PLACEHOLDERS_KEY); } catch (_) {}
+    try {
+      const storage = window.__storageManager;
+      const log = storage && typeof storage.get === 'function' ? storage.get('Signals.eventLog') : null;
+      if (Array.isArray(log) && log.some((e) => e && e.type === 'HISTORY_SYNC_PLACEHOLDER')) {
+        storage.updateRecord('Signals.eventLog', log.filter((e) => !(e && e.type === 'HISTORY_SYNC_PLACEHOLDER')));
+      }
+    } catch (_) {}
+
     const todayKey = toDateKey();
     let lastKey = null;
     try {
@@ -113,41 +123,6 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
       d.setDate(d.getDate() + i);
       missingDateKeys.push(toDateKey(d));
     }
-
-    const baselineProtocol = ['lecithin', 'gelatin', '10k steps'];
-    const placeholders = missingDateKeys.map((dateKey) => ({
-      id: `history-gap-${dateKey}`,
-      dateKey,
-      status: 'pending_user_confirmation',
-      protocol: baselineProtocol,
-      source: 'syncHistory',
-      createdAt: new Date().toISOString()
-    }));
-
-    try {
-      const existingRaw = localStorage.getItem(HISTORY_SYNC_PLACEHOLDERS_KEY);
-      const existing = existingRaw ? JSON.parse(existingRaw) : [];
-      const byId = new Map((Array.isArray(existing) ? existing : []).map((row) => [row.id, row]));
-      placeholders.forEach((row) => byId.set(row.id, row));
-      localStorage.setItem(HISTORY_SYNC_PLACEHOLDERS_KEY, JSON.stringify(Array.from(byId.values())));
-    } catch (_) {}
-
-    // Mirror to Master Record event log as placeholders
-    try {
-      const storage = window.__storageManager;
-      if (storage && typeof storage.appendToArray === 'function') {
-        placeholders.forEach((row) => {
-          storage.appendToArray('Signals.eventLog', {
-            type: 'HISTORY_SYNC_PLACEHOLDER',
-            dateKey: row.dateKey,
-            status: row.status,
-            protocol: row.protocol,
-            source: row.source,
-            createdAt: row.createdAt
-          });
-        });
-      }
-    } catch (_) {}
 
     window.__serronHistorySync = {
       isSyncing: true,
@@ -352,6 +327,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
   function switchView(view) {
     if (view === currentView) return;
 
+    const previousView = currentView;
     currentView = view;
 
     // Save active tab to localStorage (only for feed/talk in desktop)
@@ -587,6 +563,10 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
       document.body.classList.add('talk-view-active');
     } else {
       document.body.classList.remove('talk-view-active');
+    }
+
+    if (previousView === 'talk' && view !== 'talk' && talkComponent && typeof talkComponent.onTalkClosed === 'function') {
+      talkComponent.onTalkClosed();
     }
 
     // Notify badge systems of view change (hide badge on active tab)

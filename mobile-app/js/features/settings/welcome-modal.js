@@ -23,11 +23,11 @@ export function initWelcomeModal() {
     overlay.innerHTML = `
       <div class="profile-modal welcome-modal">
         <div class="profile-modal-header">
-          <h2 class="card-title" id="welcomeModalTitle">Welcome to TendAI</h2>
+          <h2 class="card-title" id="welcomeModalTitle">Welcome to Obrium</h2>
         </div>
         <div class="profile-modal-content" style="padding: 20px 24px;">
           <p class="welcome-modal-text">
-            By continuing, you agree that TendAI uses your biometric data for lifestyle optimization purposes only and is not a replacement for professional medical help.
+            By continuing, you agree that Obrium uses your biometric data for lifestyle optimization purposes only and is not a replacement for professional medical help.
           </p>
         </div>
         <div class="profile-modal-footer" style="padding: 16px 24px;">

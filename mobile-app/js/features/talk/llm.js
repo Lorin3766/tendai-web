@@ -7,6 +7,8 @@ import { getUserMemory } from './user-memory.js';
 import { fetchBackend, publishBackendStatus } from '../../core/backend-fetch.js';
 import { NetworkController } from '../../infrastructure/network-controller.js';
 import { saveMetrics, getMetricsByDate } from '../../core/biometrics-db.js';
+import { getUserProfile } from './talk-context.js';
+import { recordDataSent, updateDataSentOutcome, DATA_SENT_REQUEST_TYPES } from './data-sent-log.js';
 
 /**
  * Default relay URL. Port 3001 avoids clashing with repo `npm start`, which serves
@@ -95,8 +97,7 @@ function dispatchLocalMockUpdateAgentFromInput(userInput) {
         unit: 'h',
         caption: 'Logged from Talk',
         // Signal Confidence is derived from the logged value — no hardcoded mock %.
-        status: 'OPTIMAL',
-        statusColor: '#a8ff53',
+        status: 'LOGGED',
       });
       dispatched.push({ type: 'sleep', value: sleepVal });
     }
@@ -111,8 +112,7 @@ function dispatchLocalMockUpdateAgentFromInput(userInput) {
         unit: 'steps',
         caption: 'Logged from Talk',
         // Signal Confidence is derived from the logged value — no hardcoded mock %.
-        status: 'OPTIMAL',
-        statusColor: '#a8ff53',
+        status: 'LOGGED',
       });
       dispatched.push({ type: 'steps', value: stepsVal });
     }
@@ -137,20 +137,32 @@ function localFallbackResponse(opts = {}) {
   const sleep = byAgent('sleep');
   const steps = byAgent('step');
   const weather = byAgent('weather');
-  const sleepText = sleep ? String(sleep.status || '').trim() : 'Sleep data unavailable';
-  const stepsText = steps ? String(steps.status || '').trim() : 'Steps data unavailable';
-  const weatherText = weather ? String(weather.status || '').trim() : 'Weather data unavailable';
+  const sleepText = sleep ? String(sleep.status || '').trim() : '';
+  const stepsText = steps ? String(steps.status || '').trim() : '';
+  const weatherText = weather ? String(weather.status || '').trim() : '';
   const isWeatherCritical = /strong\s+wind|critical|thermal drain/i.test(weatherText);
   const discussLead = discussAgent
     ? `I'm in offline mode, but let's talk specifically about the ${discussAgent} report. `
     : '';
+  const known = [];
+  if (stepsText) known.push(`Steps: ${stepsText}`);
+  if (sleepText) known.push(`Sleep: ${sleepText}`);
+  if (weatherText) known.push(`Weather: ${weatherText}`);
+  const missing = [];
+  if (!stepsText) missing.push('steps');
+  if (!sleepText) missing.push('sleep');
+  if (!weatherText) missing.push('weather');
+  const knownPart = known.length
+    ? `From your local data: ${known.join('. ')}.`
+    : "I don't have any steps, sleep, or weather data stored locally right now, so I can't assess today.";
+  const missingPart = known.length && missing.length ? ` No ${missing.join(' or ')} data on record.` : '';
   const action = isWeatherCritical
-    ? 'Because of the Strong Wind alert, stay indoors and switch to a safe indoor walk/mobility block.'
-    : 'Conditions look stable; continue your routine with normal caution.';
+    ? ' Because of the Strong Wind alert, stay indoors and switch to a safe indoor walk/mobility block.'
+    : '';
   const mockNote = mockMetrics.length
     ? ` Parsed ${mockMetrics.map((m) => `${m.value} (${m.type})`).join(', ')} from your message and pushed to agent cards (local bridge).`
     : '';
-  return `[LOCAL MODE] ${discussLead}I've analyzed your local data: ${stepsText}. ${sleepText}. Weather: ${weatherText}. ${action}${mockNote}`;
+  return `[LOCAL MODE] ${discussLead}${knownPart}${missingPart}${action}${mockNote}`;
 }
 
 /**
@@ -200,35 +212,35 @@ function getTodayLocalIsoDate() {
   return `${y}-${m}-${d}`;
 }
 
-const SERRON_USER_PROFILE = {
-  name: 'Anton',
-  age: 43,
-  location: 'NJ',
-  occupation: 'IT Architect/Developer',
-  goals: [
-    'Longevity optimization',
-    'High nutritional density',
-    '10,000 steps daily target',
-  ],
-};
+/**
+ * Only fields the user actually provided (Master Record); absent fields are omitted, never defaulted.
+ * @returns {NonNullable<ReturnType<typeof getUserProfile>> | {}}
+ */
+function getProvidedUserProfile() {
+  return getUserProfile() || {};
+}
 
 /**
  * Assembles a live context snapshot for the current TALK request.
  * Called on every send so the LLM always reasons against the freshest state.
  *
- * @returns {Promise<{ profile: typeof SERRON_USER_PROFILE, contextInstruction: string }>}
+ * @returns {Promise<{ profile: ReturnType<typeof getProvidedUserProfile>, contextInstruction: string }>}
  */
 async function getSystemContextSnapshot() {
   let biometricsSummary = 'No biometric data recorded today.';
+  /** @type {string[]} */
+  const biometricKeys = [];
   try {
     const record = await getMetricsByDate(getTodayLocalIsoDate());
     if (record && record.metrics) {
       const parts = [];
       if (Number.isFinite(record.metrics.steps)) {
         parts.push(`Steps today: ${Math.round(record.metrics.steps)}`);
+        biometricKeys.push('steps');
       }
       if (Number.isFinite(record.metrics.sleep)) {
         parts.push(`Sleep last night: ${Math.round(record.metrics.sleep * 10) / 10} hours`);
+        biometricKeys.push('sleep');
       }
       if (parts.length) biometricsSummary = parts.join('. ') + '.';
     }
@@ -236,18 +248,102 @@ async function getSystemContextSnapshot() {
     // IndexedDB unavailable — proceed with "no data" summary.
   }
 
+  const profile = getProvidedUserProfile();
+  const profileBits = [];
+  if (profile.name) profileBits.push(`name ${profile.name}`);
+  if (profile.age != null) profileBits.push(`age ${profile.age}`);
+  if (profile.goals) profileBits.push(`goals: ${profile.goals.join('; ')}`);
+  if (profile.diet) profileBits.push(`diet: ${profile.diet.join('; ')}`);
+  if (profile.habits) profileBits.push(`habits: ${profile.habits.join('; ')}`);
+
   const contextInstruction = [
-    `User: ${SERRON_USER_PROFILE.name}, ${SERRON_USER_PROFILE.age}, ${SERRON_USER_PROFILE.occupation}, ${SERRON_USER_PROFILE.location}.`,
+    `User-provided profile: ${profileBits.length ? profileBits.join(', ') : 'nothing provided yet'}.`,
     `Current State: ${biometricsSummary}`,
-    `Goals: ${SERRON_USER_PROFILE.goals.join('; ')}.`,
+    'Anything not listed above is unknown: do not assume, estimate, or invent it.',
     'Analyze the user\'s input considering this context.',
     'Be concise, logical, and focus on systemic efficiency.',
-    'Provide insights on how today\'s metrics impact his stated goals.',
+    'Relate today\'s metrics to the user\'s stated goals only if goals are listed above.',
     'NO medical advice.',
     'Tone: hardware-grade, analytical, candid.',
   ].join(' ');
 
-  return { profile: SERRON_USER_PROFILE, contextInstruction };
+  return { profile, contextInstruction, biometricKeys };
+}
+
+const LEDGER_RECENT_LIMIT = 5;
+const USER_MEMORY_LOG_ITEM_CHARS = 60;
+
+const PROFILE_FIELD_LOG_LABELS = {
+  name: 'name',
+  age: 'age',
+  location: 'location',
+  goals: 'goals',
+  wantFromObrium: 'what you want from Obrium',
+  motivationLevel: 'motivation',
+  diet: 'diet',
+  habits: 'habits',
+};
+
+/**
+ * Newest ledger rows only, slimmed to what the model uses. The row for a discussed Feed card is always kept.
+ * @param {{ agent_insights?: Array<object> }} ledger
+ * @param {string} [discussAgent]
+ */
+function selectRecentLedgerRows(ledger, discussAgent) {
+  const rows = Array.isArray(ledger && ledger.agent_insights) ? [...ledger.agent_insights] : [];
+  rows.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+  const picked = rows.slice(0, LEDGER_RECENT_LIMIT);
+  const wanted = String(discussAgent || '').trim().toLowerCase();
+  if (wanted && !picked.some((r) => String(r.agent || '').toLowerCase() === wanted)) {
+    const row = rows.find((r) => String(r.agent || '').toLowerCase() === wanted);
+    if (row) picked.push(row);
+  }
+  return picked.map((r) => ({
+    agent: r.agent,
+    status: r.status,
+    priority: r.priority,
+    ...(r.done ? { done: true } : {}),
+    updatedAt: r.updatedAt,
+  }));
+}
+
+/**
+ * Data categories in a Talk request body, for the data-sent log.
+ * @param {object} body
+ * @param {{ requestType: string, biometricKeys: string[], extraCategories: string[] }} meta
+ */
+function describeTalkPayload(body, meta) {
+  const cats = [];
+  if (meta.requestType === DATA_SENT_REQUEST_TYPES.PROFILE_GREETING) {
+    cats.push('greeting instruction (no user text)');
+  } else {
+    cats.push(`message text (${String(body.message || '').length} chars)`);
+  }
+  const profileKeys = Object.keys(body.userProfile || {}).filter((k) => body.userProfile[k] != null);
+  cats.push(
+    profileKeys.length
+      ? `profile: ${profileKeys.map((k) => PROFILE_FIELD_LOG_LABELS[k] || k).join(', ')}`
+      : 'profile: nothing provided yet',
+  );
+  cats.push(meta.biometricKeys.length ? `today's biometrics: ${meta.biometricKeys.join(', ')}` : "today's biometrics: none recorded");
+  cats.push(...meta.extraCategories);
+  const st = body.system_state || {};
+  if (Array.isArray(st.common_ledger_recent)) {
+    cats.push(`ledger: ${st.common_ledger_recent.length} item${st.common_ledger_recent.length === 1 ? '' : 's'}`);
+  }
+  const insights = st.user_memory && Array.isArray(st.user_memory.insights) ? st.user_memory.insights : null;
+  if (insights) {
+    const shown = insights.map((x) => {
+      const s = String(x);
+      return s.length > USER_MEMORY_LOG_ITEM_CHARS ? `${s.slice(0, USER_MEMORY_LOG_ITEM_CHARS - 1)}…` : s;
+    });
+    cats.push(`user_memory: ${insights.length} item${insights.length === 1 ? '' : 's'}${shown.length ? ` (${shown.join('; ')})` : ''}`);
+  }
+  if (st.discuss_context) {
+    const agent = st.discuss_context.agent ? String(st.discuss_context.agent) : 'Feed card';
+    cats.push(`Feed card discussed: ${agent}`);
+  }
+  return cats;
 }
 
 /**
@@ -417,15 +513,9 @@ export async function sendMessageToLLM(text, context) {
   body.profileContext = callerContext
     ? `${snapshot.contextInstruction}\n\n${callerContext}`
     : snapshot.contextInstruction;
-  let hasRecentLedger = false;
+  const requestType = (context && context.requestType) || DATA_SENT_REQUEST_TYPES.TALK_MESSAGE;
+  const includeLedger = !(context && context.includeLedger === false);
   try {
-    const ledger = getCommonLedger();
-    const recentAgentInsights = Array.isArray(ledger.agent_insights)
-      ? [...ledger.agent_insights]
-          .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
-          .slice(0, 10)
-      : [];
-    hasRecentLedger = recentAgentInsights.length > 0;
     const extraState =
       context && context.systemState && typeof context.systemState === 'object' && !Array.isArray(context.systemState)
         ? context.systemState
@@ -436,24 +526,30 @@ export async function sendMessageToLLM(text, context) {
       typeof window.__serronDiscussContext === 'object'
         ? window.__serronDiscussContext
         : null;
-    body.system_state = hasRecentLedger
-      ? {
-          ...extraState,
-          common_ledger: ledger,
-          common_ledger_recent: recentAgentInsights,
-          user_memory: getUserMemory(),
-          ...(discussContext ? { discuss_context: discussContext } : {}),
-        }
-      : {
-          ...extraState,
-          // Data-integrity fallback: avoid sending empty recent ledger payloads.
-          user_memory: getUserMemory(),
-          simplified_context: true,
-          ...(discussContext ? { discuss_context: discussContext } : {}),
-        };
+    const recentLedger = includeLedger
+      ? selectRecentLedgerRows(getCommonLedger(), discussContext && discussContext.agent)
+      : [];
+    body.system_state = {
+      ...extraState,
+      user_memory: getUserMemory(),
+      ...(recentLedger.length ? { common_ledger_recent: recentLedger } : { simplified_context: true }),
+      ...(discussContext ? { discuss_context: discussContext } : {}),
+    };
   } catch (_) {
     body.system_state = { simplified_context: true };
   }
+
+  const logEntry = recordDataSent({
+    requestType,
+    trigger: 'user',
+    dataCategoriesIncluded: describeTalkPayload(body, {
+      requestType,
+      biometricKeys: snapshot.biometricKeys,
+      extraCategories: Array.isArray(context && context.dataCategories) ? context.dataCategories : [],
+    }),
+  });
+  const notSent = () => updateDataSentOutcome(logEntry.id, 'not sent — relay offline, answered on device');
+  let reachedRelay = false;
 
   try {
     const discussContext = body.system_state && body.system_state.discuss_context ? body.system_state.discuss_context : null;
@@ -463,6 +559,7 @@ export async function sendMessageToLLM(text, context) {
     if ((!NetworkController.isBackendReachable || mustStayLocal) && !localhostDevRelay) {
       if (typeof window !== 'undefined') window.__serronForceLocalConversation = true;
       setOfflineBrainIndicator(true);
+      notSent();
       return localFallbackResponse({ discussContext, userInput: text });
     }
     if (typeof window !== 'undefined') window.__serronForceLocalConversation = false;
@@ -472,9 +569,11 @@ export async function sendMessageToLLM(text, context) {
       headers: buildBackendHeaders(),
       body: JSON.stringify(body),
     });
+    reachedRelay = true;
+    updateDataSentOutcome(logEntry.id, response.ok ? 'sent' : `sent — relay returned HTTP ${response.status}`);
 
     if (!response.ok) {
-      let errorMessage = 'Unable to get response from Serron';
+      let errorMessage = 'Unable to get response from Obrium';
       let errorBody = null;
       try {
         errorBody = await response.json();
@@ -508,7 +607,7 @@ export async function sendMessageToLLM(text, context) {
 
     if (!data.reply || typeof data.reply !== 'string') {
       logTalkError('bad-shape', new Error('missing reply'), { API_URL, dataKeys: data ? Object.keys(data) : [] });
-      throw new Error('No reply in response from Serron');
+      throw new Error('No reply in response from Obrium');
     }
 
     if (typeof window !== 'undefined') {
@@ -527,6 +626,7 @@ export async function sendMessageToLLM(text, context) {
     return replyOut;
   } catch (error) {
     if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+      updateDataSentOutcome(logEntry.id, 'timed out — the relay may have received it');
       logTalkError('timeout', error, {
         API_URL,
         backendBase: BACKEND_URL,
@@ -557,8 +657,11 @@ export async function sendMessageToLLM(text, context) {
       const discussContext = body.system_state && body.system_state.discuss_context ? body.system_state.discuss_context : null;
       if (typeof window !== 'undefined') window.__serronForceLocalConversation = true;
       setOfflineBrainIndicator(true);
+      notSent();
       return localFallbackResponse({ discussContext, userInput: text });
     }
+
+    if (!reachedRelay) updateDataSentOutcome(logEntry.id, 'not sent — request failed');
 
     if (isConnectionRefused || isNetwork) {
       logTalkError('network-retries-exhausted', error, {
@@ -572,6 +675,7 @@ export async function sendMessageToLLM(text, context) {
       const discussContext = body.system_state && body.system_state.discuss_context ? body.system_state.discuss_context : null;
       if (typeof window !== 'undefined') window.__serronForceLocalConversation = true;
       setOfflineBrainIndicator(true);
+      notSent();
       return localFallbackResponse({ discussContext, userInput: text });
     }
 
@@ -616,9 +720,22 @@ async function triggerProactiveAnalysis(biometricData) {
   const BACKEND_URL = getBackendURL();
   const API_URL = `${BACKEND_URL}/api/talk`;
   const analysisPrompt =
-    'SYSTEM PROMPT: Analyze these new biometrics for Anton (43, IT Architect, goals: 10k steps). Data: ' +
+    'SYSTEM PROMPT: Analyze these new biometrics. Use only the values in Data; do not assume any other facts about the user. Data: ' +
     JSON.stringify(biometricData) +
     '. IF there is a critical deficit (e.g., sleep < 6h, steps very low), generate a strict, 2-sentence hardware-grade warning about cognitive/systemic risks. IF data is normal/acceptable, reply EXACTLY with the string \'STATUS_NORMAL\'.';
+
+  const fields = Object.keys(biometricData).filter((k) => biometricData[k] != null);
+  const logEntry = recordDataSent({
+    requestType: DATA_SENT_REQUEST_TYPES.BACKGROUND_BIOMETRIC_CHECK,
+    trigger: 'automatic',
+    dataCategoriesIncluded: [
+      `biometrics (raw values): ${fields.join(', ') || 'none'}`,
+      'no profile, ledger or user_memory attached',
+    ],
+  });
+  console.info(
+    `[Obrium] Background check: sending new biometrics (${fields.join(', ')}) to the AI without a Talk message.`,
+  );
 
   try {
     const abortController = new AbortController();
@@ -632,15 +749,26 @@ async function triggerProactiveAnalysis(biometricData) {
     });
     clearTimeout(timeoutId);
 
-    if (!response.ok) return;
+    if (!response.ok) {
+      updateDataSentOutcome(logEntry.id, `sent — relay returned HTTP ${response.status}`);
+      return;
+    }
 
     const data = await response.json();
     const reply = String(data?.reply || '').trim();
 
-    if (!reply || reply === 'STATUS_NORMAL') return;
+    if (!reply || reply === 'STATUS_NORMAL') {
+      updateDataSentOutcome(logEntry.id, 'sent — result: normal, nothing shown');
+      return;
+    }
 
+    updateDataSentOutcome(logEntry.id, 'sent — result: warning returned');
     showAdvisoryInUI(reply);
   } catch (err) {
+    updateDataSentOutcome(
+      logEntry.id,
+      err && err.name === 'AbortError' ? 'timed out — the relay may have received it' : 'not sent — request failed',
+    );
     logTalkError('proactive-analysis', err, { biometricData });
   }
 }

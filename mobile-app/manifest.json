@@ -1,7 +1,7 @@
 {
   "_comment": "Base Directory Rule: All resources must remain relative to the app root to support PWA hosting from any path (e.g. / or /mobile-app/). Use relative paths for start_url, scope, and icon src.",
-  "name": "Serron",
-  "short_name": "Serron",
+  "name": "Obrium",
+  "short_name": "Obrium",
   "id": "./",
   "start_url": "./",
   "scope": "./",

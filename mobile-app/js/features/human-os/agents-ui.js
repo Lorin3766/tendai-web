@@ -50,7 +50,7 @@ export function openEditAgentModal(onSaved, edit) {
   const codeBlock = document.createElement('pre');
   codeBlock.className = 'human-os-modal__code';
   const code = document.createElement('code');
-  code.textContent = `TendAIHumanOS.writeAgentInsight(\n  'AgentName',\n  'Short status line'\n);`;
+  code.textContent = `ObriumHumanOS.writeAgentInsight(\n  'AgentName',\n  'Short status line'\n);`;
   codeBlock.appendChild(code);
 
   const nameLabel = document.createElement('label');

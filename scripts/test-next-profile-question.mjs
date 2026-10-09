@@ -1,5 +1,5 @@
 /**
- * Dev-only checks for getNextProfileQuestion() — no UI.
+ * Part 1 verification: getNextProfileQuestion() — data layer only.
  * Usage: node scripts/test-next-profile-question.mjs
  */
 import {
@@ -8,8 +8,10 @@ import {
   getNextProfileQuestion,
 } from '../mobile-app/js/features/profile/profile-schema.js';
 
-function assert(cond, msg) {
-  if (!cond) throw new Error(msg);
+const results = [];
+
+function record(name, passed, detail) {
+  results.push({ name, passed, detail });
 }
 
 function filledBody() {
@@ -78,62 +80,147 @@ function filledGoals() {
 }
 
 function pathOf(q) {
-  return q ? q.path : null;
+  return q == null ? null : q.path;
+}
+
+function expectPath(name, profile, expected) {
+  const q = getNextProfileQuestion(profile);
+  const actual = pathOf(q);
+  const passed = actual === expected;
+  record(
+    name,
+    passed,
+    passed
+      ? actual === null
+        ? 'null (profile complete)'
+        : `${q.sectionLabel} / ${q.fieldLabel} (${actual})`
+      : `expected ${expected}, got ${actual}`,
+  );
 }
 
 const schema = getProfileSchema();
 const catalog = getProfileQuestionCatalog();
 
+let catalogOk = true;
+const missing = [];
 for (const section of catalog) {
-  assert(schema[section.key], `schema missing section ${section.key}`);
+  if (!schema[section.key]) {
+    catalogOk = false;
+    missing.push(section.key);
+    continue;
+  }
   for (const field of section.fields) {
-    assert(
-      Object.prototype.hasOwnProperty.call(schema[section.key], field.key),
-      `schema missing ${section.key}.${field.key}`,
-    );
+    if (!Object.prototype.hasOwnProperty.call(schema[section.key], field.key)) {
+      catalogOk = false;
+      missing.push(`${section.key}.${field.key}`);
+    }
   }
 }
+record(
+  'Catalog keys exist on schema (no invented fields)',
+  catalogOk,
+  catalogOk
+    ? catalog.map((s) => `${s.label}: ${s.fields.length}`).join(' | ')
+    : `missing: ${missing.join(', ')}`,
+);
 
-const fresh = getNextProfileQuestion({});
-assert(pathOf(fresh) === 'body.sexAtBirth', `fresh expected body.sexAtBirth, got ${pathOf(fresh)}`);
-assert(fresh.sectionLabel === 'Your Body', `fresh sectionLabel ${fresh.sectionLabel}`);
-assert(fresh.fieldLabel === 'Sex at birth', `fresh fieldLabel ${fresh.fieldLabel}`);
+record(
+  'Section walk order',
+  catalog.map((s) => s.key).join(',') === 'body,health,mind,lifestyle,goals',
+  catalog.map((s) => s.label).join(' → '),
+);
 
-const bodyPartial = getNextProfileQuestion({
+// --- required checkpoints ---
+expectPath('All fields empty (fresh user)', {}, 'body.sexAtBirth');
+expectPath('Empty object body/health/mind/lifestyle/goals', {
+  body: {},
+  health: {},
+  mind: {},
+  lifestyle: {},
+  goals: {},
+}, 'body.sexAtBirth');
+expectPath('Omitted profile (undefined)', undefined, 'body.sexAtBirth');
+
+expectPath('Partial: only sexAtBirth filled', {
   body: { sexAtBirth: 'female' },
-});
-assert(
-  pathOf(bodyPartial) === 'body.genderIdentity',
-  `partial body expected genderIdentity, got ${pathOf(bodyPartial)}`,
-);
+}, 'body.genderIdentity');
 
-const mid = getNextProfileQuestion({ body: filledBody() });
-assert(
-  pathOf(mid) === 'health.healthConditions',
-  `mid expected health.healthConditions, got ${pathOf(mid)}`,
-);
-assert(mid.sectionLabel === 'Your Health', `mid sectionLabel ${mid.sectionLabel}`);
+expectPath('Partial: Body complete, rest empty', {
+  body: filledBody(),
+}, 'health.healthConditions');
 
-const midMind = getNextProfileQuestion({
+expectPath('Partial: Body + Health complete', {
   body: filledBody(),
   health: filledHealth(),
-});
-assert(pathOf(midMind) === 'mind.stressLevel', `mid-mind expected mind.stressLevel, got ${pathOf(midMind)}`);
+}, 'mind.stressLevel');
 
-const complete = getNextProfileQuestion({
+expectPath('Partial: through Mind, Lifestyle next', {
+  body: filledBody(),
+  health: filledHealth(),
+  mind: filledMind(),
+}, 'lifestyle.eatingPattern');
+
+expectPath('Partial: through Lifestyle, Goals next', {
+  body: filledBody(),
+  health: filledHealth(),
+  mind: filledMind(),
+  lifestyle: filledLifestyle(),
+}, 'goals.primaryGoals');
+
+expectPath('All fields filled (complete profile)', {
   body: filledBody(),
   health: filledHealth(),
   mind: filledMind(),
   lifestyle: filledLifestyle(),
   goals: filledGoals(),
-});
-assert(complete === null, `complete expected null, got ${JSON.stringify(complete)}`);
+}, null);
 
-console.log('OK  fresh       →', `${fresh.sectionLabel} / ${fresh.fieldLabel} (${fresh.path})`);
-console.log('OK  mid-profile →', `${mid.sectionLabel} / ${mid.fieldLabel} (${mid.path})`);
-console.log('OK  complete    →', complete);
-console.log('OK  extra walks →', `${bodyPartial.path}, ${midMind.path}`);
-console.log(
-  'Catalog counts:',
-  catalog.map((s) => `${s.label}: ${s.fields.length}`).join(' | '),
-);
+// --- extra edge cases ---
+expectPath('Empty arrays do not count as answered', {
+  body: { ...filledBody(), regularDiscomfort: [] },
+}, 'body.regularDiscomfort');
+
+expectPath('Placeholder string is unanswered', {
+  body: { ...filledBody(), bloodType: 'Select...' },
+}, 'body.bloodType');
+
+expectPath('goalsPriority default 2 is unanswered', {
+  body: { ...filledBody(), goalsPriority: 2 },
+}, 'body.goalsPriority');
+
+expectPath('stressLevel default 3 is unanswered', {
+  body: filledBody(),
+  health: filledHealth(),
+  mind: { ...filledMind(), stressLevel: 3 },
+}, 'mind.stressLevel');
+
+expectPath('Whitespace-only string is unanswered', {
+  body: { ...filledBody(), bodyBuild: '   ' },
+}, 'body.bodyBuild');
+
+expectPath('Does not skip ahead to a later hole', {
+  body: { sexAtBirth: 'male', age: 43 },
+}, 'body.genderIdentity');
+
+expectPath('Last Goals field empty after everything else', {
+  body: filledBody(),
+  health: filledHealth(),
+  mind: filledMind(),
+  lifestyle: filledLifestyle(),
+  goals: { ...filledGoals(), wantFromTendAI: [] },
+}, 'goals.wantFromTendAI');
+
+expectPath('Legacy-only body fields do not satisfy modal catalog', {
+  body: { gender: 'male', goalFocus: 'weight-loss', intensity: 3 },
+}, 'body.sexAtBirth');
+
+const failed = results.filter((r) => !r.passed);
+console.log('\n=== Part 1 — getNextProfileQuestion() verification ===\n');
+for (const r of results) {
+  console.log(`${r.passed ? 'PASS' : 'FAIL'}  ${r.name}`);
+  console.log(`      ${r.detail}`);
+}
+console.log(`\n${results.length - failed.length}/${results.length} passed`);
+if (failed.length) {
+  process.exit(1);
+}

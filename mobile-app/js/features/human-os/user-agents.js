@@ -6,6 +6,49 @@ import { writeAgentInsight, renameAgentInsightKey, removeAgentInsightsForAgent }
 import { getFocusAreaById, getFocusAreaByName } from './focus-areas.js';
 
 const STORAGE_KEY = 'tendai_user_agents';
+const FABRICATED_PROFILE_SCRUB_KEY = 'tendai_focus_profile_scrub_v1';
+
+/**
+ * Earlier "+ Add Focus" builds wrote invented fallback facts into every agent instruction
+ * (name "Anton", "83 kg", "1996 subaortic stenosis"). Replace them with real profile data or
+ * "not provided". Runs once per device.
+ */
+function scrubFabricatedProfileFacts() {
+  try {
+    if (localStorage.getItem(FABRICATED_PROFILE_SCRUB_KEY) === '1') return;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(list) && list.length) {
+      let realName = '';
+      try {
+        const profile = JSON.parse(localStorage.getItem('tendai-profile-state') || '{}');
+        if (typeof profile?.body?.name === 'string') realName = profile.body.name.trim();
+      } catch (_) {}
+      let changed = false;
+      const next = list.map((row) => {
+        if (!row || typeof row.instruction !== 'string') return row;
+        const scrubbed = row.instruction
+          .replace(
+            'USER PROFILE (inject into every reasoning turn; do not contradict without explicit user override):',
+            'USER PROFILE (only what the user has provided; anything marked "not provided" is unknown and must not be invented):'
+          )
+          .replace(/^- Name: Anton[ \t]*$/m, `- Name: ${realName || 'not provided'}`)
+          .replace(/^- Weight: 83 kg \(baseline on file[^\n]*$/m, '- Weight: not provided (unknown — do not assume a value).')
+          .replace(
+            /^- Cardiac history \(on file for agent safety\): 1996 subaortic stenosis[^\n]*$/m,
+            '- Medical / cardiac context: none provided (unknown — do not assume any condition).'
+          );
+        if (scrubbed === row.instruction) return row;
+        changed = true;
+        return { ...row, instruction: scrubbed };
+      });
+      if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    }
+    localStorage.setItem(FABRICATED_PROFILE_SCRUB_KEY, '1');
+  } catch (_) {}
+}
+
+if (typeof localStorage !== 'undefined') scrubFabricatedProfileFacts();
 
 /** @typedef {'Active'|'Paused'|'Incomplete'} AgentLifecycleStatus */
 

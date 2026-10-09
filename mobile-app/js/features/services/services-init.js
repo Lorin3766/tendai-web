@@ -18,6 +18,9 @@ import { getUserAgentById, deleteUserAgent, updateUserAgent } from '../human-os/
       getLedger: getCommonLedger,
       writeAgentInsight,
     };
+    window.SerronHumanOS = window.TendAIHumanOS;
+    window.SereginOSHumanOS = window.TendAIHumanOS;
+    window.ObriumHumanOS = window.TendAIHumanOS;
   }
 
   async function refreshServicesAfterAgentChange() {

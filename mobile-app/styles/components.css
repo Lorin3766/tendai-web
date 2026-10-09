@@ -796,8 +796,8 @@ body.calendar-open {
   flex: 1;
   box-sizing: border-box;
   padding: 8px 8px 8px 14px;
-  border-radius: var(--radius-md, 16px);
-  border: 1px solid rgba(255, 248, 235, 0.1);
+  border-radius: var(--radius-sm, 12px);
+  border: 1px solid rgba(255, 248, 235, 0.28);
   background: rgba(0, 0, 0, 0.22);
   box-shadow: none;
   transition:
@@ -938,7 +938,7 @@ body.calendar-open {
     width: 100%;
     max-width: none;
     box-sizing: border-box;
-    padding: 10px 0 0 !important;
+    padding: 10px 16px 12px !important;
     margin: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -1560,6 +1560,13 @@ body.calendar-open {
   align-self: flex-start;
   font-size: 12px;
   padding: 6px 12px;
+}
+
+.drift-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 /* TALK: [SIGNAL: XYZ] â€” Save to Feed/Profile button */
@@ -2695,6 +2702,57 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 }
 .talk-quick-reply-btn:hover {
   border-color: rgba(246, 195, 106, 0.5);
+}
+
+.talk-pace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 6px;
+  width: 100%;
+}
+
+.talk-pace-actions .btn {
+  flex: 1 1 140px;
+  min-height: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.talk-pace-continue {
+  background: linear-gradient(120deg, #fce3b6, var(--gold, #f6c36a));
+  border: 1px solid rgba(246, 195, 106, 0.72);
+  color: #2c1a00;
+  box-shadow: 0 8px 20px rgba(246, 195, 106, 0.28);
+}
+
+.talk-pace-continue:hover:not(:disabled),
+.talk-pace-continue:focus-visible:not(:disabled) {
+  background: linear-gradient(120deg, #ffe9c4, #f6c36a);
+  border-color: rgba(246, 195, 106, 0.9);
+  color: #2c1a00;
+}
+
+.talk-pace-later {
+  background: rgba(255, 248, 235, 0.06);
+  border: 1px solid rgba(255, 248, 235, 0.22);
+  color: var(--fg-soft, #d4cdc4);
+  box-shadow: none;
+}
+
+.talk-pace-later:hover:not(:disabled),
+.talk-pace-later:focus-visible:not(:disabled) {
+  background: rgba(255, 248, 235, 0.1);
+  border-color: rgba(255, 248, 235, 0.32);
+  color: var(--fg, #f7f3ee);
+}
+
+.talk-pace-actions .btn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 /* Feed â€” glass utility (TendAI depth) */
@@ -7450,6 +7508,23 @@ button.sidebar-core-retry[hidden] {
   color: var(--fg-muted);
   line-height: 1.5;
   margin-bottom: 12px;
+}
+
+.settings-inferred-notes {
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.settings-inferred-notes__list {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--fg);
+}
+
+.settings-inferred-notes__clear {
+  font-size: 13px;
 }
 
 .settings-coming-soon,

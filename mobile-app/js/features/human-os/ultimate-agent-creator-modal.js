@@ -304,7 +304,7 @@ const SOURCE_DEFS = {
   apple_health: { label: 'Apple Health / Watch', sub: 'Automatic sync when connected' },
   google_fit: { label: 'Google Fit', sub: 'Android health stack' },
   devices_bt: { label: 'HARDWARE SYNC', sub: 'Bluetooth and connected apps' },
-  manual: { label: 'TERMINAL UPLINK', sub: 'You log or confirm in TendAI' },
+  manual: { label: 'TERMINAL UPLINK', sub: 'You log or confirm in Obrium' },
   global_api: { label: 'AI insights', sub: 'Guidance without a device link' },
 };
 
@@ -318,7 +318,7 @@ const TRACKING_OPTIONS = [
     sub: 'Apple Health, wearables, and connected apps',
     mode: 'auto',
   },
-  { id: 'manual', label: 'TERMINAL UPLINK', sub: 'You log or confirm in TendAI', mode: 'manual' },
+  { id: 'manual', label: 'TERMINAL UPLINK', sub: 'You log or confirm in Obrium', mode: 'manual' },
   { id: 'ai_only', label: 'AI Only', sub: 'Insights and coaching without device data', mode: 'ai_only' },
 ];
 
@@ -425,15 +425,16 @@ export function getUserDeploymentProfileFacts() {
   const body = p.body || {};
   const health = p.health || {};
 
-  let name =
-    (typeof localStorage !== 'undefined' && localStorage.getItem('tendai-display-name')) || '';
-  if (!name.trim()) name = 'Anton';
+  const rawName = typeof body.name === 'string' && body.name.trim()
+    ? body.name
+    : (typeof localStorage !== 'undefined' && localStorage.getItem('tendai-display-name')) || '';
+  const name = rawName.trim() || 'not provided';
 
   const w = body.weight;
   const weightLine =
     w != null && w !== '' && !Number.isNaN(Number(w))
       ? `Weight: ${w} kg (from Profile — confirm units in settings if needed).`
-      : 'Weight: 83 kg (baseline on file — update Profile for live sync).';
+      : 'Weight: not provided (unknown — do not assume a value).';
 
   const heartBits = [];
   if (Array.isArray(health.chronicDiseases) && health.chronicDiseases.length) {
@@ -448,9 +449,9 @@ export function getUserDeploymentProfileFacts() {
   const heartLine =
     heartBits.length > 0
       ? `Medical / cardiac context (Profile): ${heartBits.join('; ')}.`
-      : 'Cardiac history (on file for agent safety): 1996 subaortic stenosis — prioritize conservative exertion guidance unless Profile is updated.';
+      : 'Medical / cardiac context: none provided (unknown — do not assume any condition).';
 
-  return { name: name.trim() || 'Anton', weightLine, heartLine };
+  return { name, weightLine, heartLine };
 }
 
 function getTypeDef(domainId, typeId) {
@@ -481,7 +482,7 @@ function buildSystemPrompt(sel) {
     `Data path: ${src.label} — ${src.sub}.`,
     modeLine,
     '',
-    'USER PROFILE (inject into every reasoning turn; do not contradict without explicit user override):',
+    'USER PROFILE (only what the user has provided; anything marked "not provided" is unknown and must not be invented):',
     `- Name: ${name}`,
     `- ${weightLine}`,
     `- ${heartLine}`,

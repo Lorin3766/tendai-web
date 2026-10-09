@@ -3,9 +3,15 @@
 // @role: ui
 import { sendMessageToLLM } from '../js/features/talk/llm.js';
 import { getCommonLedger } from '../js/features/human-os/common-ledger.js';
-import { getSystemContext, getUserProfile } from '../js/features/talk/talk-context.js';
+import { getSystemContextDetails, getUserProfile } from '../js/features/talk/talk-context.js';
+import { recordDataSent, DATA_SENT_REQUEST_TYPES } from '../js/features/talk/data-sent-log.js';
 import { talkState, profileState } from '../js/state.js';
 import { getNextProfileQuestion } from '../js/features/profile/profile-schema.js';
+import {
+  parseProfileAnswer,
+  applyProfileTalkAnswer,
+  getConversationalAsk,
+} from '../js/features/talk/profile-answer-parser.js';
 import { parseAndUpdateState } from '../js/features/talk/messageParser.js';
 import { extractRoutineSuggestionFromText, protocolIdForRoutine } from '../js/features/talk/talk-engine.js';
 import { getUserMemory, learnFromUserMessage } from '../js/features/talk/user-memory.js';
@@ -15,6 +21,7 @@ import { publishBackendStatus } from '../js/core/backend-fetch.js';
 
 /** Regex for [SIGNAL: XYZ] — TendAI secret sauce: offer to save to Feed/Profile */
 const SIGNAL_REGEX = /\[SIGNAL:\s*([^\]]+)\]/gi;
+const PROACTIVE_TALK_SESSION_LIMIT = 3;
 
 /**
  * Show or hide the amber advisory badge on all Talk navigation elements.
@@ -36,6 +43,9 @@ export class TalkComponent {
     this.selectMode = false;
     this.selectModeBar = null;
     this._profilePromptSeq = 0;
+    this._proactiveAnswersThisSession = 0;
+    this._awaitingPaceChoice = false;
+    this._proactivePassiveThisSession = false;
     this.init();
   }
 
@@ -320,7 +330,7 @@ export class TalkComponent {
     const lines = [
       'RUN MODE: ' + runMode,
       'Local: ' + now.toISOString() + ' timezone=' + tz,
-      'tendai_* keys: ' + (keys.length ? keys.join(', ') : 'none')
+      'localStorage keys: ' + (keys.length ? keys.join(', ') : 'none')
     ];
     const text = lines.join('\n');
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -454,8 +464,11 @@ export class TalkComponent {
   }
 
   // Add message to chat (AI messages get typing effect and command-center styling)
-  addMessageToChat(text, type = 'user', shouldSave = true, timestamp = null) {
+  addMessageToChat(text, type = 'user', shouldSave = true, timestamp = null, options = {}) {
     if (!this.conversationArea) return null;
+
+    const isProfilePrompt = Boolean(options.profilePrompt);
+    const profilePromptPath = options.profilePromptPath ? String(options.profilePromptPath) : '';
 
     if (timestamp === null) {
       timestamp = Date.now();
@@ -472,6 +485,9 @@ export class TalkComponent {
     messageDiv.className = `message ${messageType} message-appearing${isAi ? ' message-command-center' : ''}`;
     messageDiv.setAttribute('data-timestamp', timestamp);
     messageDiv.setAttribute('data-msg-id', msgId);
+    if (isProfilePrompt && profilePromptPath) {
+      messageDiv.setAttribute('data-profile-prompt-path', profilePromptPath);
+    }
 
     const messageContent = document.createElement('div');
     messageContent.className = 'message-content';
@@ -496,11 +512,43 @@ export class TalkComponent {
     messageDiv.appendChild(messageContent);
     this.conversationArea.appendChild(messageDiv);
 
+    const finalizeAiMessage = (displayText, signal) => {
+      textP.textContent = displayText;
+      messageDiv.classList.remove('message-typing');
+      messageDiv.classList.add('message-visible');
+      if (!isProfilePrompt) {
+        if (signal) this.appendSignalSaveButton(messageContent, signal, displayText);
+        const routine = extractRoutineSuggestionFromText(displayText);
+        if (routine) {
+          const protocolId = protocolIdForRoutine(routine.label, routine.time);
+          this.appendProtocolAddButton(messageContent, {
+            id: protocolId,
+            label: routine.label,
+            time: routine.time,
+          });
+        }
+        try {
+          const ledger = getCommonLedger();
+          if (ledger && Array.isArray(ledger.agent_insights) && ledger.agent_insights.length > 0) {
+            this.appendAgentQuickReplies(messageContent);
+          }
+        } catch (_) {}
+      }
+      if (messageDiv.getAttribute('data-talk-pace-prompt') === '1') {
+        this.appendPaceChoiceButtons(messageContent);
+      }
+      if (shouldSave) this.saveChatHistory();
+    };
+
     if (isAi && text) {
       const fullText = String(text);
       const { displayText, signal } = this.parseSignalFromResponse(fullText);
 
       if (isSystem) {
+        textP.textContent = displayText;
+        requestAnimationFrame(() => messageDiv.classList.add('message-visible'));
+        if (shouldSave) this.saveChatHistory();
+      } else if (isProfilePrompt) {
         textP.textContent = displayText;
         requestAnimationFrame(() => messageDiv.classList.add('message-visible'));
         if (shouldSave) this.saveChatHistory();
@@ -517,26 +565,7 @@ export class TalkComponent {
             this.scrollToBottom();
             setTimeout(reveal, typingDelayMs);
           } else {
-            textP.textContent = displayText;
-            messageDiv.classList.remove('message-typing');
-            messageDiv.classList.add('message-visible');
-            if (signal) this.appendSignalSaveButton(messageContent, signal, displayText);
-            const routine = extractRoutineSuggestionFromText(displayText);
-            if (routine) {
-              const protocolId = protocolIdForRoutine(routine.label, routine.time);
-              this.appendProtocolAddButton(messageContent, {
-                id: protocolId,
-                label: routine.label,
-                time: routine.time
-              });
-            }
-            try {
-              const ledger = getCommonLedger();
-              if (ledger && Array.isArray(ledger.agent_insights) && ledger.agent_insights.length > 0) {
-                this.appendAgentQuickReplies(messageContent);
-              }
-            } catch (_) {}
-            if (shouldSave) this.saveChatHistory();
+            finalizeAiMessage(displayText, signal);
           }
         };
         requestAnimationFrame(() => messageDiv.classList.add('message-visible'));
@@ -638,10 +667,12 @@ export class TalkComponent {
     messageContent.insertBefore(btn, timeEl);
   }
 
-  /** Quick replies when Agent ledger has data (CEO synthesis context). */
+  /** Quick replies when Agent ledger has data (CEO synthesis context). Never on profile-question prompts. */
   appendAgentQuickReplies(messageContent) {
     const timeEl = messageContent.querySelector('.message-time');
     if (!timeEl || messageContent.querySelector('.talk-quick-replies')) return;
+    const host = messageContent.closest('.message');
+    if (host && host.getAttribute('data-profile-prompt-path')) return;
     const wrap = document.createElement('div');
     wrap.className = 'talk-quick-replies';
     const replies = [
@@ -717,7 +748,7 @@ export class TalkComponent {
     
     const textP = document.createElement('p');
     textP.className = 'message-text';
-    textP.innerHTML = `TendAI is thinking<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>`;
+    textP.innerHTML = `Obrium is thinking<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>`;
     
     typingDiv.appendChild(textP);
     this.conversationArea.appendChild(typingDiv);
@@ -820,9 +851,10 @@ export class TalkComponent {
     this.conversationArea.querySelectorAll('[data-sleep-checkin-id="' + checkinId + '"]').forEach((el) => el.remove());
   }
 
-  /** First message after system onboarding — replaces default welcome when history is empty. */
+  /** First message after system onboarding — only when profile is already complete (proactive Talk owns incomplete profiles). */
   deliverOnboardingGreeting(text) {
     if (!this.conversationArea || !text) return;
+    if (getNextProfileQuestion(profileState.get())) return;
 
     const talkData = talkState.get();
     talkData.history = [];
@@ -868,13 +900,54 @@ export class TalkComponent {
     this.scrollToBottom();
   }
 
+  /** Remove legacy welcome/onboarding bot rows when proactive profile questions will run. */
+  clearStaleWelcomeMessagesForProactiveFlow() {
+    if (!this.conversationArea) return;
+    let removed = false;
+    this.conversationArea.querySelectorAll('.message.bot:not(.typing-indicator)').forEach((el) => {
+      if (el.getAttribute('data-profile-prompt-path')) return;
+      if (el.getAttribute('data-talk-pace-prompt') === '1') return;
+      const msgId = el.getAttribute('data-msg-id') || '';
+      const header = el.querySelector('.message-system-header');
+      const body = el.querySelector('.message-text')?.textContent || '';
+      const isOnboarding = msgId.startsWith('onboarding-');
+      const isPassiveIdentity = /Identity:\s*(?:Obrium|Seregin OS|Serron|TendAI)/i.test(body);
+      const isOnlineWelcome = /\bI'm online\b/i.test(body);
+      const isWelcomeCard = header && /^Welcome$/i.test(String(header.textContent || '').trim());
+      if (isOnboarding || isPassiveIdentity || isOnlineWelcome || isWelcomeCard) {
+        el.remove();
+        removed = true;
+      }
+    });
+    if (removed) this.saveChatHistory();
+  }
+
+  profilePromptChatOptions(question) {
+    return { profilePrompt: true, profilePromptPath: question.path };
+  }
+
+  isUsableProfileOpening(text, question) {
+    const s = String(text || '').trim();
+    if (!s || /\[LOCAL MODE\]/i.test(s)) return false;
+    if (s.length < 48) return false;
+    if (!/[.?!]\s*$/.test(s)) return false;
+    const expectedAsk = getConversationalAsk(question);
+    if (expectedAsk.includes('?') && !/\?/.test(s)) return false;
+    return true;
+  }
+
   /**
    * On Talk open: if the profile is incomplete, greet briefly and ask the next unanswered field.
    * Skips when the last visible message is already that same prompt. Profile-complete: no-op.
    */
   async onTalkOpened() {
+    this._proactiveAnswersThisSession = 0;
+    this._awaitingPaceChoice = false;
+    this._proactivePassiveThisSession = false;
     const question = getNextProfileQuestion(profileState.get());
     if (!question) return;
+
+    this.clearStaleWelcomeMessagesForProactiveFlow();
 
     const msgs = this.conversationArea
       ? this.conversationArea.querySelectorAll('.message:not(.typing-indicator)')
@@ -896,45 +969,230 @@ export class TalkComponent {
     if (seq !== this._profilePromptSeq) return;
 
     const trimmed = String(text || '').trim();
-    const usable = trimmed && !/\[LOCAL MODE\]/i.test(trimmed)
-      ? trimmed
-      : this.fallbackProfileOpeningPrompt(question);
-    const el = this.addMessageToChat(usable, 'ai');
-    if (el) el.setAttribute('data-profile-prompt-path', question.path);
+    const sanitized = this.sanitizeTalkGreetingText(trimmed);
+    const usable =
+      this.isUsableProfileOpening(sanitized, question)
+        ? sanitized
+        : this.fallbackProfileOpeningPrompt(question);
+    this.addMessageToChat(usable, 'ai', true, null, this.profilePromptChatOptions(question));
   }
 
   fallbackProfileOpeningPrompt(question) {
-    const askByField = {
-      sexAtBirth: 'Were you recorded male or female at birth, or would you rather not say?',
-      genderIdentity: 'How do you describe your gender identity?',
-      age: 'How old are you?',
-      height: 'About how tall are you?',
-      weight: 'About how much do you weigh?',
-      bodyBuild: 'How would you describe your body build?',
-      bloodType: 'Do you know your blood type?',
-      physicalActivity: 'How active is a typical week for you?',
-      regularDiscomfort: 'Any regular aches or discomfort I should know about?',
-    };
-    const ask = askByField[question.fieldKey]
-      || `Could I ask about your ${String(question.fieldLabel || 'next detail').toLowerCase()}?`;
-    return `I'm Serron — I get to know you through conversation so your Feed and advice actually fit. ${ask}`;
+    const ask = getConversationalAsk(question);
+    return `I'm Obrium, your personal companion. I get to know you through conversation so your Feed and advice actually fit. ${ask}`;
+  }
+
+  onTalkClosed() {
+    this._proactiveAnswersThisSession = 0;
+    this._awaitingPaceChoice = false;
+    this._proactivePassiveThisSession = false;
+  }
+
+  getLastBotMessageEl() {
+    if (!this.conversationArea) return null;
+    const msgs = this.conversationArea.querySelectorAll('.message.bot:not(.typing-indicator)');
+    return msgs.length ? msgs[msgs.length - 1] : null;
+  }
+
+  getPendingProfileQuestion() {
+    if (this._proactivePassiveThisSession) return null;
+    const next = getNextProfileQuestion(profileState.get());
+    if (!next) return null;
+    const last = this.getLastBotMessageEl();
+    if (!last) return null;
+    const path = last.getAttribute('data-profile-prompt-path');
+    if (path !== next.path) return null;
+    return next;
+  }
+
+  async askNextProfileQuestion(question) {
+    if (!question) return;
+    const text = getConversationalAsk(question);
+    this.addMessageToChat(text, 'ai', true, null, this.profilePromptChatOptions(question));
+  }
+
+  /**
+   * If Talk is waiting on a proactive profile answer, parse/save it instead of sending to the LLM.
+   * @returns {Promise<boolean>} true when the reply was handled here
+   */
+  async tryHandleProactiveTalkReply(messageText) {
+    if (this._proactivePassiveThisSession) return false;
+
+    if (this._awaitingPaceChoice) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const choice = this.interpretPaceReply(messageText);
+      await this.resolvePaceChoice(choice, { fromText: true });
+      return true;
+    }
+
+    const question = this.getPendingProfileQuestion();
+    if (!question) return false;
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    this.showTypingIndicator();
+    const parsed = parseProfileAnswer(question, messageText);
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    this.removeTypingIndicator();
+
+    if (!parsed.ok) {
+      this.addMessageToChat(parsed.clarify, 'ai', true, null, this.profilePromptChatOptions(question));
+      return true;
+    }
+
+    applyProfileTalkAnswer(question.sectionKey, question.fieldKey, parsed.value);
+    recordDataSent({
+      requestType: DATA_SENT_REQUEST_TYPES.PROFILE_ANSWER_LOCAL,
+      sentOffDevice: false,
+      dataCategoriesIncluded: [
+        `profile answer saved: ${question.sectionLabel} · ${question.fieldLabel}`,
+        'parsed on device; included in later AI requests as profile context',
+      ],
+    });
+    this._proactiveAnswersThisSession += 1;
+
+    const next = getNextProfileQuestion(profileState.get());
+    if (!next) {
+      this.addMessageToChat(
+        "That's everything I needed on your profile for now. Ask me anything whenever you like.",
+        'ai',
+      );
+      this._proactivePassiveThisSession = true;
+      this._awaitingPaceChoice = false;
+      return true;
+    }
+
+    if (this._proactiveAnswersThisSession >= PROACTIVE_TALK_SESSION_LIMIT) {
+      this.showPacePrompt();
+      return true;
+    }
+
+    await this.askNextProfileQuestion(next);
+    return true;
+  }
+
+  interpretPaceReply(text) {
+    const t = String(text || '').toLowerCase();
+    if (/\b(continue|keep going|keep on|yes|yeah|yep|sure|now|let's go|lets go)\b/.test(t)) {
+      return 'continue';
+    }
+    if (/\b(later|another time|stop|not now|nope|nah|no thanks)\b/.test(t) || /^(no|nope)[.!?]?$/.test(t.trim())) {
+      return 'stop';
+    }
+    return 'stop';
+  }
+
+  showPacePrompt() {
+    this._awaitingPaceChoice = true;
+    const el = this.addMessageToChat(
+      "We've covered a few things. Want to keep going now, or pick this up another time?",
+      'ai',
+    );
+    if (el) el.setAttribute('data-talk-pace-prompt', '1');
+  }
+
+  appendPaceChoiceButtons(messageContent) {
+    if (!messageContent || messageContent.querySelector('.talk-pace-actions')) return;
+    const timeEl = messageContent.querySelector('.message-time');
+    const wrap = document.createElement('div');
+    wrap.className = 'talk-pace-actions';
+
+    const continueBtn = document.createElement('button');
+    continueBtn.type = 'button';
+    continueBtn.className = 'btn talk-pace-continue';
+    continueBtn.textContent = 'Continue now';
+    continueBtn.addEventListener('click', () => {
+      if (!this._awaitingPaceChoice) return;
+      this.addMessageToChat('Continue now', 'user');
+      void this.resolvePaceChoice('continue');
+    });
+
+    const laterBtn = document.createElement('button');
+    laterBtn.type = 'button';
+    laterBtn.className = 'btn talk-pace-later';
+    laterBtn.textContent = 'Another time';
+    laterBtn.addEventListener('click', () => {
+      if (!this._awaitingPaceChoice) return;
+      this.addMessageToChat('Another time', 'user');
+      void this.resolvePaceChoice('stop');
+    });
+
+    wrap.appendChild(continueBtn);
+    wrap.appendChild(laterBtn);
+    if (timeEl) messageContent.insertBefore(wrap, timeEl);
+    else messageContent.appendChild(wrap);
+  }
+
+  disablePaceButtons() {
+    if (!this.conversationArea) return;
+    this.conversationArea.querySelectorAll('.talk-pace-actions button').forEach((btn) => {
+      btn.disabled = true;
+    });
+  }
+
+  async resolvePaceChoice(choice, { fromText = false } = {}) {
+    this._awaitingPaceChoice = false;
+    this.disablePaceButtons();
+
+    await new Promise((resolve) => setTimeout(resolve, fromText ? 180 : 80));
+    this.showTypingIndicator();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    this.removeTypingIndicator();
+
+    if (choice === 'continue') {
+      this._proactiveAnswersThisSession = 0;
+      const next = getNextProfileQuestion(profileState.get());
+      if (!next) {
+        this.addMessageToChat(
+          "That's everything I needed on your profile for now. Ask me anything whenever you like.",
+          'ai',
+        );
+        this._proactivePassiveThisSession = true;
+        return;
+      }
+      await this.askNextProfileQuestion(next);
+      return;
+    }
+
+    this._proactivePassiveThisSession = true;
+    this.addMessageToChat(
+      "No rush — I'll pick this up next time you open Talk. Ask me anything in the meantime.",
+      'ai',
+    );
+  }
+
+  /** Replace every leaked legacy product name (TendAI, Serron, Seregin OS) with Obrium. */
+  sanitizeTalkGreetingText(text) {
+    const legacy = '(?:Tend[\\s.-]?AI|Serron|Seregin[\\s-]?OS|Seregin)';
+    let s = String(text || '').trim();
+    s = s.replace(new RegExp(`\\byour\\s+(?:personal\\s+)?${legacy}\\s+companion\\b`, 'gi'), 'your personal companion');
+    s = s.replace(new RegExp(`\\b${legacy}\\s+companion\\b`, 'gi'), 'personal companion');
+    s = s.replace(new RegExp(`\\b${legacy}\\b`, 'gi'), 'Obrium');
+    s = s.replace(/\bObrium(?:\s+Obrium)+\b/g, 'Obrium');
+    return s;
   }
 
   async composeProfileOpeningPrompt(question) {
     const systemContext = [
       'PROACTIVE TALK OPENING — this turn only.',
       'Write at most two short sentences a busy person can skim in a few seconds.',
-      'Sentence 1: who Serron is and what the user gets (personal companion that learns them so Feed/advice fit).',
+      'Sentence 1 MUST start like: "I\'m Obrium, your personal companion..." then one short clause about learning them so Feed/advice fit.',
+      'Never say TendAI, Serron, Seregin OS, or any other product name. The only name is Obrium.',
       'Sentence 2: ONE natural conversational question that collects this exact fact — not a form label.',
       `Required fact: ${question.fieldLabel} (${question.sectionLabel}). Internal key ${question.path}.`,
       'The question must be clearly about that fact (e.g. Age → "How old are you?").',
       'No lists, markdown, JSON, or extra questions. Not medical advice.',
     ].join(' ');
 
-    return sendMessageToLLM(
-      'The user just opened Talk. Greet them briefly and ask only the next profile question.',
-      { systemContext },
+    const raw = await sendMessageToLLM(
+      'The user just opened Talk. Greet them briefly as Obrium (never TendAI, Serron, or Seregin OS) and ask only the next profile question.',
+      {
+        systemContext,
+        requestType: DATA_SENT_REQUEST_TYPES.PROFILE_GREETING,
+        includeLedger: false,
+        dataCategories: [`profile question being asked: ${question.sectionLabel} · ${question.fieldLabel}`],
+      },
     );
+    return this.sanitizeTalkGreetingText(raw);
   }
 
   // Save chat history to localStorage
@@ -947,18 +1205,21 @@ export class TalkComponent {
       let idx = 0;
       messageElements.forEach((msgEl) => {
         if (msgEl.classList.contains('sleep-flow-message') || msgEl.hasAttribute('data-sleep-checkin-id')) return;
+        if (msgEl.hasAttribute('data-drift-prompt')) return;
         const text = msgEl.querySelector('.message-text')?.textContent || '';
         const type = msgEl.classList.contains('bot') ? 'ai' : 'user';
         const timestamp = msgEl.getAttribute('data-timestamp');
         if (text.trim() && !msgEl.classList.contains('typing-indicator')) {
           const ts = timestamp ? parseInt(timestamp) : Date.now();
           const promptPath = msgEl.getAttribute('data-profile-prompt-path');
+          const pacePrompt = msgEl.getAttribute('data-talk-pace-prompt');
           messages.push({
             id: msgEl.getAttribute('data-msg-id') || 'msg-' + ts + '-' + idx,
             text,
             type,
             timestamp: ts,
             ...(promptPath ? { profilePromptPath: promptPath } : {}),
+            ...(pacePrompt ? { talkPacePrompt: true } : {}),
           });
           idx++;
         }
@@ -1004,10 +1265,26 @@ export class TalkComponent {
       }
       
       // Normalize type: convert 'bot' to 'ai' if needed
-      history = history.map(msg => ({
-        ...msg,
-        type: msg.type === 'bot' ? 'ai' : msg.type
-      }));
+      history = history
+        .map(msg => {
+          const type = msg.type === 'bot' ? 'ai' : msg.type;
+          return {
+            ...msg,
+            type,
+            ...(type === 'ai' && typeof msg.text === 'string' ? { text: this.sanitizeTalkGreetingText(msg.text) } : {})
+          };
+        })
+        .filter(msg => !(msg.type === 'ai' && /filled it with your baseline protocol/i.test(String(msg.text || ''))));
+
+      const pendingQuestion = getNextProfileQuestion(profileState.get());
+      if (pendingQuestion && history.length > 0) {
+        history = history.filter((msg) => {
+          if (msg.type === 'user') return true;
+          if (msg.profilePromptPath) return true;
+          if (msg.talkPacePrompt) return true;
+          return false;
+        });
+      }
       
       this.conversationArea.innerHTML = '';
       
@@ -1036,6 +1313,9 @@ export class TalkComponent {
           messageDiv.setAttribute('data-msg-id', msgId);
           if (msg.profilePromptPath) {
             messageDiv.setAttribute('data-profile-prompt-path', msg.profilePromptPath);
+          }
+          if (msg.talkPacePrompt) {
+            messageDiv.setAttribute('data-talk-pace-prompt', '1');
           }
           
           const messageContent = document.createElement('div');
@@ -1074,7 +1354,9 @@ export class TalkComponent {
         
         const textP = document.createElement('p');
         textP.className = 'message-text message-text-multiline';
-        textP.textContent = 'Identity: TendAI v1.0.\nStatus: Active and monitoring. How can I assist with your optimization today, Anton?';
+        const rawName = profileState.get()?.body?.name;
+        const nameSuffix = typeof rawName === 'string' && rawName.trim() ? `, ${rawName.trim()}` : '';
+        textP.textContent = `Identity: Obrium v1.0.\nStatus: Active. How can I assist with your optimization today${nameSuffix}?`;
         messageContent.appendChild(textP);
         
         const timeSpan = document.createElement('span');
@@ -1119,13 +1401,17 @@ export class TalkComponent {
         window.dispatchEvent(new CustomEvent('serron:talk-user-submit', { detail: { text: messageText } }));
       } catch (_) {}
 
+      if (await this.tryHandleProactiveTalkReply(messageText)) {
+        return;
+      }
+
       // Show typing indicator after a short delay
       await new Promise(resolve => setTimeout(resolve, 300));
       const typingIndicator = this.showTypingIndicator();
 
       // User profile (name, age, location, goals) + system context for LLM
       const userProfile = getUserProfile();
-      const systemContext = getSystemContext();
+      const { text: systemContext, categories: contextCategories } = getSystemContextDetails();
       learnFromUserMessage(messageText);
       const discussContext =
         typeof window !== 'undefined' &&
@@ -1136,6 +1422,8 @@ export class TalkComponent {
       const reply = await sendMessageToLLM(messageText, {
         userProfile,
         systemContext,
+        requestType: DATA_SENT_REQUEST_TYPES.TALK_MESSAGE,
+        dataCategories: contextCategories,
         systemState: {
           user_memory: getUserMemory(),
           ...(discussContext && discussContext.context_id ? { context_id: discussContext.context_id } : {}),
@@ -1154,7 +1442,7 @@ export class TalkComponent {
       const stateUpdates = parseAndUpdateState(messageText);
       
       // Add AI reply
-      this.addMessageToChat(reply, 'ai');
+      this.addMessageToChat(this.sanitizeTalkGreetingText(reply), 'ai');
       
       // Ensure scroll to bottom after reply
       setTimeout(() => this.scrollToBottom(), 100);
@@ -1205,7 +1493,7 @@ export class TalkComponent {
       // Формируем понятное сообщение об ошибке
       let friendlyMessage = 'I\'m having trouble connecting right now. Please check your internet connection and try again.';
       if (isFetchTypeError) {
-        friendlyMessage = 'Offline Assistant mode is active. I will continue from your local TendAI data.';
+        friendlyMessage = 'Offline Assistant mode is active. I will continue from your local Obrium data.';
       }
       
       // Обрабатываем разные типы ошибок
@@ -1228,7 +1516,7 @@ export class TalkComponent {
       }
       
       // Add error message as AI reply
-      this.addMessageToChat(friendlyMessage, 'ai');
+      this.addMessageToChat(this.sanitizeTalkGreetingText(friendlyMessage), 'ai');
       
       // Прокручиваем к сообщению об ошибке
       setTimeout(() => this.scrollToBottom(), 100);

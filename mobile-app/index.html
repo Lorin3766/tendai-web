@@ -22,7 +22,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="theme-color" content="#000000" />
-  <title>Serron</title>
+  <title>Obrium</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -69,8 +69,8 @@
   </script>
   <div class="tendai-layout">
     <!-- Brand Header -->
-    <header class="brand-header" aria-label="Serron brand">
-      <h1 class="brand-title">Serron</h1>
+    <header class="brand-header" aria-label="Obrium brand">
+      <h1 class="brand-title">Obrium</h1>
       <!-- Calendar button for mobile (visible on mobile, hidden on desktop where it's in tabs) -->
       <button
         type="button"
@@ -96,7 +96,7 @@
     </header>
 
     <!-- Main three-column layout -->
-    <main aria-label="Serron main layout">
+    <main aria-label="Obrium main layout">
       <div class="layout-grid">
         <!-- LEFT COLUMN -->
         <section id="col-left">
@@ -104,10 +104,10 @@
           <article class="card-soft profile-header-card data-integrity-container" id="profileHeader">
             <div class="profile-header-card__shell">
               <div class="profile-header">
-                <div class="profile-avatar" id="profileAvatar">A</div>
+                <div class="profile-avatar" id="profileAvatar">G</div>
                 <div class="profile-info">
                   <p class="profile-name" id="profileName">
-                    Anton
+                    Guest
                     <span
                       class="profile-core-dot"
                       data-tendai-core-status
@@ -151,7 +151,7 @@
                 <div class="profile-header-card__integrity">
                   <div class="profile-header-card__integrity-stack">
                     <div class="profile-header-card__integrity-readout-line">
-                      <span class="data-integrity-readout" id="profileCompletenessDesktop" title="How completely Serron understands you">System Integrity · 0%</span>
+                      <span class="data-integrity-readout" id="profileCompletenessDesktop" title="How completely Obrium understands you">System Integrity · 0%</span>
                       <span class="profile-completeness-details" id="profileCompletenessDetailsDesktop" style="display:none;">0%</span>
                     </div>
                     <div class="data-integrity-bar profile-integrity-status" id="dataIntegrityBarDesktop" aria-hidden="true">
@@ -485,7 +485,7 @@
                   </div>
                 </div>
                 <div class="talk-doctor-disclaimer" id="talkDoctorDisclaimer" aria-live="polite">
-                  Medical services are provided by independent licensed practitioners via our partners. Serron does not practice medicine.
+                  Obrium does not practice medicine and is not yet connected to any medical providers. Doctor AI is an automated assistant, not a clinician.
                 </div>
                 <div class="chat-scroll-wrapper">
                   <div id="chatLog" class="conversation-area" aria-live="polite"></div>
@@ -580,10 +580,10 @@
               <!-- Profile Header Card -->
               <article class="card-soft" id="mobileProfileHeader">
                 <div class="profile-header">
-                  <div class="profile-avatar" id="mobileProfileAvatar">A</div>
+                  <div class="profile-avatar" id="mobileProfileAvatar">G</div>
                   <div class="profile-info">
                     <p class="profile-name" id="mobileProfileName">
-                      Anton
+                      Guest
                       <span
                         class="profile-core-dot"
                         data-tendai-core-status
@@ -623,7 +623,7 @@
                       <div class="profile-header-card__integrity-stack">
                         <h3 class="card-title profile-header-card__profile-title">Your Profile</h3>
                         <div class="profile-header-card__integrity-readout-line">
-                          <span class="data-integrity-readout" id="profileCompletenessMobile" title="How completely Serron understands you">System Integrity · 0%</span>
+                          <span class="data-integrity-readout" id="profileCompletenessMobile" title="How completely Obrium understands you">System Integrity · 0%</span>
                           <span class="profile-completeness-details" id="profileCompletenessDetailsMobile" style="display:none;">0%</span>
                         </div>
                         <div class="data-integrity-bar profile-integrity-status" id="dataIntegrityBarMobile" aria-hidden="true">
@@ -852,7 +852,7 @@
                 <span class="settings-toggle-slider"></span>
               </label>
             </div>
-            <div class="settings-field-hint">Allow Serron to remind you about check-ins and programs.</div>
+            <div class="settings-field-hint">Allow Obrium to remind you about check-ins and programs.</div>
           </div>
 
           <div class="settings-field">
@@ -921,6 +921,15 @@
             <span class="settings-row-arrow">→</span>
           </button>
 
+          <button class="settings-row" id="settingsInferredNotes" aria-expanded="false" aria-controls="settingsInferredNotesPanel">
+            <div class="settings-row-content">
+              <span class="settings-row-label">Notes Obrium has inferred about you</span>
+              <span class="settings-row-hint">Guessed from what you type and tap — not written by you. Sent with Talk requests.</span>
+            </div>
+            <span class="settings-row-arrow">→</span>
+          </button>
+          <div class="settings-inferred-notes" id="settingsInferredNotesPanel" hidden></div>
+
           <button class="settings-row" id="settingsConnectSources">
             <div class="settings-row-content">
               <span class="settings-row-label">Connect health sources</span>
@@ -950,7 +959,7 @@
           </button>
 
           <div class="settings-info-text">
-            Your data is stored locally on your device. Serron is not a medical service.
+            Your data is stored on your device. To write Talk replies and run health checks, your messages and relevant profile and health data are sent to Google's Gemini API, sometimes automatically (when you open Talk, or when new steps or sleep are logged) — see the Privacy Policy. Obrium is not a medical service.
           </div>
 
           <button class="settings-row settings-row-danger" id="settingsDeleteData">
@@ -961,12 +970,12 @@
           </button>
         </div>
 
-        <!-- About Serron -->
+        <!-- About Seregin OS -->
         <div class="settings-section">
-          <h4 class="settings-section-title">About Serron</h4>
+          <h4 class="settings-section-title">About Obrium</h4>
           
           <div class="settings-info-text">
-            Serron is a personal wellbeing assistant.
+            Obrium is a personal wellbeing assistant.
           </div>
           <div class="settings-info-text">
             It helps you understand your body, mind and habits step by step.

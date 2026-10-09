@@ -90,7 +90,7 @@ function showEventForm(eventData) {
             <option value="health" ${eventData.type === 'health' ? 'selected' : ''}>Health</option>
             <option value="program" ${eventData.type === 'program' ? 'selected' : ''}>Program</option>
             <option value="personal" ${eventData.type === 'personal' ? 'selected' : ''}>Personal</option>
-            <option value="tendai" ${eventData.type === 'tendai' ? 'selected' : ''}>TendAI</option>
+            <option value="tendai" ${eventData.type === 'tendai' ? 'selected' : ''}>Obrium</option>
           </select>
         </label>
         

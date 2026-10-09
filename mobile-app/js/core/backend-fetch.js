@@ -98,18 +98,18 @@ function updateCoreStatusStrip(status) {
       el.hidden = false;
       el.classList.add('sidebar-core-status--online');
       if (textEl) textEl.textContent = 'CORE: ONLINE';
-      el.setAttribute('aria-label', 'TendAI core relay online');
+      el.setAttribute('aria-label', 'Obrium core relay online');
       el.setAttribute('title', 'Connected relay available. Local ledger remains private.');
     } else if (status === 'Offline') {
       el.hidden = false;
       el.classList.add('sidebar-core-status--offline');
       if (textEl) textEl.textContent = 'CORE: LOCAL';
-      el.setAttribute('aria-label', 'TendAI running in local mode');
+      el.setAttribute('aria-label', 'Obrium running in local mode');
       el.setAttribute('title', 'Running on-device ledger for maximum privacy.');
     } else {
       el.hidden = true;
       if (textEl) textEl.textContent = 'CORE: LOCAL';
-      el.setAttribute('aria-label', 'TendAI running in local mode');
+      el.setAttribute('aria-label', 'Obrium running in local mode');
       el.setAttribute('title', 'Running on-device ledger for maximum privacy.');
     }
   });
