@@ -34,6 +34,7 @@ import { IS_VERBOSE_BOOT_LOGS } from '../../env-flags.js';
 import { getState, updateState } from '../../core/app-state.js';
 import { getProfileSchema, getSectionSchema, getSectionKeys, getProfileQuestionCatalog, isProfileFieldAnswered } from './profile-schema.js';
 import { getSliderConfig } from '../storage/slider-config.js';
+import { deleteBiometricsDatabase } from '../../core/biometrics-db.js';
 
 const PROFILE_NAME_PLACEHOLDER = 'Guest';
 
@@ -2003,9 +2004,20 @@ function countFilledFields(profile, structure) {
         return;
       }
 
+      if (e.target.closest('#settingsPrivacyPolicy')) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.location.assign('privacy-policy.html');
+        return;
+      }
+      if (e.target.closest('#settingsTermsOfUse')) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.location.assign('terms-of-use.html');
+        return;
+      }
+
       if (e.target.closest('#settingsConnectSources') ||
-          e.target.closest('#settingsPrivacyPolicy') ||
-          e.target.closest('#settingsTermsOfUse') ||
           e.target.closest('#settingsSendFeedback') ||
           e.target.closest('#settingsRateApp')) {
           e.preventDefault();
@@ -2020,7 +2032,10 @@ function countFilledFields(profile, structure) {
         const confirmed = confirm('Are you sure you want to delete all local data? This cannot be undone.');
         if (confirmed) {
           localStorage.clear();
-          location.reload();
+          try { sessionStorage.clear(); } catch (_) {}
+          deleteBiometricsDatabase()
+            .catch(() => false)
+            .then(() => location.reload());
         }
           return;
         }
@@ -2489,6 +2504,8 @@ function countFilledFields(profile, structure) {
       settingsModal.addEventListener('click', (e) => {
         // Защита: не трогаем клики по [data-section]
         if (e.target.closest('[data-section]')) return;
+        // Row actions are handled by the document-level handler (setupUniversalClickHandler).
+        if (e.target.closest('#settingsEditProfile, #settingsSendLogToDev, #settingsPrivacyPolicy, #settingsTermsOfUse, #settingsConnectSources, #settingsSendFeedback, #settingsRateApp, #settingsDeleteData')) return;
         e.stopPropagation();
       });
     }

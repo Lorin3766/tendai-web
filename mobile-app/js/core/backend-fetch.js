@@ -99,18 +99,18 @@ function updateCoreStatusStrip(status) {
       el.classList.add('sidebar-core-status--online');
       if (textEl) textEl.textContent = 'CORE: ONLINE';
       el.setAttribute('aria-label', 'Obrium core relay online');
-      el.setAttribute('title', 'Connected relay available. Local ledger remains private.');
+      el.setAttribute('title', "Obrium relay connected. Talk, Feed advice and automatic health checks send relevant profile and health data through it to Google's Gemini.");
     } else if (status === 'Offline') {
       el.hidden = false;
       el.classList.add('sidebar-core-status--offline');
       if (textEl) textEl.textContent = 'CORE: LOCAL';
       el.setAttribute('aria-label', 'Obrium running in local mode');
-      el.setAttribute('title', 'Running on-device ledger for maximum privacy.');
+      el.setAttribute('title', 'Obrium relay not connected. Your data is stored on this device; Talk connects to the relay when it needs the AI.');
     } else {
       el.hidden = true;
       if (textEl) textEl.textContent = 'CORE: LOCAL';
       el.setAttribute('aria-label', 'Obrium running in local mode');
-      el.setAttribute('title', 'Running on-device ledger for maximum privacy.');
+      el.setAttribute('title', 'Obrium relay not connected. Your data is stored on this device; Talk connects to the relay when it needs the AI.');
     }
   });
 

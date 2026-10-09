@@ -116,6 +116,33 @@ function getDatabase() {
 }
 
 /**
+ * Delete the whole biometrics database (used by "Delete all local data").
+ * @returns {Promise<boolean>} false if IndexedDB is unavailable or the delete was blocked/failed.
+ */
+export async function deleteBiometricsDatabase() {
+  if (!isIndexedDbSupported()) return false;
+  if (dbPromise) {
+    try {
+      const db = await dbPromise;
+      db.close();
+    } catch (_) {}
+    dbPromise = null;
+  }
+  return new Promise((resolve) => {
+    let request;
+    try {
+      request = indexedDB.deleteDatabase(DB_NAME);
+    } catch (_) {
+      resolve(false);
+      return;
+    }
+    request.onsuccess = () => resolve(true);
+    request.onerror = () => resolve(false);
+    request.onblocked = () => resolve(false);
+  });
+}
+
+/**
  * Save or replace biometrics metrics by date.
  * @param {{ date: string, metrics: { steps: number, sleep: number } }} data
  * @returns {Promise<{ date: string, metrics: { steps: number, sleep: number } }>}
