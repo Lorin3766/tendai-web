@@ -81,7 +81,7 @@ function renderOverlayData() {
 
   memEl.textContent = safeJson(getUserMemory());
   ledgerEl.textContent = safeJson(getRecentLedgerPayload());
-  const ctx = typeof window !== 'undefined' ? window.__serronDiscussContext || null : null;
+  const ctx = typeof window !== 'undefined' ? window.__obriumDiscussContext || null : null;
   ctxEl.textContent = safeJson(ctx || { context_id: null, state: 'No active DISCUSS session' });
 }
 

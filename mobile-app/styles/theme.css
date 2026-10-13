@@ -45,20 +45,20 @@
   --agent-card-bg: linear-gradient(155deg, rgba(34, 31, 28, 0.94), rgba(18, 16, 14, 0.96));
   --agent-add-bar-border: rgba(197, 163, 101, 0.38);
   /* Soft companion controls — rounded, low-contrast chrome */
-  --serron-control-border-width: 1px;
-  --serron-control-radius: 14px;
-  --serron-control-radius-nested: 10px; /* inner segments inside padded shells */
-  --serron-control-surface: rgba(28, 26, 23, 0.92);
-  --serron-control-border-strong: rgba(197, 163, 101, 0.42);
-  --serron-control-shadow:
+  --obrium-control-border-width: 1px;
+  --obrium-control-radius: 14px;
+  --obrium-control-radius-nested: 10px; /* inner segments inside padded shells */
+  --obrium-control-surface: rgba(28, 26, 23, 0.92);
+  --obrium-control-border-strong: rgba(197, 163, 101, 0.42);
+  --obrium-control-shadow:
     0 8px 24px rgba(0, 0, 0, 0.32),
     0 0 0 1px rgba(255, 248, 235, 0.04);
-  /* Legacy aliases (classes still reference --serron-capsule-*) */
-  --serron-capsule-border-width: var(--serron-control-border-width);
-  --serron-capsule-border-strong: var(--serron-control-border-strong);
-  --serron-capsule-surface: var(--serron-control-surface);
-  --serron-capsule-radius-pill: var(--serron-control-radius);
-  --serron-capsule-shadow: var(--serron-control-shadow);
+  /* Legacy aliases (classes still reference --obrium-capsule-*) */
+  --obrium-capsule-border-width: var(--obrium-control-border-width);
+  --obrium-capsule-border-strong: var(--obrium-control-border-strong);
+  --obrium-capsule-surface: var(--obrium-control-surface);
+  --obrium-capsule-radius-pill: var(--obrium-control-radius);
+  --obrium-capsule-shadow: var(--obrium-control-shadow);
   
   /* Shadows */
   --shadow-card: 0 16px 40px rgba(8, 6, 4, 0.55);
@@ -80,31 +80,31 @@
      Interface aura (glow) — matte sand / warm gold “light dust” (not neon cyan).
      body.stealth-mode clears these for flat industrial UI.
      ------------------------------------------------------------------------- */
-  --serron-aura-sand-matte: rgba(246, 195, 106, 0.35);
-  --serron-aura-selected-border: #BFA785;
-  --serron-glow-primary: 0 14px 28px var(--serron-aura-sand-matte);
-  --serron-glow-accent: 0 22px 48px rgba(191, 167, 133, 0.22);
+  --obrium-aura-sand-matte: rgba(246, 195, 106, 0.35);
+  --obrium-aura-selected-border: #BFA785;
+  --obrium-glow-primary: 0 14px 28px var(--obrium-aura-sand-matte);
+  --obrium-glow-accent: 0 22px 48px rgba(191, 167, 133, 0.22);
   /* Knowledge list row + checkbox halo (legacy names; values are sand) */
-  --serron-aura-cyan-row: 0 14px 28px rgba(246, 195, 106, 0.35), 0 4px 20px rgba(191, 167, 133, 0.12);
-  --serron-aura-cyan-check: 0 10px 26px rgba(246, 195, 106, 0.28);
-  --serron-aura-sector-ring: 0 22px 52px rgba(246, 195, 106, 0.26), 0 12px 32px rgba(191, 167, 133, 0.14);
-  --serron-aura-sector-label: 0 2px 22px rgba(246, 195, 106, 0.3);
-  --serron-aura-deploy-btn: 0 14px 28px rgba(246, 195, 106, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.12);
-  --serron-aura-hardware-gold:
+  --obrium-aura-cyan-row: 0 14px 28px rgba(246, 195, 106, 0.35), 0 4px 20px rgba(191, 167, 133, 0.12);
+  --obrium-aura-cyan-check: 0 10px 26px rgba(246, 195, 106, 0.28);
+  --obrium-aura-sector-ring: 0 22px 52px rgba(246, 195, 106, 0.26), 0 12px 32px rgba(191, 167, 133, 0.14);
+  --obrium-aura-sector-label: 0 2px 22px rgba(246, 195, 106, 0.3);
+  --obrium-aura-deploy-btn: 0 14px 28px rgba(246, 195, 106, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+  --obrium-aura-hardware-gold:
     inset 0 1px 1px rgba(255, 255, 255, 0.32),
     0 6px 16px rgba(0, 0, 0, 0.38),
     0 14px 28px rgba(246, 195, 106, 0.18);
-  --serron-filter-calendar-svg: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3));
-  --serron-filter-calendar-hover: drop-shadow(0 14px 28px rgba(246, 195, 106, 0.28));
-  --serron-filter-labs-marker: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
-  --serron-filter-agent-sparkline: drop-shadow(0 12px 26px rgba(246, 195, 106, 0.22));
-  --serron-filter-agent-icon-null: drop-shadow(0 10px 22px rgba(191, 167, 133, 0.28));
-  --serron-filter-agent-icon-active: drop-shadow(0 14px 30px rgba(246, 195, 106, 0.32));
-  --serron-filter-sensor-value: drop-shadow(0 0 4px var(--gold-aura));
-  --serron-filter-phai-icon-selected: saturate(0.88) brightness(1.02) drop-shadow(0 14px 28px rgba(246, 195, 106, 0.22));
-  --serron-filter-phai-text-selected: drop-shadow(0 18px 40px rgba(246, 195, 106, 0.22));
-  --serron-filter-phai-option-body: drop-shadow(0 18px 40px rgba(246, 195, 106, 0.2));
-  --serron-filter-feed-card-line: drop-shadow(0 12px 24px rgba(246, 195, 106, 0.22));
+  --obrium-filter-calendar-svg: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3));
+  --obrium-filter-calendar-hover: drop-shadow(0 14px 28px rgba(246, 195, 106, 0.28));
+  --obrium-filter-labs-marker: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  --obrium-filter-agent-sparkline: drop-shadow(0 12px 26px rgba(246, 195, 106, 0.22));
+  --obrium-filter-agent-icon-null: drop-shadow(0 10px 22px rgba(191, 167, 133, 0.28));
+  --obrium-filter-agent-icon-active: drop-shadow(0 14px 30px rgba(246, 195, 106, 0.32));
+  --obrium-filter-sensor-value: drop-shadow(0 0 4px var(--gold-aura));
+  --obrium-filter-phai-icon-selected: saturate(0.88) brightness(1.02) drop-shadow(0 14px 28px rgba(246, 195, 106, 0.22));
+  --obrium-filter-phai-text-selected: drop-shadow(0 18px 40px rgba(246, 195, 106, 0.22));
+  --obrium-filter-phai-option-body: drop-shadow(0 18px 40px rgba(246, 195, 106, 0.2));
+  --obrium-filter-feed-card-line: drop-shadow(0 12px 24px rgba(246, 195, 106, 0.22));
 }
 
 /* Dynamic mood accent (context engine): buttons, progress bars match atmospheric mood */
@@ -118,25 +118,25 @@ body[data-weather-mood="clear-night"] { --accent: #818cf8; --gold-glow: rgba(129
 
 /* Stealth / industrial: strip emissive layers (after mood vars). */
 body.stealth-mode {
-  --serron-glow-primary: none;
-  --serron-glow-accent: none;
-  --serron-aura-cyan-row: none;
-  --serron-aura-cyan-check: none;
-  --serron-aura-sector-ring: none;
-  --serron-aura-sector-label: none;
-  --serron-aura-deploy-btn: none;
-  --serron-aura-hardware-gold: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px rgba(0, 0, 0, 0.35);
-  --serron-filter-calendar-svg: none;
-  --serron-filter-calendar-hover: none;
-  --serron-filter-labs-marker: none;
-  --serron-filter-agent-sparkline: none;
-  --serron-filter-agent-icon-null: none;
-  --serron-filter-agent-icon-active: none;
-  --serron-filter-sensor-value: none;
-  --serron-filter-phai-icon-selected: saturate(0.88) brightness(1.02);
-  --serron-filter-phai-text-selected: none;
-  --serron-filter-phai-option-body: none;
-  --serron-filter-feed-card-line: none;
+  --obrium-glow-primary: none;
+  --obrium-glow-accent: none;
+  --obrium-aura-cyan-row: none;
+  --obrium-aura-cyan-check: none;
+  --obrium-aura-sector-ring: none;
+  --obrium-aura-sector-label: none;
+  --obrium-aura-deploy-btn: none;
+  --obrium-aura-hardware-gold: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px rgba(0, 0, 0, 0.35);
+  --obrium-filter-calendar-svg: none;
+  --obrium-filter-calendar-hover: none;
+  --obrium-filter-labs-marker: none;
+  --obrium-filter-agent-sparkline: none;
+  --obrium-filter-agent-icon-null: none;
+  --obrium-filter-agent-icon-active: none;
+  --obrium-filter-sensor-value: none;
+  --obrium-filter-phai-icon-selected: saturate(0.88) brightness(1.02);
+  --obrium-filter-phai-text-selected: none;
+  --obrium-filter-phai-option-body: none;
+  --obrium-filter-feed-card-line: none;
 }
 
 *,
@@ -181,7 +181,7 @@ body.onboarding-active {
   background: var(--bg) !important;
   background-image: none !important;
 }
-body.onboarding-active .tendai-layout,
+body.onboarding-active .obrium-layout,
 body.onboarding-active .bottom-nav {
   visibility: hidden !important;
   pointer-events: none !important;
@@ -215,7 +215,7 @@ html[data-theme="graphite"] body::before,
 html[data-theme="graphite"] body::after {
   background: none !important;
 }
-html[data-theme="graphite"] .tendai-layout {
+html[data-theme="graphite"] .obrium-layout {
   background: #12100e !important;
 }
 

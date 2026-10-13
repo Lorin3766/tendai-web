@@ -320,7 +320,7 @@ export class TalkComponent {
   }
 
   copyReportInfo() {
-    const runMode = typeof window !== 'undefined' && window.__serronRunMode ? window.__serronRunMode : 'unified';
+    const runMode = typeof window !== 'undefined' && window.__obriumRunMode ? window.__obriumRunMode : 'unified';
     const now = new Date();
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
     const keys = [];
@@ -725,9 +725,9 @@ export class TalkComponent {
       }
     });
 
-    if (!window.__serronAdvisoryListenerBound) {
-      window.__serronAdvisoryListenerBound = true;
-      window.addEventListener('serron:show-advisory', (ev) => {
+    if (!window.__obriumAdvisoryListenerBound) {
+      window.__obriumAdvisoryListenerBound = true;
+      window.addEventListener('obrium:show-advisory', (ev) => {
         const text = /** @type {CustomEvent} */ (ev).detail?.text;
         if (!text) return;
         const b = document.getElementById('system-advisory-block');
@@ -1413,7 +1413,7 @@ export class TalkComponent {
       this.autoResizeTextarea();
 
       try {
-        window.dispatchEvent(new CustomEvent('serron:talk-user-submit', { detail: { text: messageText } }));
+        window.dispatchEvent(new CustomEvent('obrium:talk-user-submit', { detail: { text: messageText } }));
       } catch (_) {}
 
       if (await this.tryHandleProactiveTalkReply(messageText)) {
@@ -1430,9 +1430,9 @@ export class TalkComponent {
       learnFromUserMessage(messageText);
       const discussContext =
         typeof window !== 'undefined' &&
-        window.__serronDiscussContext &&
-        typeof window.__serronDiscussContext === 'object'
-          ? window.__serronDiscussContext
+        window.__obriumDiscussContext &&
+        typeof window.__obriumDiscussContext === 'object'
+          ? window.__obriumDiscussContext
           : null;
       const reply = await sendMessageToLLM(messageText, {
         userProfile,
@@ -1444,8 +1444,8 @@ export class TalkComponent {
           ...(discussContext && discussContext.context_id ? { context_id: discussContext.context_id } : {}),
         },
       });
-      if (typeof window !== 'undefined' && window.__serronDiscussContext) {
-        window.__serronDiscussContext = null;
+      if (typeof window !== 'undefined' && window.__obriumDiscussContext) {
+        window.__obriumDiscussContext = null;
       }
 
       // Remove typing indicator
@@ -1495,7 +1495,7 @@ export class TalkComponent {
       if (isFetchTypeError) {
         if (typeof window !== 'undefined') {
           publishBackendStatus('Offline');
-          window.__serronForceLocalConversation = true;
+          window.__obriumForceLocalConversation = true;
         }
       } else {
         console.error('[TendAI Talk] sendMessage failed', {

@@ -14,7 +14,7 @@
    UNIFIED LAYOUT STRUCTURE
    ============================================================ */
 
-.tendai-layout {
+.obrium-layout {
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -324,7 +324,7 @@ main {
 /* MOBILE (< 900px) */
 @media (max-width: 899px) {
   /* No extra bottom padding here — views (e.g. TALK) own tab-bar clearance to avoid a gap above the nav */
-  .tendai-layout {
+  .obrium-layout {
     padding: 0 16px 0;
   }
 
@@ -492,7 +492,7 @@ main {
   
   .calendar-header-btn:hover svg {
     color: var(--gold);
-    filter: var(--serron-filter-calendar-hover);
+    filter: var(--obrium-filter-calendar-hover);
   }
   
   .calendar-header-btn[aria-expanded="true"] {
@@ -625,7 +625,7 @@ main {
 }
 
 @media (min-width: 1025px) {
-  .tendai-layout {
+  .obrium-layout {
     min-height: 100vh;
     min-height: 100dvh;
     height: 100vh;

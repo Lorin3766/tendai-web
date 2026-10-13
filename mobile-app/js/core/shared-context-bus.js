@@ -2,7 +2,7 @@
 // @owner: core
 // @role: state
 
-const BUS_EVENT = 'serron:shared-context-bus';
+const BUS_EVENT = 'obrium:shared-context-bus';
 
 function createBus() {
   /** @type {Record<string, unknown>} */

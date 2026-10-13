@@ -236,7 +236,7 @@ const fillResult = await page.evaluate(async (canned) => {
 console.log('FILL_REMAINING', fillResult);
 
 await page.evaluate(() => {
-  const talk = window.__serronTalkComponent;
+  const talk = window.__obriumTalkComponent;
   talk.conversationArea.innerHTML = '';
   talk.saveChatHistory();
   talk.loadChatHistory();

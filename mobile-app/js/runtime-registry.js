@@ -1,7 +1,7 @@
 // Serron — Runtime Feature Registry (single source of truth)
 // Central place to declare and audit which features are loaded/initialized.
 
-const globalKey = '__serronRuntime__';
+const globalKey = '__obriumRuntime__';
 
 function ensureRuntime() {
   if (!window[globalKey]) {

@@ -57,7 +57,7 @@ function renderFeedMessageCard(message) {
 function renderTalkMessage(message) {
   const timeStr = formatTime(message.timestamp);
   return `
-    <div class="message message-from-tendai" data-message-id="${message.id}" style="margin-bottom: 12px;">
+    <div class="message message-from-obrium" data-message-id="${message.id}" style="margin-bottom: 12px;">
       <div class="message-content" style="background: rgba(246, 195, 106, 0.1); border-left: 3px solid rgba(246, 195, 106, 0.5); padding: 12px 16px; border-radius: 8px;">
         <p style="margin: 0 0 4px 0; color: var(--fg); font-size: 14px;">${message.text}</p>
         <span style="color: var(--fg-soft); font-size: 11px;">${timeStr}</span>

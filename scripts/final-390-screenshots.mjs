@@ -101,7 +101,7 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(600);
 await page.evaluate(() => {
-  const tc = window.__serronTalkComponent;
+  const tc = window.__obriumTalkComponent;
   if (tc && typeof tc.addMessageToChat === 'function') {
     tc.addMessageToChat('Hi — how should I think about recovery this week?', 'user');
     tc.addMessageToChat(

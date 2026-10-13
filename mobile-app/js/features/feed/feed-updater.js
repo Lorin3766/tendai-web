@@ -22,13 +22,13 @@ export function renderProtocolCards() {
   document.getElementById('feed-view')?.querySelector('#protocolEngineSection')?.remove();
 }
 
-/** Returns a Promise that resolves when SERRON_BOOT_READY is true (bootstrap + HealthSync done). */
+/** Returns a Promise that resolves when OBRIUM_BOOT_READY is true (bootstrap + HealthSync done). */
 function ensureBootReady() {
-  if (typeof window !== 'undefined' && window.SERRON_BOOT_READY === true) {
+  if (typeof window !== 'undefined' && window.OBRIUM_BOOT_READY === true) {
     return Promise.resolve();
   }
   return new Promise(function (resolve) {
-    window.addEventListener('serron:boot-ready', function () { resolve(); }, { once: true });
+    window.addEventListener('obrium:boot-ready', function () { resolve(); }, { once: true });
   });
 }
 
@@ -713,7 +713,7 @@ async function updateHumanOsDashboard(weatherOrNull) {
 
     let status = getSystemStatus();
     let driftingDays = getDriftingConsecutiveDays();
-    const historySync = window.__serronHistorySync || { isSyncing: false, gapDays: 0 };
+    const historySync = window.__obriumHistorySync || { isSyncing: false, gapDays: 0 };
     const isSyncingHistory = historySync.isSyncing === true && Number(historySync.gapDays || 0) > 0;
     if (isSyncingHistory) {
       // Inactivity gap is missing data, not evidence of drift (or of being optimal).
@@ -829,7 +829,7 @@ async function updateHumanOsDashboard(weatherOrNull) {
 export async function showDriftRecoveryPromptInTalk(conversationArea) {
   if (!conversationArea) return;
   if (conversationArea.querySelector('[data-drift-prompt]')) return;
-  const historySync = window.__serronHistorySync || { isSyncing: false, gapDays: 0 };
+  const historySync = window.__obriumHistorySync || { isSyncing: false, gapDays: 0 };
   if (historySync.isSyncing && Number(historySync.gapDays || 0) > 0) {
     const onceKey = `tendai_history_gap_prompt_shown_${new Date().toISOString().slice(0, 10)}`;
     try {
@@ -1176,12 +1176,12 @@ export function updateWellbeing() {
 }
 
 /**
- * Update all Feed UI elements. Waits for serron:boot-ready if called before boot.
+ * Update all Feed UI elements. Waits for obrium:boot-ready if called before boot.
  */
 export async function updateFeedUI() {
   await ensureBootReady();
-  if (typeof window !== 'undefined' && !window.__serronLegacyLastFeedStatePurged) {
-    window.__serronLegacyLastFeedStatePurged = true;
+  if (typeof window !== 'undefined' && !window.__obriumLegacyLastFeedStatePurged) {
+    window.__obriumLegacyLastFeedStatePurged = true;
     try {
       if (typeof localStorage !== 'undefined') localStorage.removeItem('last_feed_state');
     } catch (_) {}
@@ -1208,7 +1208,7 @@ function startDayHeaderTimeTicker() {
   }, 60000);
 }
 
-// Initialize Feed UI only after serron:boot-ready (HealthSync and core inits done)
+// Initialize Feed UI only after obrium:boot-ready (HealthSync and core inits done)
 async function initFeedUI() {
   await updateFeedUI();
   updateDailyActionUI();
@@ -1221,10 +1221,10 @@ async function initFeedUI() {
 }
 
 function runInitFeedUIWhenReady() {
-  if (typeof window !== 'undefined' && window.SERRON_BOOT_READY === true) {
+  if (typeof window !== 'undefined' && window.OBRIUM_BOOT_READY === true) {
     initFeedUI();
   } else if (typeof window !== 'undefined') {
-    window.addEventListener('serron:boot-ready', function () { initFeedUI(); }, { once: true });
+    window.addEventListener('obrium:boot-ready', function () { initFeedUI(); }, { once: true });
   }
 }
 runInitFeedUIWhenReady();

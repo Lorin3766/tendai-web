@@ -6,8 +6,8 @@ import { invalidateWeatherCache } from '../storage/weather-service.js';
 import { findUserAgentByDisplayName } from '../human-os/user-agents.js';
 import { runModularAgentRefreshForDisplayName } from '../human-os/modular-agents-runtime.js';
 
-if (typeof window !== 'undefined' && !window.__serronAgentAnalyzeHandlers) {
-  window.__serronAgentAnalyzeHandlers = {};
+if (typeof window !== 'undefined' && !window.__obriumAgentAnalyzeHandlers) {
+  window.__obriumAgentAnalyzeHandlers = {};
 }
 
 function isEnvironmentalAgentName(name) {
@@ -16,7 +16,7 @@ function isEnvironmentalAgentName(name) {
 
 /**
  * Run agent-specific refresh. Environmental agents invalidate weather cache; others use
- * `window.__serronAgentAnalyzeHandlers[name]` if set, else full `updateFeedUI`.
+ * `window.__obriumAgentAnalyzeHandlers[name]` if set, else full `updateFeedUI`.
  * @param {string} agentName
  */
 export async function runAgentCardAnalyze(agentName) {
@@ -41,7 +41,7 @@ export async function runAgentCardAnalyze(agentName) {
     return;
   }
 
-  const handlers = typeof window !== 'undefined' ? window.__serronAgentAnalyzeHandlers : null;
+  const handlers = typeof window !== 'undefined' ? window.__obriumAgentAnalyzeHandlers : null;
   if (handlers && typeof handlers[name] === 'function') {
     await handlers[name]();
     return;

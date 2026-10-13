@@ -206,10 +206,10 @@ async function finishOnboarding(answers) {
     sessionStorage.setItem(OPEN_TALK_KEY, '1');
   } catch (_) {}
 
-  if (typeof window !== 'undefined' && window.__serronTalkComponent) {
+  if (typeof window !== 'undefined' && window.__obriumTalkComponent) {
     if (typeof window.switchView === 'function') window.switchView('talk');
-    if (typeof window.__serronTalkComponent.deliverOnboardingGreeting === 'function') {
-      window.__serronTalkComponent.deliverOnboardingGreeting(greeting);
+    if (typeof window.__obriumTalkComponent.deliverOnboardingGreeting === 'function') {
+      window.__obriumTalkComponent.deliverOnboardingGreeting(greeting);
       try {
         sessionStorage.removeItem(GREETING_KEY);
         sessionStorage.removeItem(OPEN_TALK_KEY);

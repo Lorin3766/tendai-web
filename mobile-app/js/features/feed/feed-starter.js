@@ -4,7 +4,7 @@
 // Shows simple cards from quick-setup data to keep feed non-empty without network calls
 
 // CRITICAL: Block feed-starter in unified mode (hard block, not detection)
-if (typeof window !== 'undefined' && window.__serronRunMode === 'unified') {
+if (typeof window !== 'undefined' && window.__obriumRunMode === 'unified') {
   window.__feedStarterBlocked = true;
   // No exports, no DOM operations, no timers, no side effects
   // All functions below are no-ops in unified mode
@@ -176,7 +176,7 @@ function renderFeedStarter(state) {
   list.appendChild(bridgeCard);
 
   // Log only in non-unified mode
-  if (window.__serronRunMode !== 'unified') {
+  if (window.__obriumRunMode !== 'unified') {
     console.log(`FEED STARTER: rendered 5 cards; Nebula ready: ${nebulaReady}`);
   }
 }

@@ -55,11 +55,11 @@ const PHAI_ICON_CHECK_CACHE = new Map();
 
 function purgeAgentUiOverlaysFromDocument() {
   const byId = [
-    'tendai-create-agent-overlay',
-    'tendai-edit-agent-overlay',
-    'tendai-ultimate-agent-creator-overlay',
-    'tendai-blueprint-store-overlay',
-    'tendai-workflow-init-overlay',
+    'obrium-create-agent-overlay',
+    'obrium-edit-agent-overlay',
+    'obrium-ultimate-agent-creator-overlay',
+    'obrium-blueprint-store-overlay',
+    'obrium-workflow-init-overlay',
   ];
   byId.forEach((id) => document.getElementById(id)?.remove());
   document.querySelectorAll('body > .human-os-modal-overlay').forEach((el) => el.remove());
@@ -374,8 +374,8 @@ function guardPhaiTileIcons(host) {
     const originalPath = String(img.getAttribute('data-icon-path') || img.getAttribute('src') || '').trim();
     const normalizedPath = normalizePhaiIconPath(originalPath);
     if (!normalizedPath) {
-      if (typeof window !== 'undefined' && typeof window.__serronApplyAssetFallback === 'function') {
-        window.__serronApplyAssetFallback(img, originalPath);
+      if (typeof window !== 'undefined' && typeof window.__obriumApplyAssetFallback === 'function') {
+        window.__obriumApplyAssetFallback(img, originalPath);
       }
       return;
     }
@@ -385,8 +385,8 @@ function guardPhaiTileIcons(host) {
     img.addEventListener(
       'error',
       () => {
-        if (typeof window !== 'undefined' && typeof window.__serronApplyAssetFallback === 'function') {
-          window.__serronApplyAssetFallback(img, normalizedPath);
+        if (typeof window !== 'undefined' && typeof window.__obriumApplyAssetFallback === 'function') {
+          window.__obriumApplyAssetFallback(img, normalizedPath);
         }
       },
       { once: true }
@@ -397,8 +397,8 @@ function guardPhaiTileIcons(host) {
         if (console.error) console.error(`[PATH ERROR]: Missing file at ${normalizedPath}`);
         if (console.warn) console.warn(`[SYSTEM ERROR]: Resource Missing at ${normalizedPath}`);
       }
-      if (typeof window !== 'undefined' && typeof window.__serronApplyAssetFallback === 'function') {
-        window.__serronApplyAssetFallback(img, normalizedPath);
+      if (typeof window !== 'undefined' && typeof window.__obriumApplyAssetFallback === 'function') {
+        window.__obriumApplyAssetFallback(img, normalizedPath);
       }
     });
   });
@@ -527,11 +527,11 @@ function sourceIdForTrackingMode(mode, domainId) {
 
 function showWorkflowInitializingOverlay() {
   const el = document.createElement('div');
-  el.id = 'tendai-workflow-init-overlay';
-  el.className = 'tendai-workflow-init-overlay';
+  el.id = 'obrium-workflow-init-overlay';
+  el.className = 'obrium-workflow-init-overlay';
   el.setAttribute('role', 'status');
   el.innerHTML =
-    '<span class="tendai-workflow-init-overlay__text">Initializing Workflow...</span>';
+    '<span class="obrium-workflow-init-overlay__text">Initializing Workflow...</span>';
   document.body.appendChild(el);
   requestAnimationFrame(() => {
     requestAnimationFrame(() => el.classList.add('is-visible'));
@@ -540,10 +540,10 @@ function showWorkflowInitializingOverlay() {
 }
 
 function showCompletionToast(displayName, areaHint) {
-  const prev = document.getElementById('tendai-phai-toast');
+  const prev = document.getElementById('obrium-phai-toast');
   if (prev) prev.remove();
   const el = document.createElement('div');
-  el.id = 'tendai-phai-toast';
+  el.id = 'obrium-phai-toast';
   el.className = 'phai-toast';
   el.setAttribute('role', 'status');
   el.innerHTML = `
@@ -716,7 +716,7 @@ export function openUltimateAgentCreatorModalAfterPurge(onDone) {
   };
 
   const overlay = document.createElement('div');
-  overlay.id = 'tendai-ultimate-agent-creator-overlay';
+  overlay.id = 'obrium-ultimate-agent-creator-overlay';
 
   function resetWizardSelections() {
     state.phase = 0;
@@ -1119,8 +1119,8 @@ export function openUltimateAgentCreatorModalAfterPurge(onDone) {
 
   function renderModal() {
     overlay.innerHTML = `
-      <div class="serron-modal-overlay" role="dialog" aria-modal="true" aria-label="Focus Area deployment modal">
-        <div class="serron-modal-content serron-modal-container glass-panel deploy-cyan deploy-phase-${state.phase}">
+      <div class="obrium-modal-overlay" role="dialog" aria-modal="true" aria-label="Focus Area deployment modal">
+        <div class="obrium-modal-content obrium-modal-container glass-panel deploy-cyan deploy-phase-${state.phase}">
           <button
             type="button"
             class="deploy-modal-close-btn"
@@ -1156,7 +1156,7 @@ export function openUltimateAgentCreatorModalAfterPurge(onDone) {
       </div>
     `;
 
-    const modalOverlay = overlay.querySelector('.serron-modal-overlay');
+    const modalOverlay = overlay.querySelector('.obrium-modal-overlay');
     modalOverlay?.addEventListener('click', (e) => {
       if (e.target === modalOverlay && !state.isBusy) dismissWizard();
     });

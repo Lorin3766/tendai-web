@@ -16,25 +16,25 @@ import { updateUserAgent } from './user-agents.js';
 export function openEditAgentModal(onSaved, edit) {
   if (!edit || !edit.id) return;
 
-  document.getElementById('tendai-ultimate-agent-creator-overlay')?.remove();
-  document.getElementById('tendai-blueprint-store-overlay')?.remove();
-  document.getElementById('tendai-create-agent-overlay')?.remove();
+  document.getElementById('obrium-ultimate-agent-creator-overlay')?.remove();
+  document.getElementById('obrium-blueprint-store-overlay')?.remove();
+  document.getElementById('obrium-create-agent-overlay')?.remove();
   document.querySelectorAll('body > .human-os-modal-overlay').forEach((el) => el.remove());
 
   const editId = String(edit.id);
 
   const overlay = document.createElement('div');
-  overlay.id = 'tendai-edit-agent-overlay';
+  overlay.id = 'obrium-edit-agent-overlay';
   overlay.className = 'human-os-modal-overlay';
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
-  overlay.setAttribute('aria-labelledby', 'tendai-agent-modal-title');
+  overlay.setAttribute('aria-labelledby', 'obrium-agent-modal-title');
 
   const modal = document.createElement('div');
   modal.className = 'human-os-modal';
 
   const title = document.createElement('h2');
-  title.id = 'tendai-agent-modal-title';
+  title.id = 'obrium-agent-modal-title';
   title.className = 'human-os-modal__title';
   title.textContent = 'EDIT FOCUS AREA';
 
@@ -55,10 +55,10 @@ export function openEditAgentModal(onSaved, edit) {
 
   const nameLabel = document.createElement('label');
   nameLabel.className = 'human-os-modal__label';
-  nameLabel.htmlFor = 'tendai-agent-name';
+  nameLabel.htmlFor = 'obrium-agent-name';
   nameLabel.textContent = 'Designation';
   const nameInput = document.createElement('input');
-  nameInput.id = 'tendai-agent-name';
+  nameInput.id = 'obrium-agent-name';
   nameInput.type = 'text';
   nameInput.className = 'human-os-modal__input';
   nameInput.placeholder = 'e.g. Environmental scout';
@@ -67,10 +67,10 @@ export function openEditAgentModal(onSaved, edit) {
 
   const instrLabel = document.createElement('label');
   instrLabel.className = 'human-os-modal__label';
-  instrLabel.htmlFor = 'tendai-agent-instruction';
+  instrLabel.htmlFor = 'obrium-agent-instruction';
   instrLabel.textContent = 'Mission / instruction';
   const instrInput = document.createElement('textarea');
-  instrInput.id = 'tendai-agent-instruction';
+  instrInput.id = 'obrium-agent-instruction';
   instrInput.className = 'human-os-modal__textarea';
   instrInput.rows = 4;
   instrInput.placeholder = 'What to monitor, thresholds, and how to phrase alerts.';
@@ -151,26 +151,26 @@ function normalizeConnectedSources(agent) {
 export function openConfigureAgentSourcesModal(onSaved, agent) {
   if (!agent || !agent.id) return;
 
-  document.getElementById('tendai-ultimate-agent-creator-overlay')?.remove();
-  document.getElementById('tendai-blueprint-store-overlay')?.remove();
-  document.getElementById('tendai-create-agent-overlay')?.remove();
+  document.getElementById('obrium-ultimate-agent-creator-overlay')?.remove();
+  document.getElementById('obrium-blueprint-store-overlay')?.remove();
+  document.getElementById('obrium-create-agent-overlay')?.remove();
   document.querySelectorAll('body > .human-os-modal-overlay').forEach((el) => el.remove());
 
   const agentId = String(agent.id);
   const selected = new Set(normalizeConnectedSources(agent));
 
   const overlay = document.createElement('div');
-  overlay.id = 'tendai-configure-agent-overlay';
+  overlay.id = 'obrium-configure-agent-overlay';
   overlay.className = 'human-os-modal-overlay';
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
-  overlay.setAttribute('aria-labelledby', 'tendai-agent-configure-title');
+  overlay.setAttribute('aria-labelledby', 'obrium-agent-configure-title');
 
   const modal = document.createElement('div');
   modal.className = 'human-os-modal';
 
   const title = document.createElement('h2');
-  title.id = 'tendai-agent-configure-title';
+  title.id = 'obrium-agent-configure-title';
   title.className = 'human-os-modal__title';
   title.textContent = 'CONFIGURE KNOWLEDGE BASE';
 

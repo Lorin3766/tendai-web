@@ -200,7 +200,7 @@ export function dispatchTalkTelemetry(text) {
 
     try {
       window.dispatchEvent(
-        new CustomEvent('serron:agent-sensor-updated', {
+        new CustomEvent('obrium:agent-sensor-updated', {
           detail: { agentName: String(prev.name || '').trim(), patch },
         })
       );
@@ -210,7 +210,7 @@ export function dispatchTalkTelemetry(text) {
   if (items.length) {
     try {
       window.dispatchEvent(
-        new CustomEvent('serron:telemetry-ingested', {
+        new CustomEvent('obrium:telemetry-ingested', {
           detail: { source: 'talk', count: items.length },
         })
       );
@@ -220,10 +220,10 @@ export function dispatchTalkTelemetry(text) {
 
 export function initDataDispatcher() {
   if (typeof window === 'undefined') return;
-  if (window.__serronDataDispatcherInit) return;
-  window.__serronDataDispatcherInit = true;
+  if (window.__obriumDataDispatcherInit) return;
+  window.__obriumDataDispatcherInit = true;
 
-  window.addEventListener('serron:talk-user-submit', (ev) => {
+  window.addEventListener('obrium:talk-user-submit', (ev) => {
     const text = ev && /** @type {CustomEvent} */ (ev).detail && /** @type {any} */ (ev.detail).text;
     if (text) dispatchTalkTelemetry(String(text));
   });

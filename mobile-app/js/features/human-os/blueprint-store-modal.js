@@ -24,8 +24,8 @@ function esc(s) {
  * @param {() => void|Promise<void>} [onSaved]
  */
 export function openBlueprintStoreModal(onSaved) {
-  document.getElementById('tendai-ultimate-agent-creator-overlay')?.remove();
-  const prev = document.getElementById('tendai-blueprint-store-overlay');
+  document.getElementById('obrium-ultimate-agent-creator-overlay')?.remove();
+  const prev = document.getElementById('obrium-blueprint-store-overlay');
   if (prev) prev.remove();
 
   const state = {
@@ -37,7 +37,7 @@ export function openBlueprintStoreModal(onSaved) {
   };
 
   const overlay = document.createElement('div');
-  overlay.id = 'tendai-blueprint-store-overlay';
+  overlay.id = 'obrium-blueprint-store-overlay';
   overlay.className = 'blueprint-store-overlay';
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');

@@ -10,7 +10,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
   'use strict';
 
   if (IS_VERBOSE_BOOT_LOGS) {
-    console.log('[BOOT][UNIFIED] start (waiting for serron:boot-ready)');
+    console.log('[BOOT][UNIFIED] start (waiting for obrium:boot-ready)');
     console.log('[RUN MODE] unified');
     const _bootDate = new Date();
     console.log('[BOOT][UNIFIED] local', _bootDate.toISOString(), 'timezone=' + (Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown'));
@@ -105,7 +105,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
     // First run or invalid date -> just establish baseline and continue
     if (!lastKey || !/^\d{4}-\d{2}-\d{2}$/.test(lastKey)) {
       try { localStorage.setItem(HISTORY_SYNC_LAST_DATE_KEY, todayKey); } catch (_) {}
-      window.__serronHistorySync = { isSyncing: false, gapDays: 0, missingDateKeys: [] };
+      window.__obriumHistorySync = { isSyncing: false, gapDays: 0, missingDateKeys: [] };
       return;
     }
 
@@ -113,7 +113,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
     const missingDays = Math.max(0, diffDays - 1);
     if (missingDays <= 0) {
       try { localStorage.setItem(HISTORY_SYNC_LAST_DATE_KEY, todayKey); } catch (_) {}
-      window.__serronHistorySync = { isSyncing: false, gapDays: 0, missingDateKeys: [] };
+      window.__obriumHistorySync = { isSyncing: false, gapDays: 0, missingDateKeys: [] };
       return;
     }
 
@@ -124,7 +124,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
       missingDateKeys.push(toDateKey(d));
     }
 
-    window.__serronHistorySync = {
+    window.__obriumHistorySync = {
       isSyncing: true,
       gapDays: missingDays,
       missingDateKeys
@@ -171,7 +171,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
     } catch (_) {}
   }
 
-  // TALK component and tabs are initialized in runAfterBootReady() on serron:boot-ready
+  // TALK component and tabs are initialized in runAfterBootReady() on obrium:boot-ready
 
   /**
    * Render plan cards in FEED based on plan state.
@@ -199,7 +199,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
   }
 
   // Subscribe to plan state changes (once)
-  if (!window.__serronPlanCardsSubscribed) {
+  if (!window.__obriumPlanCardsSubscribed) {
     try {
       const unsubscribe = subscribe((newState, oldState, patch) => {
         // Only react to plan state changes
@@ -212,15 +212,15 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
           }
         }
       });
-      window.__serronPlanCardsSubscribed = true;
-      window.__serronPlanCardsUnsubscribe = unsubscribe;
+      window.__obriumPlanCardsSubscribed = true;
+      window.__obriumPlanCardsUnsubscribe = unsubscribe;
     } catch (error) {
       console.warn('[FEED][PLAN] Failed to subscribe to plan state:', error);
     }
   }
 
   // Programs: "Create my plan" — switch to TALK and start plan generation flow (analyzing + strategy buttons + plan)
-  if (!document.body.dataset.tendaiCreatePlanDelegate) {
+  if (!document.body.dataset.obriumCreatePlanDelegate) {
     document.body.addEventListener('click', (e) => {
       const btn = e.target && e.target.closest && e.target.closest('[data-service="mini-program"][data-program-id="create-my-plan"]');
       if (!btn) return;
@@ -233,11 +233,11 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
         if (talkComponent) startPlanGenerationFlow(talkComponent);
       }, 200);
     });
-    document.body.dataset.tendaiCreatePlanDelegate = '1';
+    document.body.dataset.obriumCreatePlanDelegate = '1';
   }
 
   // Labs: open report modal with chart and "Sync with AI"
-  if (!document.body.dataset.tendaiLabsDelegate) {
+  if (!document.body.dataset.obriumLabsDelegate) {
     document.body.addEventListener('click', (e) => {
       const row = e.target && e.target.closest && e.target.closest('[data-service="lab"]');
       if (!row) return;
@@ -247,11 +247,11 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
       addGoldPulseToServiceRow(row);
       openLabsReportModal(labId, labName);
     });
-    document.body.dataset.tendaiLabsDelegate = '1';
+    document.body.dataset.obriumLabsDelegate = '1';
   }
 
   // Online Doctor "Chat with doctor": switch to TALK + Secure Medical Channel
-  if (!document.body.dataset.tendaiDoctorChatDelegate) {
+  if (!document.body.dataset.obriumDoctorChatDelegate) {
     document.body.addEventListener('click', (e) => {
       const row = e.target && e.target.closest && e.target.closest('[data-service="online-doctor"][data-doctor-id="chat"]');
       if (!row) return;
@@ -262,7 +262,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
         if (talkComponent) startSecureMedicalChannel(talkComponent);
       }, 200);
     });
-    document.body.dataset.tendaiDoctorChatDelegate = '1';
+    document.body.dataset.obriumDoctorChatDelegate = '1';
   }
 
   function addGoldPulseToServiceRow(element) {
@@ -273,8 +273,8 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
   }
 
   // Enable location: delegated handler (catches data-action="enable-location" even when element is created after render)
-  if (!document.body.dataset.tendaiEnableLocationDelegate) {
-    document.body.dataset.tendaiEnableLocationDelegate = '1';
+  if (!document.body.dataset.obriumEnableLocationDelegate) {
+    document.body.dataset.obriumEnableLocationDelegate = '1';
     document.body.addEventListener('click', (e) => {
       const el = e.target && e.target.closest && e.target.closest('[data-action="enable-location"]');
       if (!el) return;
@@ -404,8 +404,8 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
       if (feedView) feedView.removeAttribute('aria-hidden');
 
       // Entry animation: run once on first load when feed is shown
-      if (feedView && !window.__serronEntryReadyDone) {
-        window.__serronEntryReadyDone = true;
+      if (feedView && !window.__obriumEntryReadyDone) {
+        window.__obriumEntryReadyDone = true;
         requestAnimationFrame(() => {
           requestAnimationFrame(() => feedView.classList.add('entry-ready'));
         });
@@ -685,7 +685,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
   // ============================================================
   
   // Global init status tracker
-  window.tendaiInitStatus = {
+  window.obriumInitStatus = {
     modules: {},
     startTime: Date.now(),
     getSummary: function() {
@@ -709,7 +709,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
     try {
       const result = initFn();
       const status = { success: true, name, timestamp: Date.now() };
-      window.tendaiInitStatus.modules[name] = status;
+      window.obriumInitStatus.modules[name] = status;
       if (IS_VERBOSE_BOOT_LOGS) console.log(`[INIT] ✅ ${name} initialized`);
       return status;
     } catch (error) {
@@ -719,12 +719,12 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
         error: error.message,
         timestamp: Date.now()
       };
-      window.tendaiInitStatus.modules[name] = status;
+      window.obriumInitStatus.modules[name] = status;
       console.error(`[INIT] ❌ ${name} failed:`, error.message);
       // Show visible status for failed critical modules
       if (name === 'Tabs') {
         const errorDiv = document.createElement('div');
-        errorDiv.id = 'tendai-init-error';
+        errorDiv.id = 'obrium-init-error';
         errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(220, 53, 69, 0.9); color: white; padding: 12px 20px; border-radius: 8px; z-index: 10001; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
         errorDiv.textContent = `⚠️ Module ${name} failed: ${error.message}`;
         document.body.appendChild(errorDiv);
@@ -853,13 +853,13 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
     }
     
     // Store results globally
-    window.tendaiSmokeTest = results;
+    window.obriumSmokeTest = results;
     
     return results;
   }
 
   /**
-   * UI initialization: runs only after serron:boot-ready (bootstrap has finished HealthSync + core inits).
+   * UI initialization: runs only after obrium:boot-ready (bootstrap has finished HealthSync + core inits).
    * Single place for TalkComponent, tabs, initial view, calendar, smoke test.
    */
   function runAfterBootReady() {
@@ -868,7 +868,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
     if (conversationCard) {
       try {
         talkComponent = new TalkComponent(conversationCard);
-        window.__serronTalkComponent = talkComponent;
+        window.__obriumTalkComponent = talkComponent;
       } catch (error) {
         console.error('[INIT] Talk component failed:', error);
       }
@@ -907,7 +907,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
 
     safeInit('Calendar', () => typeof window.toggleCalendar === 'function');
 
-    const summary = window.tendaiInitStatus.getSummary();
+    const summary = window.obriumInitStatus.getSummary();
     if (IS_VERBOSE_BOOT_LOGS) {
       console.log('[INIT] ✅ App initialization complete');
       console.log('[INIT] Summary:', {
@@ -943,7 +943,7 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
       source: 'agent-card',
       prepared_at: new Date().toISOString(),
     };
-    window.__serronDiscussContext = prepared;
+    window.__obriumDiscussContext = prepared;
     return prepared;
   }
 
@@ -976,19 +976,19 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
     }
   };
 
-  window.__serronPrimeDiscussContext = primeDiscussContext;
+  window.__obriumPrimeDiscussContext = primeDiscussContext;
 
-  window.tendaiApp = {
+  window.obriumApp = {
     switchView,
     primeDiscussContext,
     get talkComponent() { return talkComponent; }
   };
 
-  // Gate: run UI init only after bootstrap has set SERRON_BOOT_READY and dispatched serron:boot-ready
-  if (window.SERRON_BOOT_READY === true) {
+  // Gate: run UI init only after bootstrap has set OBRIUM_BOOT_READY and dispatched obrium:boot-ready
+  if (window.OBRIUM_BOOT_READY === true) {
     runAfterBootReady();
   } else {
-    window.addEventListener('serron:boot-ready', runAfterBootReady, { once: true });
+    window.addEventListener('obrium:boot-ready', runAfterBootReady, { once: true });
   }
 })();
 

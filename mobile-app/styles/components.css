@@ -8,8 +8,8 @@
   --font-main: 'Inter', sans-serif;
 }
 
-/* ========== System Shield â€” boot curtain (#tendai-gatekeeper in index.html) ========== */
-.tendai-gatekeeper {
+/* ========== System Shield â€” boot curtain (#obrium-gatekeeper in index.html) ========== */
+.obrium-gatekeeper {
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -18,7 +18,7 @@
   opacity: 1;
   transition: opacity 0.35s ease;
 }
-.tendai-gatekeeper.tendai-gatekeeper--exiting {
+.obrium-gatekeeper.obrium-gatekeeper--exiting {
   opacity: 0;
   pointer-events: none;
 }
@@ -657,7 +657,7 @@ body.calendar-open {
    ============================================================ */
 
 .btn {
-  border-radius: var(--serron-control-radius, 9px);
+  border-radius: var(--obrium-control-radius, 9px);
   border: 1px solid rgba(255, 248, 235, 0.12);
   background: rgba(255, 248, 235, 0.06);
   color: var(--fg-soft, #d4cdc4);
@@ -749,7 +749,7 @@ body.calendar-open {
 
 .input {
   flex: 1;
-  border-radius: var(--serron-control-radius, 9px);
+  border-radius: var(--obrium-control-radius, 9px);
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(0, 0, 0, 0.32);
   color: var(--fg);
@@ -1005,13 +1005,13 @@ body.calendar-open {
    TENDAI PRIMARY CONTROL CHROME â€” + ADD AGENT (technical rect, ~9px radius)
    ============================================================ */
 
-.serron-control-capsule {
+.obrium-control-capsule {
   box-sizing: border-box;
-  border-radius: var(--serron-control-radius, 9px);
-  border: var(--serron-control-border-width, 1.5px) solid var(--agent-add-bar-border);
-  border-top-color: var(--serron-control-border-strong, rgba(197, 163, 101, 0.48));
-  background: var(--serron-control-surface, rgba(12, 14, 18, 0.88));
-  box-shadow: var(--serron-capsule-shadow);
+  border-radius: var(--obrium-control-radius, 9px);
+  border: var(--obrium-control-border-width, 1.5px) solid var(--agent-add-bar-border);
+  border-top-color: var(--obrium-control-border-strong, rgba(197, 163, 101, 0.48));
+  background: var(--obrium-control-surface, rgba(12, 14, 18, 0.88));
+  box-shadow: var(--obrium-capsule-shadow);
   transition:
     border-color 0.2s var(--ease-premium),
     background 0.2s var(--ease-premium),
@@ -1039,7 +1039,7 @@ body.calendar-open {
   min-width: 0;
   margin: 0;
   box-sizing: border-box;
-  border-radius: var(--serron-control-radius, 9px);
+  border-radius: var(--obrium-control-radius, 9px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
   box-shadow: none;
@@ -1092,8 +1092,8 @@ body.calendar-open {
 
 .center-tabs-segment .center-tab.is-active,
 .center-tabs-segment .center-tab[aria-selected="true"] {
-  border: var(--serron-control-border-width, 1.5px) solid var(--agent-add-bar-border);
-  border-top-color: var(--serron-control-border-strong, rgba(197, 163, 101, 0.48));
+  border: var(--obrium-control-border-width, 1.5px) solid var(--agent-add-bar-border);
+  border-top-color: var(--obrium-control-border-strong, rgba(197, 163, 101, 0.48));
   background: rgba(255, 255, 255, 0.03);
   color: var(--gold);
   box-shadow: none;
@@ -1202,7 +1202,7 @@ body.calendar-open {
   stroke-width: 2 !important;
   color: rgba(255, 255, 255, 0.95) !important; /* Almost white for maximum contrast */
   fill: none !important; /* Explicitly set fill to none for stroke-only elements */
-  filter: var(--serron-filter-calendar-svg); /* Subtle depth; aura token */
+  filter: var(--obrium-filter-calendar-svg); /* Subtle depth; aura token */
   
   /* Prevent transforms that might distort */
   transform: none !important;
@@ -1221,7 +1221,7 @@ body.calendar-open {
 
 #calendarBtn.calendar-tab-btn:hover svg {
   color: var(--gold);
-  filter: var(--serron-filter-calendar-hover);
+  filter: var(--obrium-filter-calendar-hover);
 }
 
 #calendarBtn.calendar-tab-btn:active {
@@ -1705,10 +1705,10 @@ body.calendar-open {
   font-size: 14px;
   font-weight: 500;
   color: var(--fg);
-  background: var(--serron-control-surface, rgba(12, 14, 18, 0.88));
-  border: var(--serron-control-border-width, 1.5px) solid var(--agent-add-bar-border);
-  border-top-color: var(--serron-control-border-strong);
-  border-radius: var(--serron-control-radius, 9px);
+  background: var(--obrium-control-surface, rgba(12, 14, 18, 0.88));
+  border: var(--obrium-control-border-width, 1.5px) solid var(--agent-add-bar-border);
+  border-top-color: var(--obrium-control-border-strong);
+  border-radius: var(--obrium-control-radius, 9px);
   box-sizing: border-box;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -1736,10 +1736,10 @@ body.calendar-open {
 .talk-view .sleep-flow-chip.talk-status-tile {
   width: 100%;
   max-width: 100%;
-  background: var(--serron-control-surface, rgba(12, 14, 18, 0.88));
-  border: var(--serron-control-border-width, 1.5px) solid var(--agent-add-bar-border);
-  border-top-color: var(--serron-control-border-strong);
-  border-radius: var(--serron-control-radius, 9px);
+  background: var(--obrium-control-surface, rgba(12, 14, 18, 0.88));
+  border: var(--obrium-control-border-width, 1.5px) solid var(--agent-add-bar-border);
+  border-top-color: var(--obrium-control-border-strong);
+  border-radius: var(--obrium-control-radius, 9px);
   box-sizing: border-box;
   color: var(--fg);
   text-align: center;
@@ -1769,7 +1769,7 @@ body.calendar-open {
 .talk-view .sleep-flow-chip.talk-status-tile.is-selected {
   border-color: var(--agent-add-bar-border);
   box-shadow:
-    inset 0 0 0 var(--serron-control-border-width, 1.5px) rgba(246, 195, 106, 0.35),
+    inset 0 0 0 var(--obrium-control-border-width, 1.5px) rgba(246, 195, 106, 0.35),
     0 0 12px var(--gold-aura);
   background: rgba(197, 163, 101, 0.1);
   color: var(--gold-primary);
@@ -1890,7 +1890,7 @@ body.talk-header-secure-channel #tab-talk.center-tab.is-active,
 body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   background: rgba(30, 58, 95, 0.5);
   color: #7eb8e8;
-  border: var(--serron-control-border-width, 1.5px) solid rgba(42, 74, 111, 0.85);
+  border: var(--obrium-control-border-width, 1.5px) solid rgba(42, 74, 111, 0.85);
   border-top-color: rgba(100, 140, 190, 0.55);
   box-shadow: 0 0 14px rgba(30, 58, 95, 0.45);
 }
@@ -2182,7 +2182,7 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
   border-bottom: 10px solid #fff;
-  filter: var(--serron-filter-labs-marker);
+  filter: var(--obrium-filter-labs-marker);
 }
 .labs-zone-bar {
   display: flex;
@@ -2323,10 +2323,10 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   right: 20px;
   width: 44px;
   height: 44px;
-  border-radius: var(--serron-control-radius, 9px);
+  border-radius: var(--obrium-control-radius, 9px);
   background: var(--gold);
   color: var(--bg);
-  border: var(--serron-control-border-width, 1.5px) solid var(--gold);
+  border: var(--obrium-control-border-width, 1.5px) solid var(--gold);
   box-shadow: 0 4px 12px rgba(246, 195, 106, 0.4), 0 0 8px var(--gold-glow);
   cursor: pointer;
   display: flex;
@@ -2374,8 +2374,8 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 .talk-runtime-indicator {
   display: none;
   padding: 5px 8px;
-  border-radius: var(--serron-control-radius-nested, 6px);
-  border: var(--serron-control-border-width, 1.5px) solid rgba(246, 195, 106, 0.35);
+  border-radius: var(--obrium-control-radius-nested, 6px);
+  border: var(--obrium-control-border-width, 1.5px) solid rgba(246, 195, 106, 0.35);
   background: rgba(18, 20, 26, 0.65);
   color: rgba(246, 195, 106, 0.88);
   font-size: 10px;
@@ -2692,10 +2692,10 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 .talk-quick-reply-btn {
   font-size: 13px;
   padding: 8px 12px;
-  border-radius: var(--serron-control-radius, 9px);
-  border: var(--serron-control-border-width, 1.5px) solid var(--agent-add-bar-border);
-  border-top-color: var(--serron-control-border-strong);
-  background: var(--serron-control-surface);
+  border-radius: var(--obrium-control-radius, 9px);
+  border: var(--obrium-control-border-width, 1.5px) solid var(--agent-add-bar-border);
+  border-top-color: var(--obrium-control-border-strong);
+  background: var(--obrium-control-surface);
   color: var(--fg);
   cursor: pointer;
   box-sizing: border-box;
@@ -2878,7 +2878,7 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   box-sizing: border-box;
 }
 
-@keyframes serronAgentCardEnter {
+@keyframes obriumAgentCardEnter {
   from {
     opacity: 0;
     transform: translateY(12px);
@@ -2898,7 +2898,7 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   transition: border-color 0.28s ease, box-shadow 0.28s ease;
 }
 .agent-report-card--enter {
-  animation: serronAgentCardEnter 0.42s ease forwards;
+  animation: obriumAgentCardEnter 0.42s ease forwards;
 }
 .agent-report-card--critical {
   border-color: rgba(255, 82, 82, 0.55) !important;
@@ -4773,8 +4773,8 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 .section-button {
   width: 100%;
   padding: 10px 14px;
-  border-radius: var(--serron-control-radius, 9px);
-  border: var(--serron-control-border-width, 1.5px) solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--obrium-control-radius, 9px);
+  border: var(--obrium-control-border-width, 1.5px) solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
   color: var(--fg);
   font-size: 14px;
@@ -4843,8 +4843,8 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   gap: 12px;
   width: 100%;
   padding: 12px 14px;
-  border: var(--serron-control-border-width, 1.5px) solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--serron-control-radius, 9px);
+  border: var(--obrium-control-border-width, 1.5px) solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--obrium-control-radius, 9px);
   background: rgba(255, 255, 255, 0.02);
   color: var(--fg);
   font-size: 14px;
@@ -5144,7 +5144,7 @@ button.sidebar-core-retry[hidden] {
   min-height: 44px;
   padding: 10px 14px;
   padding-right: 36px;
-  border-radius: var(--serron-control-radius, 9px);
+  border-radius: var(--obrium-control-radius, 9px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
   box-shadow: none;
@@ -5202,8 +5202,8 @@ button.sidebar-core-retry[hidden] {
 .layout-sidebar-right .sidebar-panel-flat .card-header-toggle.is-open,
 .services-view .sidebar-panel-flat .card-header-toggle.is-open,
 #col-right .sidebar-panel-flat .card-header-toggle.is-open {
-  border: var(--serron-control-border-width, 1.5px) solid var(--agent-add-bar-border);
-  border-top-color: var(--serron-control-border-strong, rgba(197, 163, 101, 0.48));
+  border: var(--obrium-control-border-width, 1.5px) solid var(--agent-add-bar-border);
+  border-top-color: var(--obrium-control-border-strong, rgba(197, 163, 101, 0.48));
   background: rgba(255, 255, 255, 0.03);
   box-shadow: none;
 }
@@ -5219,8 +5219,8 @@ button.sidebar-core-retry[hidden] {
 .services-view .sidebar-panel-flat .card-header-toggle.is-open:hover,
 #col-right .sidebar-panel-flat .card-header-toggle.is-open:hover {
   opacity: 1;
-  border: var(--serron-control-border-width, 1.5px) solid var(--agent-add-bar-border);
-  border-top-color: var(--serron-control-border-strong, rgba(197, 163, 101, 0.48));
+  border: var(--obrium-control-border-width, 1.5px) solid var(--agent-add-bar-border);
+  border-top-color: var(--obrium-control-border-strong, rgba(197, 163, 101, 0.48));
 }
 
 .layout-sidebar-right .sidebar-panel-flat .card-header-toggle.is-open:hover::after,
@@ -5331,7 +5331,7 @@ button.sidebar-core-retry[hidden] {
   justify-content: center;
   gap: 3px;
   padding: 8px 12px;
-  border-radius: var(--serron-control-radius, 9px);
+  border-radius: var(--obrium-control-radius, 9px);
   background: transparent;
   border: none;
   min-width: 0;
@@ -5357,7 +5357,7 @@ button.sidebar-core-retry[hidden] {
 }
 
 .nav-item.active {
-  color: var(--serron-led-gold, #F6C36A);
+  color: var(--obrium-led-gold, #F6C36A);
   background: transparent;
   border-color: transparent;
   outline: none;
@@ -5396,12 +5396,12 @@ button.sidebar-core-retry[hidden] {
 }
 
 .nav-item.active .nav-item-icon {
-  color: var(--serron-led-gold, #F6C36A);
+  color: var(--obrium-led-gold, #F6C36A);
   filter: drop-shadow(0 0 6px rgba(246, 195, 106, 0.55));
 }
 
 .nav-item.active .nav-item-label {
-  color: var(--serron-led-gold, #F6C36A);
+  color: var(--obrium-led-gold, #F6C36A);
   text-shadow: 0 0 8px rgba(246, 195, 106, 0.5);
 }
 
@@ -6881,7 +6881,7 @@ button.sidebar-core-retry[hidden] {
   appearance: none;
   width: 18px;
   height: 18px;
-  border-radius: var(--serron-control-radius-nested, 6px);
+  border-radius: var(--obrium-control-radius-nested, 6px);
   background: var(--gold);
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(246, 195, 106, 0.4);
@@ -6895,7 +6895,7 @@ button.sidebar-core-retry[hidden] {
 .card-slider input[type="range"]::-moz-range-thumb {
   width: 18px;
   height: 18px;
-  border-radius: var(--serron-control-radius-nested, 6px);
+  border-radius: var(--obrium-control-radius-nested, 6px);
   background: var(--gold);
   cursor: pointer;
   border: none;
@@ -7167,11 +7167,11 @@ button.sidebar-core-retry[hidden] {
   right: 0;
   bottom: 0;
   background: rgba(255, 255, 255, 0.15);
-  border-radius: var(--serron-control-radius, 9px);
+  border-radius: var(--obrium-control-radius, 9px);
   transition:
     background 0.5s var(--ease-human-os),
     box-shadow 0.5s var(--ease-human-os);
-  border: var(--serron-control-border-width, 1.5px) solid rgba(255, 255, 255, 0.12);
+  border: var(--obrium-control-border-width, 1.5px) solid rgba(255, 255, 255, 0.12);
 }
 
 /* Switch thumb â€” soft rectangle, not a disc */
@@ -7183,7 +7183,7 @@ button.sidebar-core-retry[hidden] {
   left: 3px;
   bottom: 2px;
   background: #ffffff;
-  border-radius: var(--serron-control-radius-nested, 6px);
+  border-radius: var(--obrium-control-radius-nested, 6px);
   transition:
     transform 0.5s var(--ease-human-os),
     box-shadow 0.5s var(--ease-human-os);
@@ -8368,7 +8368,7 @@ button.sidebar-core-retry[hidden] {
 }
 .sensor-tile-value:not(.sensor-tile-value--empty) {
   color: var(--gold-primary);
-  filter: var(--serron-filter-sensor-value);
+  filter: var(--obrium-filter-sensor-value);
   animation: sensor-value-fade-in 0.35s ease-out;
 }
 @keyframes sensor-value-fade-in {
@@ -8583,7 +8583,7 @@ button.sidebar-core-retry[hidden] {
 /* ============================================================
    SELECT SECTOR MODAL — TendAI Hardware Gold + Glass
    ============================================================ */
-.serron-modal-overlay {
+.obrium-modal-overlay {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -8599,7 +8599,7 @@ button.sidebar-core-retry[hidden] {
 }
 
 /* Slab: both classes are on the same node in ultimate-agent-creator-modal.js */
-.serron-modal-content.serron-modal-container {
+.obrium-modal-content.obrium-modal-container {
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   background: var(--bg-elevated, #1c1a17);
@@ -8621,14 +8621,14 @@ button.sidebar-core-retry[hidden] {
   font-family: var(--font-ui);
 }
 
-.serron-modal-content.serron-modal-container::-webkit-scrollbar {
+.obrium-modal-content.obrium-modal-container::-webkit-scrollbar {
   display: none;
 }
 
 /* Deployment wizard — height follows content up to the viewport cap; past that,
    only .deploy-phase-body scrolls while header/context/footer stay pinned
    (Phase 00's 9-tile grid is the main case that overflows). */
-.serron-modal-content.serron-modal-container.deploy-cyan {
+.obrium-modal-content.obrium-modal-container.deploy-cyan {
   display: flex;
   flex-direction: column;
   max-height: min(88vh, 760px);
@@ -8641,12 +8641,12 @@ button.sidebar-core-retry[hidden] {
   transform: none;
 }
 
-.serron-modal-container.deploy-cyan > .deploy-header-row,
-.serron-modal-container.deploy-cyan > .deploy-context-row {
+.obrium-modal-container.deploy-cyan > .deploy-header-row,
+.obrium-modal-container.deploy-cyan > .deploy-context-row {
   flex-shrink: 0;
 }
 
-.serron-modal-container.deploy-cyan .deploy-phase-body {
+.obrium-modal-container.deploy-cyan .deploy-phase-body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -8656,16 +8656,16 @@ button.sidebar-core-retry[hidden] {
   scrollbar-width: none;
 }
 
-.serron-modal-container.deploy-cyan .deploy-phase-body::-webkit-scrollbar {
+.obrium-modal-container.deploy-cyan .deploy-phase-body::-webkit-scrollbar {
   display: none;
 }
 
-.serron-modal-container.deploy-cyan .deploy-tile-toolbar {
+.obrium-modal-container.deploy-cyan .deploy-tile-toolbar {
   flex-shrink: 0;
 }
 
-.serron-modal-container.deploy-cyan .deploy-phase-body > .deploy-instruction:not(.deploy-instruction--toolbar),
-.serron-modal-container.deploy-cyan .deploy-phase-body > .deploy-duplicate-block {
+.obrium-modal-container.deploy-cyan .deploy-phase-body > .deploy-instruction:not(.deploy-instruction--toolbar),
+.obrium-modal-container.deploy-cyan .deploy-phase-body > .deploy-duplicate-block {
   flex-shrink: 0;
 }
 
@@ -8680,18 +8680,18 @@ button.sidebar-core-retry[hidden] {
   border-top: 1px solid rgba(255, 248, 235, 0.06);
 }
 
-.serron-modal-container.deploy-cyan .deploy-modal-footer .hardware-gold-btn {
+.obrium-modal-container.deploy-cyan .deploy-modal-footer .hardware-gold-btn {
   margin: 0 auto;
 }
 
 @media (max-width: 768px) {
-  .serron-modal-overlay {
+  .obrium-modal-overlay {
     align-items: flex-end !important;
     padding: 0;
     box-sizing: border-box;
   }
 
-  .serron-modal-content.serron-modal-container.deploy-cyan {
+  .obrium-modal-content.obrium-modal-container.deploy-cyan {
     width: 100%;
     max-width: 100%;
     height: auto;
@@ -8701,7 +8701,7 @@ button.sidebar-core-retry[hidden] {
     overflow: hidden;
   }
 
-  .serron-modal-content.serron-modal-container.deploy-cyan > .deploy-modal-close-btn {
+  .obrium-modal-content.obrium-modal-container.deploy-cyan > .deploy-modal-close-btn {
     top: 12px;
     right: 12px;
     width: 40px;
@@ -8723,7 +8723,7 @@ button.sidebar-core-retry[hidden] {
     margin: 0 0 12px;
   }
 
-  .serron-modal-container.deploy-cyan .deploy-phase-body {
+  .obrium-modal-container.deploy-cyan .deploy-phase-body {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
@@ -8734,7 +8734,7 @@ button.sidebar-core-retry[hidden] {
     scrollbar-width: none;
   }
 
-  .serron-modal-container.deploy-cyan .deploy-phase-body::-webkit-scrollbar {
+  .obrium-modal-container.deploy-cyan .deploy-phase-body::-webkit-scrollbar {
     width: 0;
     height: 0;
     display: none;
@@ -8758,7 +8758,7 @@ button.sidebar-core-retry[hidden] {
 }
 
 /* Deployment wizard close: must stay out of document flow — do not include in `> *` relative stack below. */
-.serron-modal-content.serron-modal-container > .deploy-modal-close-btn {
+.obrium-modal-content.obrium-modal-container > .deploy-modal-close-btn {
   position: absolute;
   top: 20px;
   right: 20px;
@@ -8811,12 +8811,12 @@ button.sidebar-core-retry[hidden] {
   outline-offset: 2px;
 }
 
-.serron-modal-content.serron-modal-container > *:not(.deploy-modal-close-btn) {
+.obrium-modal-content.obrium-modal-container > *:not(.deploy-modal-close-btn) {
   position: relative;
   z-index: 1;
 }
 
-.serron-modal-container .modal-header {
+.obrium-modal-container .modal-header {
   font-family: var(--font-ui);
   font-size: 1.35rem;
   font-weight: 700;
@@ -8943,7 +8943,7 @@ button.sidebar-core-retry[hidden] {
   line-height: 1.4;
 }
 
-.serron-modal-container .section-title {
+.obrium-modal-container .section-title {
   font-family: var(--font-ui);
   font-size: 12px;
   font-weight: 600;
@@ -8955,11 +8955,11 @@ button.sidebar-core-retry[hidden] {
   margin-bottom: 12px;
 }
 
-.serron-modal-container .modal-section {
+.obrium-modal-container .modal-section {
   width: 100%;
 }
 
-.serron-modal-container .modal-section + .modal-section {
+.obrium-modal-container .modal-section + .modal-section {
   margin-top: 18px;
 }
 
@@ -9274,7 +9274,7 @@ button.sidebar-core-retry[hidden] {
   display: block;
 }
 
-.serron-modal-container.deploy-cyan .hardware-gold-btn {
+.obrium-modal-container.deploy-cyan .hardware-gold-btn {
   background: linear-gradient(120deg, #fce3b6, var(--gold, #f6c36a));
   border: 1px solid rgba(246, 195, 106, 0.72);
   color: #2c1a00;
@@ -9285,7 +9285,7 @@ button.sidebar-core-retry[hidden] {
 }
 
 .hardware-gold-btn:hover:not(:disabled),
-.serron-modal-container.deploy-cyan .hardware-gold-btn:hover:not(:disabled) {
+.obrium-modal-container.deploy-cyan .hardware-gold-btn:hover:not(:disabled) {
   background: linear-gradient(120deg, #ffe9c4, #f6c36a);
   border-color: rgba(246, 195, 106, 0.9);
   color: #2c1a00;
@@ -9294,7 +9294,7 @@ button.sidebar-core-retry[hidden] {
 }
 
 .hardware-gold-btn:active:not(:disabled),
-.serron-modal-container.deploy-cyan .hardware-gold-btn:active:not(:disabled) {
+.obrium-modal-container.deploy-cyan .hardware-gold-btn:active:not(:disabled) {
   background: linear-gradient(120deg, #e8d49a, #e1a94a);
   border-color: rgba(197, 163, 101, 0.85);
   color: #2c1a00;
@@ -9302,7 +9302,7 @@ button.sidebar-core-retry[hidden] {
   filter: none;
 }
 
-.serron-modal-container.deploy-cyan .modal-continue-btn--compact {
+.obrium-modal-container.deploy-cyan .modal-continue-btn--compact {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -9551,7 +9551,7 @@ button.sidebar-core-retry[hidden] {
   color: #ffffff;
   text-shadow: 0 0 4px rgba(255, 255, 255, 0.55);
   transform: scale(1);
-  box-shadow: var(--serron-aura-cyan-check);
+  box-shadow: var(--obrium-aura-cyan-check);
 }
 
 .deploy-init-overlay {
@@ -9601,7 +9601,7 @@ button.sidebar-core-retry[hidden] {
 
 .hardware-gold-btn:disabled,
 .modal-continue-btn.hardware-gold-btn:disabled,
-.serron-modal-container.deploy-cyan .hardware-gold-btn:disabled {
+.obrium-modal-container.deploy-cyan .hardware-gold-btn:disabled {
   opacity: 1;
   cursor: not-allowed;
   filter: none;
@@ -10666,7 +10666,7 @@ button.sidebar-core-retry[hidden] {
   gap: 0;
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: var(--serron-control-radius-nested, 6px);
+  border-radius: var(--obrium-control-radius-nested, 6px);
   box-sizing: border-box;
   background: rgba(0, 0, 0, 0.25);
 }
@@ -10701,8 +10701,8 @@ button.sidebar-core-retry[hidden] {
   padding: 10px 10px;
   box-sizing: border-box;
   text-align: left;
-  border-radius: var(--serron-control-radius, 9px);
-  border: var(--serron-control-border-width, 1.5px) solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--obrium-control-radius, 9px);
+  border: var(--obrium-control-border-width, 1.5px) solid rgba(255, 255, 255, 0.06);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.02);
   color: var(--fg);
@@ -10736,7 +10736,7 @@ button.sidebar-core-retry[hidden] {
 }
 
 .phai-tile.is-selected .phai-tile__icon-img {
-  filter: var(--serron-filter-phai-icon-selected);
+  filter: var(--obrium-filter-phai-icon-selected);
 }
 
 .phai-tile__icon-img {
@@ -10760,7 +10760,7 @@ button.sidebar-core-retry[hidden] {
 }
 
 .phai-tile.is-selected .phai-tile__text {
-  filter: var(--serron-filter-phai-text-selected);
+  filter: var(--obrium-filter-phai-text-selected);
 }
 
 .phai-tile__name {
@@ -10851,7 +10851,7 @@ button.sidebar-core-retry[hidden] {
   width: 100%;
   max-width: 320px;
   padding: 8px 12px 10px;
-  border-radius: var(--serron-control-radius, 9px);
+  border-radius: var(--obrium-control-radius, 9px);
   border: 1px solid #d4af37;
   border-top-color: rgba(212, 175, 55, 0.65);
   font-family: var(--font-ui, 'Inter', system-ui, 'SF Pro Text', sans-serif);
@@ -10862,8 +10862,8 @@ button.sidebar-core-retry[hidden] {
   text-align: center;
   cursor: pointer;
   color: #d4af37;
-  background: var(--serron-control-surface, rgba(12, 14, 18, 0.88));
-  box-shadow: var(--serron-control-shadow, 0 2px 14px rgba(0, 0, 0, 0.38));
+  background: var(--obrium-control-surface, rgba(12, 14, 18, 0.88));
+  box-shadow: var(--obrium-control-shadow, 0 2px 14px rgba(0, 0, 0, 0.38));
   transition:
     border-color 0.2s var(--ease-premium, cubic-bezier(0.16, 1, 0.3, 1)),
     background 0.2s var(--ease-premium, cubic-bezier(0.16, 1, 0.3, 1)),
@@ -10875,7 +10875,7 @@ button.sidebar-core-retry[hidden] {
 .phai-btn-continue--bar {
   max-width: none;
   width: 100%;
-  border-radius: var(--serron-control-radius, 9px);
+  border-radius: var(--obrium-control-radius, 9px);
   padding: 14px 16px 15px;
   margin-top: 0;
   font-size: 10px;
@@ -10888,8 +10888,8 @@ button.sidebar-core-retry[hidden] {
   border-top-color: rgba(212, 175, 55, 0.55);
   color: #d4af37;
   font-weight: 700;
-  background: var(--serron-control-surface, rgba(12, 14, 18, 0.88));
-  box-shadow: var(--serron-control-shadow, 0 2px 14px rgba(0, 0, 0, 0.38));
+  background: var(--obrium-control-surface, rgba(12, 14, 18, 0.88));
+  box-shadow: var(--obrium-control-shadow, 0 2px 14px rgba(0, 0, 0, 0.38));
   cursor: pointer;
 }
 
@@ -10948,8 +10948,8 @@ button.sidebar-core-retry[hidden] {
   display: flex;
   width: 100%;
   padding: 0;
-  border-radius: var(--serron-control-radius, 9px);
-  border: var(--serron-control-border-width, 1.5px) solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--obrium-control-radius, 9px);
+  border: var(--obrium-control-border-width, 1.5px) solid rgba(255, 255, 255, 0.06);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.02);
   color: var(--fg);
@@ -11009,7 +11009,7 @@ button.sidebar-core-retry[hidden] {
 }
 
 .phai-option.is-selected .phai-option__body {
-  filter: var(--serron-filter-phai-option-body);
+  filter: var(--obrium-filter-phai-option-body);
 }
 
 .phai-option.is-selected .phai-option__bar {
@@ -11037,7 +11037,7 @@ button.sidebar-core-retry[hidden] {
   font-weight: 600;
 }
 
-#tendai-phai-toast.phai-toast {
+#obrium-phai-toast.phai-toast {
   position: fixed;
   left: 50%;
   bottom: max(24px, env(safe-area-inset-bottom, 0px));
@@ -11080,7 +11080,7 @@ button.sidebar-core-retry[hidden] {
 }
 
 /* Workflow handoff: wizard → feed */
-.tendai-workflow-init-overlay {
+.obrium-workflow-init-overlay {
   position: fixed;
   inset: 0;
   z-index: 10070;
@@ -11094,11 +11094,11 @@ button.sidebar-core-retry[hidden] {
   transition: opacity 0.22s ease;
 }
 
-.tendai-workflow-init-overlay.is-visible {
+.obrium-workflow-init-overlay.is-visible {
   opacity: 1;
 }
 
-.tendai-workflow-init-overlay__text {
+.obrium-workflow-init-overlay__text {
   font-family: var(--font-ui, 'Inter', system-ui, sans-serif);
   font-size: 12px;
   font-weight: 600;
@@ -11109,7 +11109,7 @@ button.sidebar-core-retry[hidden] {
   padding: 0 24px;
 }
 
-@keyframes serron-agent-data-pulse {
+@keyframes obrium-agent-data-pulse {
   0% {
     box-shadow:
       0 0 0 0 rgba(246, 195, 106, 0.42),
@@ -11128,7 +11128,7 @@ button.sidebar-core-retry[hidden] {
 }
 
 .agent-report-card--data-pulse {
-  animation: tendai-agent-data-pulse 0.85s cubic-bezier(0.22, 1, 0.36, 1) 1;
+  animation: obrium-agent-data-pulse 0.85s cubic-bezier(0.22, 1, 0.36, 1) 1;
 }
 
 /* ============================================================
@@ -11177,7 +11177,7 @@ button.sidebar-core-retry[hidden] {
   height: 100%;
   box-sizing: border-box;
   border-radius: 2px;
-  border: var(--serron-control-border-width, 1.5px) solid rgba(110, 98, 82, 0.88);
+  border: var(--obrium-control-border-width, 1.5px) solid rgba(110, 98, 82, 0.88);
   background: transparent;
   transition:
     background 0.22s var(--ease-human-os, ease-out),
@@ -11210,7 +11210,7 @@ button.sidebar-core-retry[hidden] {
 .settings-hw-toggle-input:checked + .settings-hw-toggle--aura .settings-hw-toggle-frame {
   background: rgba(246, 195, 106, 0.32);
   border-color: rgba(191, 167, 133, 0.92);
-  box-shadow: var(--serron-glow-primary);
+  box-shadow: var(--obrium-glow-primary);
 }
 
 .settings-hw-toggle-input:checked + .settings-hw-toggle--aura .settings-hw-toggle-thumb {

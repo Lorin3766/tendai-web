@@ -3,8 +3,8 @@
 // @role: utils
 // Event-based, human-like, non-intrusive assistant behavior
 
-import { dayState } from './state.js';
-import { addMessage } from './message-queue.js';
+import { dayState } from '../../state.js';
+import { addMessage } from '../storage/message-queue.js';
 
 // ============================================================
 // PRODUCTION FLAG
@@ -248,13 +248,13 @@ export function getEveningGreeting() {
 // ============================================================
 function log(message, data = null) {
   if (!IS_PRODUCTION_READY) {
-    console.log(`[TENDAI ASSISTANT] ${message}`, data || '');
+    console.log(`[OBRIUM ASSISTANT] ${message}`, data || '');
   }
 }
 
 function logError(message, error) {
   if (!IS_PRODUCTION_READY) {
-    console.error(`[TENDAI ASSISTANT] ${message}`, error);
+    console.error(`[OBRIUM ASSISTANT] ${message}`, error);
   }
 }
 

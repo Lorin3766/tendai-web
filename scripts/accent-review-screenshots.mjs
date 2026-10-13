@@ -85,7 +85,7 @@ await page.waitForTimeout(2500);
 await page.evaluate(() => {
   document
     .querySelectorAll(
-      '.profile-modal-overlay, .system-onboarding-overlay, .welcome-modal-overlay, .serron-modal-overlay'
+      '.profile-modal-overlay, .system-onboarding-overlay, .welcome-modal-overlay, .obrium-modal-overlay'
     )
     .forEach((el) => el.remove());
   document.body.classList.remove('modal-open');
@@ -109,7 +109,7 @@ const debug = await page.evaluate(() => {
     cards: document.querySelectorAll('.agent-report-card, .universal-agent-card').length,
     addBtn: !!document.getElementById('agentFeedAddBtn'),
     section: !!document.querySelector('.agent-reports-section'),
-    overlays: document.querySelectorAll('.profile-modal-overlay, .serron-modal-overlay').length,
+    overlays: document.querySelectorAll('.profile-modal-overlay, .obrium-modal-overlay').length,
     bodyText: (document.body?.innerText || '').slice(0, 240),
   };
 });
@@ -149,7 +149,7 @@ await tile.click();
 await page.waitForTimeout(350);
 
 const pickerPath = path.join(outDir, 'focus-picker-390.png');
-await page.locator('.serron-modal-content.deploy-cyan').screenshot({ path: pickerPath });
+await page.locator('.obrium-modal-content.deploy-cyan').screenshot({ path: pickerPath });
 console.log('Wrote', pickerPath);
 
 await browser.close();

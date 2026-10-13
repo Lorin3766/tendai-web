@@ -612,12 +612,12 @@ function openTalkDiscussAgent(agentName, row, cardContext = {}) {
           }))
         : [],
     };
-    window.__serronDiscussContext = discussPayload;
-    if (typeof window.__serronPrimeDiscussContext === 'function') {
-      window.__serronPrimeDiscussContext(discussPayload);
+    window.__obriumDiscussContext = discussPayload;
+    if (typeof window.__obriumPrimeDiscussContext === 'function') {
+      window.__obriumPrimeDiscussContext(discussPayload);
     }
-    if (window.tendaiServerStatus === 'Offline') {
-      window.__serronForceLocalConversation = true;
+    if (window.obriumServerStatus === 'Offline') {
+      window.__obriumForceLocalConversation = true;
     }
   }
   if (isCriticalInsight(row)) {
@@ -627,9 +627,9 @@ function openTalkDiscussAgent(agentName, row, cardContext = {}) {
     window.switchView('talk');
   }
   const go = () => {
-    const tc = window.__serronTalkComponent;
+    const tc = window.__obriumTalkComponent;
     if (!tc || !tc.chatInput) return;
-    if (window.tendaiServerStatus === 'Offline' && typeof tc.addSystemMessage === 'function') {
+    if (window.obriumServerStatus === 'Offline' && typeof tc.addSystemMessage === 'function') {
       tc.addSystemMessage(
         '[ LOCAL MODE ]',
         `Running local conversation simulator for ${name}. I will reason from your on-device ledger.`,
@@ -1127,7 +1127,7 @@ function wireUniversalAgentCard(el, ctx) {
     e.preventDefault();
     if (typeof window.switchView === 'function') window.switchView('talk');
     setTimeout(() => {
-      const tc = window.__serronTalkComponent;
+      const tc = window.__obriumTalkComponent;
       if (!tc?.chatInput) return;
       tc.chatInput.value = `@${agent}, adjust my protocol based on the latest ${trackId} telemetry.`;
       tc.autoResizeTextarea && tc.autoResizeTextarea();
@@ -1301,8 +1301,8 @@ function bindAgentCardControlMenu(cardEl, agent) {
 
 function installDelegatedAddAgentListener() {
   if (typeof document === 'undefined') return;
-  if (window.__serronDelegatedAddAgentBound) return;
-  window.__serronDelegatedAddAgentBound = true;
+  if (window.__obriumDelegatedAddAgentBound) return;
+  window.__obriumDelegatedAddAgentBound = true;
 
   // Expose for manual console testing / emergency fallback checks.
   window.openUltimateAgentCreatorModalAfterPurge = openUltimateAgentCreatorModalAfterPurge;
@@ -1577,8 +1577,8 @@ function replayLatestBiometricPayloadToAgentCards() {
 
 function installBiometricsRealtimeSubscriber() {
   if (typeof window === 'undefined') return;
-  if (window.__serronBiometricsSubscriberBound) return;
-  window.__serronBiometricsSubscriberBound = true;
+  if (window.__obriumBiometricsSubscriberBound) return;
+  window.__obriumBiometricsSubscriberBound = true;
   window.addEventListener('biometricsUpdated', (ev) => {
     const detail = /** @type {CustomEvent} */ (ev).detail;
     if (!detail || typeof detail !== 'object') return;
@@ -1588,7 +1588,7 @@ function installBiometricsRealtimeSubscriber() {
 }
 
 /** Local-mode / console test ids → feed `data-track-id`. */
-const SERRON_AGENT_ID_ALIASES = {
+const OBRIUM_AGENT_ID_ALIASES = {
   'AGT-01-SLEEP': 'sleep',
   'AGT-11-MOVE': 'move',
 };
@@ -1656,7 +1656,7 @@ function getFeedGridContainer() {
  */
 function resolveTrackIdFromAgentId(agentId) {
   const id = String(agentId || '').trim().toUpperCase();
-  const alias = SERRON_AGENT_ID_ALIASES[id];
+  const alias = OBRIUM_AGENT_ID_ALIASES[id];
   if (alias) return /** @type {AgentLifeTrackId} */ (alias);
   const reg = MOCK_AGENT_REGISTRY[id];
   if (reg?.trackId) return reg.trackId;
@@ -1725,7 +1725,7 @@ function instantiateDynamicAgentCard(agentId, detail) {
   const id = String(agentId || '').trim().toUpperCase();
   const profile = MOCK_AGENT_REGISTRY[id];
   if (!profile) {
-    console.warn('[Tendai:UpdateAgent] No registry profile for dynamic card:', agentId);
+    console.warn('[Obrium:UpdateAgent] No registry profile for dynamic card:', agentId);
     return null;
   }
 
@@ -1853,7 +1853,7 @@ function applyAgentUpdateToDom(agentId, detail, opts = {}) {
   const card = ensureAgentCardInDom(id, detail);
   console.log('Target agent found: ', Boolean(card));
   if (!(card instanceof HTMLElement)) {
-    console.warn('[Tendai:UpdateAgent] No agent card in DOM for agentId:', id);
+    console.warn('[Obrium:UpdateAgent] No agent card in DOM for agentId:', id);
     return null;
   }
 
@@ -1861,7 +1861,7 @@ function applyAgentUpdateToDom(agentId, detail, opts = {}) {
     applyAgentDashboardPatch(card, detail);
     console.log('Update successful');
   } catch (err) {
-    console.error('[Tendai:UpdateAgent] Patch failed:', err);
+    console.error('[Obrium:UpdateAgent] Patch failed:', err);
     throw err;
   }
   return card;
@@ -1898,7 +1898,7 @@ function hydrateFeedStateFromStorage() {
       if (!payload || typeof payload !== 'object') continue;
       try {
         document.dispatchEvent(
-          new CustomEvent('Tendai:UpdateAgent', {
+          new CustomEvent('Obrium:UpdateAgent', {
             detail: { ...payload, agentId: id, _fromFeedStorage: true },
           }),
         );
@@ -1915,11 +1915,11 @@ function hydrateFeedStateFromStorage() {
 
   const onReady = () => {
     if (getFeedGridContainer()) {
-      document.removeEventListener('serron:boot-ready', onReady);
+      document.removeEventListener('obrium:boot-ready', onReady);
       run();
     }
   };
-  document.addEventListener('serron:boot-ready', onReady, { once: true });
+  document.addEventListener('obrium:boot-ready', onReady, { once: true });
 
   if (document.readyState === 'loading') {
     document.addEventListener(
@@ -1965,7 +1965,7 @@ function findAgentCardWrapper(agentId) {
     }
   }
 
-  const aliasTrack = SERRON_AGENT_ID_ALIASES[id.toUpperCase()];
+  const aliasTrack = OBRIUM_AGENT_ID_ALIASES[id.toUpperCase()];
   if (aliasTrack) {
     const byAlias = document.querySelector(
       `.agent-report-card[data-track-id="${cssAttrEscape(aliasTrack)}"]`,
@@ -2015,7 +2015,7 @@ function forceDomRepaint(node) {
  */
 function applyAgentDashboardPatch(card, detail) {
   const dashboardRoot = getAgentDashboardRoot(card);
-  console.log('[Tendai:UpdateAgent] Dashboard root:', dashboardRoot);
+  console.log('[Obrium:UpdateAgent] Dashboard root:', dashboardRoot);
 
   const valueRaw = detail.value ?? detail.primaryValue;
   if (dashboardRoot instanceof HTMLElement) {
@@ -2153,13 +2153,13 @@ function handleAgentUpdate(event) {
   console.log('Event received: ', detail);
 
   if (!detail || typeof detail !== 'object') {
-    console.warn('[Tendai:UpdateAgent] Missing or invalid event.detail');
+    console.warn('[Obrium:UpdateAgent] Missing or invalid event.detail');
     return;
   }
 
   const agentId = String(detail.agentId ?? '').trim();
   if (!agentId) {
-    console.warn('[Tendai:UpdateAgent] Missing agentId in event.detail');
+    console.warn('[Obrium:UpdateAgent] Missing agentId in event.detail');
     return;
   }
 
@@ -2167,11 +2167,11 @@ function handleAgentUpdate(event) {
   applyAgentUpdateToDom(agentId, /** @type {Record<string, unknown>} */ (detail), { persist });
 }
 
-function installTendaiUpdateAgentListener() {
+function installObriumUpdateAgentListener() {
   if (typeof document === 'undefined') return;
-  if (document.__serronUpdateAgentBound) return;
-  document.__serronUpdateAgentBound = true;
-  document.addEventListener('Tendai:UpdateAgent', handleAgentUpdate);
+  if (document.__obriumUpdateAgentBound) return;
+  document.__obriumUpdateAgentBound = true;
+  document.addEventListener('Obrium:UpdateAgent', handleAgentUpdate);
 }
 
 /**
@@ -2200,7 +2200,7 @@ async function hydrateAgentCardsFromStorage() {
 if (typeof window !== 'undefined') {
   installDelegatedAddAgentListener();
   installBiometricsRealtimeSubscriber();
-  installTendaiUpdateAgentListener();
+  installObriumUpdateAgentListener();
 
   const initFeedStateLifecycle = () => {
     hydrateFeedStateFromStorage();
@@ -2211,7 +2211,7 @@ if (typeof window !== 'undefined') {
     initFeedStateLifecycle();
   }
 
-  window.addEventListener('serron:agent-sensor-updated', (ev) => {
+  window.addEventListener('obrium:agent-sensor-updated', (ev) => {
     const agentName = /** @type {CustomEvent} */ (ev).detail?.agentName;
     renderAgentReportsSection();
     if (agentName) pulseAgentCard(String(agentName));

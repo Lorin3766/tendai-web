@@ -42,7 +42,7 @@ export async function getUserLocation() {
   if (cached) return cached;
 
   if (isInsecureNonLocalhost()) {
-    if (typeof window !== 'undefined') window.__serronLocationSuggestSettings = true;
+    if (typeof window !== 'undefined') window.__obriumLocationSuggestSettings = true;
     return null;
   }
 
@@ -86,7 +86,7 @@ async function reverseGeocode(lat, lon) {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
     const res = await fetch(url, {
-      headers: { Accept: 'application/json', 'User-Agent': 'TendAI-PWA-Weather/1.0' }
+      headers: { Accept: 'application/json', 'User-Agent': 'Obrium-PWA-Weather/1.0' }
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -172,10 +172,10 @@ export function saveLocation(location) {
   };
   localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(cacheData));
 
-  if (typeof window !== 'undefined') window.__serronLocationSuggestSettings = false;
+  if (typeof window !== 'undefined') window.__obriumLocationSuggestSettings = false;
 
   try {
-    document.dispatchEvent(new CustomEvent('serron:location-changed', { detail: { location } }));
+    document.dispatchEvent(new CustomEvent('obrium:location-changed', { detail: { location } }));
   } catch (_) {}
 
   if (window.updateNextStepDisplay) {

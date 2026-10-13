@@ -92,7 +92,7 @@ async function shot(name) {
     clip: { x: 0, y: 0, width: VW, height: VH },
   });
   const meta = await page.evaluate(() => {
-    const modal = document.querySelector('.serron-modal-content.deploy-cyan, .tendai-modal-content.deploy-cyan');
+    const modal = document.querySelector('.obrium-modal-content.deploy-cyan');
     const btn = document.querySelector('.modal-continue-btn');
     const r = modal ? modal.getBoundingClientRect() : null;
     return {

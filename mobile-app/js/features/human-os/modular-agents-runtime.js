@@ -329,25 +329,25 @@ let _interval = null;
 
 export function initModularAgentsRuntime() {
   if (typeof window === 'undefined') return;
-  if (window.__serronModularAgentsInit) return;
-  window.__serronModularAgentsInit = true;
+  if (window.__obriumModularAgentsInit) return;
+  window.__obriumModularAgentsInit = true;
 
   const go = () => {
     tickModularAgents().catch(() => {});
   };
 
-  window.addEventListener('serron:boot-ready', () => {
+  window.addEventListener('obrium:boot-ready', () => {
     setTimeout(go, 1200);
   });
 
-  if (window.SERRON_BOOT_READY) {
+  if (window.OBRIUM_BOOT_READY) {
     setTimeout(go, 400);
   }
 
   if (_interval) clearInterval(_interval);
   _interval = window.setInterval(go, 5 * 60 * 1000);
 
-  window.addEventListener('serron:common-ledger-updated', () => {
+  window.addEventListener('obrium:common-ledger-updated', () => {
     /* feed refreshed elsewhere */
   });
 }

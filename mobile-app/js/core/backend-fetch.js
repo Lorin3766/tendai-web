@@ -82,15 +82,15 @@ export async function runHealthProbe(healthUrl) {
 
 export function publishBackendStatus(status) {
   if (typeof window === 'undefined') return;
-  window.tendaiServerStatus = status;
+  window.obriumServerStatus = status;
   try {
-    window.dispatchEvent(new CustomEvent('serron:server-status', { detail: { status } }));
+    window.dispatchEvent(new CustomEvent('obrium:server-status', { detail: { status } }));
   } catch (_) {}
   updateCoreStatusStrip(status);
 }
 
 function updateCoreStatusStrip(status) {
-  const nodes = typeof document !== 'undefined' ? document.querySelectorAll('[data-tendai-core-status]') : [];
+  const nodes = typeof document !== 'undefined' ? document.querySelectorAll('[data-obrium-core-status]') : [];
   nodes.forEach((el) => {
     el.classList.remove('sidebar-core-status--online', 'sidebar-core-status--offline', 'sidebar-core-status--unknown');
     const textEl = el.querySelector('.sidebar-core-status__text');
@@ -114,7 +114,7 @@ function updateCoreStatusStrip(status) {
     }
   });
 
-  const retries = typeof document !== 'undefined' ? document.querySelectorAll('[data-tendai-core-retry]') : [];
+  const retries = typeof document !== 'undefined' ? document.querySelectorAll('[data-obrium-core-retry]') : [];
   retries.forEach((btn) => {
     btn.hidden = status !== 'Offline';
   });
@@ -150,12 +150,12 @@ export function retryBackendConnection() {
 }
 
 export function initBackendRetryButtons() {
-  if (typeof window === 'undefined' || window.__serronCoreRetryBound) return;
-  window.__serronCoreRetryBound = true;
+  if (typeof window === 'undefined' || window.__obriumCoreRetryBound) return;
+  window.__obriumCoreRetryBound = true;
   document.addEventListener(
     'click',
     (e) => {
-      const t = e.target && /** @type {HTMLElement} */ (e.target).closest('[data-tendai-core-retry]');
+      const t = e.target && /** @type {HTMLElement} */ (e.target).closest('[data-obrium-core-retry]');
       if (!t) return;
       e.preventDefault();
       retryBackendConnection();

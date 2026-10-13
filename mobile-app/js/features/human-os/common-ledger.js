@@ -167,7 +167,7 @@ export function removeAgentInsightsForAgent(agentDisplayName) {
 function notifyLedgerChanged() {
   if (typeof window === 'undefined') return;
   try {
-    window.dispatchEvent(new CustomEvent('serron:common-ledger-updated'));
+    window.dispatchEvent(new CustomEvent('obrium:common-ledger-updated'));
   } catch (_) {}
   try {
     if (typeof window.updateFeedUI === 'function') {

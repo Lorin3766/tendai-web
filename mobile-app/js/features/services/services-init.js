@@ -14,13 +14,10 @@ import { getUserAgentById, deleteUserAgent, updateUserAgent } from '../human-os/
   'use strict';
 
   if (typeof window !== 'undefined') {
-    window.TendAIHumanOS = {
+    window.ObriumHumanOS = {
       getLedger: getCommonLedger,
       writeAgentInsight,
     };
-    window.SerronHumanOS = window.TendAIHumanOS;
-    window.SereginOSHumanOS = window.TendAIHumanOS;
-    window.ObriumHumanOS = window.TendAIHumanOS;
   }
 
   async function refreshServicesAfterAgentChange() {
@@ -35,16 +32,16 @@ import { getUserAgentById, deleteUserAgent, updateUserAgent } from '../human-os/
   function clearDiscussSessionForDeletedAgent(agent) {
     if (!agent) return;
     const activeCtx =
-      typeof window !== 'undefined' && window.__serronDiscussContext && typeof window.__serronDiscussContext === 'object'
-        ? window.__serronDiscussContext
+      typeof window !== 'undefined' && window.__obriumDiscussContext && typeof window.__obriumDiscussContext === 'object'
+        ? window.__obriumDiscussContext
         : null;
     if (!activeCtx) return;
     if (String(activeCtx.agent || '').trim() !== String(agent.name || '').trim()) return;
 
-    window.__serronDiscussContext = null;
-    window.__serronForceLocalConversation = false;
+    window.__obriumDiscussContext = null;
+    window.__obriumForceLocalConversation = false;
 
-    const tc = window.__serronTalkComponent;
+    const tc = window.__obriumTalkComponent;
     if (tc && tc.chatInput) {
       const v = String(tc.chatInput.value || '');
       if (v.includes(`@${agent.name}`)) {
@@ -67,8 +64,8 @@ import { getUserAgentById, deleteUserAgent, updateUserAgent } from '../human-os/
     });
   }
 
-  if (!document.body.dataset.tendaiCreateAgentDelegate) {
-    document.body.dataset.tendaiCreateAgentDelegate = '1';
+  if (!document.body.dataset.obriumCreateAgentDelegate) {
+    document.body.dataset.obriumCreateAgentDelegate = '1';
     document.body.addEventListener('click', (e) => {
       const menuBtn = e.target && e.target.closest && e.target.closest('[data-action="toggle-agent-menu"]');
       if (menuBtn) {
@@ -124,8 +121,8 @@ import { getUserAgentById, deleteUserAgent, updateUserAgent } from '../human-os/
         if (!id) return;
         const agent = getUserAgentById(id);
         if (!agent) return;
-        window.__serronDiscussContext = null;
-        window.__serronForceLocalConversation = false;
+        window.__obriumDiscussContext = null;
+        window.__obriumForceLocalConversation = false;
         writeAgentInsight(agent.name, `${agent.name} reboot complete. Runtime context refreshed.`);
         closeAllAgentMenus();
         refreshServicesAfterAgentChange();

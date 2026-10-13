@@ -126,7 +126,7 @@ app.use((req, res) => {
 
 // Start server (listen on all interfaces so 127.0.0.1 and localhost both resolve)
 app.listen(PORT, '0.0.0.0', () => {
-  console.log('\n🚀 TendAI Backend server started successfully!');
+  console.log('\n🚀 Obrium Backend server started successfully!');
   console.log(`   Brain (relay) on: http://127.0.0.1:${PORT}  and  http://localhost:${PORT}`);
   console.log(`   Health check: http://localhost:${PORT}/health`);
   console.log(`   API endpoint: http://localhost:${PORT}/api/talk`);

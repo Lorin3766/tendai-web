@@ -422,7 +422,7 @@
    FEED (mission control) — mobile-only visual tweaks; flex/scroll live in components.css
    ============================================================ */
 @media (max-width: 899px) {
-  .tendai-layout {
+  .obrium-layout {
     padding-bottom: 0;
   }
 

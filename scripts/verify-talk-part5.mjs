@@ -181,7 +181,7 @@ await pageA.screenshot({ path: lastFile, clip: { x: 0, y: 0, width: VW, height: 
 assertWidth(lastFile);
 
 await pageA.evaluate(() => {
-  const talk = window.__serronTalkComponent;
+  const talk = window.__obriumTalkComponent;
   talk.conversationArea.innerHTML = '';
   talk.saveChatHistory();
   talk.loadChatHistory();

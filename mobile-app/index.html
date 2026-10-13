@@ -12,8 +12,8 @@
       var target = e && e.target;
       if (!target || target.tagName !== 'IMG') return;
       if (typeof e.preventDefault === 'function') e.preventDefault();
-      if (typeof window.__serronApplyAssetFallback === 'function') {
-        window.__serronApplyAssetFallback(target, target.getAttribute('src') || '');
+      if (typeof window.__obriumApplyAssetFallback === 'function') {
+        window.__obriumApplyAssetFallback(target, target.getAttribute('src') || '');
       }
     }, true);
   </script>
@@ -36,7 +36,7 @@
 </head>
 <body>
   <!-- Boot curtain: removed from JS after modular runtime + context bus + first feed render (see bootstrap.js). -->
-  <div id="tendai-gatekeeper" class="tendai-gatekeeper" aria-hidden="true"></div>
+  <div id="obrium-gatekeeper" class="obrium-gatekeeper" aria-hidden="true"></div>
   <script>
   (function(){
     window.applyTheme = function(nextTheme) {
@@ -67,7 +67,7 @@
 
   })();
   </script>
-  <div class="tendai-layout">
+  <div class="obrium-layout">
     <!-- Brand Header -->
     <header class="brand-header" aria-label="Obrium brand">
       <h1 class="brand-title">Obrium</h1>
@@ -110,7 +110,7 @@
                     Guest
                     <span
                       class="profile-core-dot"
-                      data-tendai-core-status
+                      data-obrium-core-status
                       role="status"
                       aria-live="polite"
                       title="Obrium relay not connected. Your data is stored on this device; Talk connects to the relay when it needs the AI."
@@ -600,7 +600,7 @@
                       Guest
                       <span
                         class="profile-core-dot"
-                        data-tendai-core-status
+                        data-obrium-core-status
                         role="status"
                         aria-live="polite"
                         title="Obrium relay not connected. Your data is stored on this device; Talk connects to the relay when it needs the AI."
@@ -908,7 +908,7 @@
             <div
               class="sidebar-core-status settings-core-status"
               id="coreBackendStrip"
-              data-tendai-core-status
+              data-obrium-core-status
               role="status"
               aria-live="polite"
               title="Obrium relay not connected. Your data is stored on this device; Talk connects to the relay when it needs the AI."
@@ -917,7 +917,7 @@
               <span class="sidebar-core-status__led" aria-hidden="true"></span>
               <span class="sidebar-core-status__text">Core: local</span>
             </div>
-            <button type="button" class="sidebar-core-retry settings-core-retry" data-tendai-core-retry hidden>
+            <button type="button" class="sidebar-core-retry settings-core-retry" data-obrium-core-retry hidden>
               RECONNECT
             </button>
           </div>
@@ -1213,7 +1213,7 @@
         }
       }
 
-      window.__serronApplyAssetFallback = applyAssetFallback;
+      window.__obriumApplyAssetFallback = applyAssetFallback;
 
       window.addEventListener(
         'error',

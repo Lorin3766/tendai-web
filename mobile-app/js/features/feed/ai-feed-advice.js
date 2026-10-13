@@ -202,7 +202,7 @@ export function resetAIAdviceCache() {
 
 // Boot and Feed-open calls are skipped while the relay is offline; run once when it comes online.
 if (typeof window !== 'undefined') {
-  window.addEventListener('serron:server-status', (ev) => {
+  window.addEventListener('obrium:server-status', (ev) => {
     const status = ev && ev.detail ? ev.detail.status : null;
     if (status === 'Online' && !cachedAdvice && !aiAdviceLoading && isAutoFeedAdviceEnabled()) {
       void updateFeedWithAIAdvice();

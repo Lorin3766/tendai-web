@@ -48,7 +48,7 @@ async function freshPage(viewport, seedName) {
     brand: document.querySelector('.brand-title')?.textContent?.trim(),
     name: document.getElementById('profileName')?.childNodes[0]?.textContent?.trim(),
     avatar: document.getElementById('profileAvatar')?.textContent?.trim(),
-    hasDot: !!document.querySelector('#profileName [data-tendai-core-status]'),
+    hasDot: !!document.querySelector('#profileName [data-obrium-core-status]'),
     visibleText: document.body.innerText,
     manifest: document.querySelector('link[rel="manifest"]')?.getAttribute('href'),
   }));
@@ -73,7 +73,7 @@ async function freshPage(viewport, seedName) {
     desk: document.getElementById('profileName')?.childNodes[0]?.textContent?.trim(),
     mobile: document.getElementById('mobileProfileName')?.childNodes[0]?.textContent?.trim(),
     mobileAvatar: document.getElementById('mobileProfileAvatar')?.textContent?.trim(),
-    mobileDot: !!document.querySelector('#mobileProfileName [data-tendai-core-status]'),
+    mobileDot: !!document.querySelector('#mobileProfileName [data-obrium-core-status]'),
   }));
   console.log('MOBILE NAMED:', JSON.stringify(info));
   if (info.desk !== 'Maria' || info.mobile !== 'Maria' || info.mobileAvatar !== 'M') fail('real name not rendered');
@@ -84,7 +84,7 @@ async function freshPage(viewport, seedName) {
   await page.waitForTimeout(1500);
   await page.evaluate(async () => {
     const mod = await import('./js/features/talk/ecosystem-bridge.js');
-    const tc = window.__serronTalkComponent;
+    const tc = window.__obriumTalkComponent;
     mod.startSecureMedicalChannel(tc);
     mod.openLabsReportModal('blood-test', 'Blood test');
     document.getElementById('labsChoiceOnlineMD')?.click();

@@ -188,7 +188,7 @@ export function openLabsReportModal(labId, labName) {
   overlay.querySelector('#labsChoiceOnlineMD').addEventListener('click', () => {
     closeLabsOverlay(overlay);
     if (typeof window.switchView === 'function') window.switchView('talk');
-    const talkComponent = window.__serronTalkComponent;
+    const talkComponent = window.__obriumTalkComponent;
     if (talkComponent) {
       talkComponent.addSystemMessage('[ CONSULT ]', 'Online MD consults are not available yet: Obrium has no booking partner connected, so no request was sent and nobody will contact you. Until then, please book with your own doctor or a telehealth service directly.', true);
     }
@@ -196,7 +196,7 @@ export function openLabsReportModal(labId, labName) {
   overlay.querySelector('#labsChoiceHomeLab').addEventListener('click', () => {
     closeLabsOverlay(overlay);
     if (typeof window.switchView === 'function') window.switchView('talk');
-    const talkComponent = window.__serronTalkComponent;
+    const talkComponent = window.__obriumTalkComponent;
     if (talkComponent) {
       talkComponent.addSystemMessage('[ HOME LAB ]', 'Home lab visits are not available yet: Obrium has no lab partner connected, so no request was sent and nobody will contact you. Until then, please arrange testing through your doctor or a local lab directly.', true);
     }

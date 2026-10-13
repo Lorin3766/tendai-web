@@ -543,6 +543,6 @@ export const storageManager = new StorageManager();
 
 // Data control — privacy compliance (call from Settings UI)
 if (typeof window !== 'undefined') {
-  window.exportTendAIData = () => storageManager.exportData();
-  window.wipeTendAIAllData = () => storageManager.wipeAllData();
+  window.exportObriumData = () => storageManager.exportData();
+  window.wipeObriumAllData = () => storageManager.wipeAllData();
 }

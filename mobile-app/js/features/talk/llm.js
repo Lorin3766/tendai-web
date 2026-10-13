@@ -44,7 +44,7 @@ function setServerStatus(status) {
 
 function setOfflineBrainIndicator(active) {
   if (typeof window === 'undefined') return;
-  window.__serronOfflineBrain = active === true;
+  window.__obriumOfflineBrain = active === true;
   const el = document.getElementById('talkRuntimeIndicator');
   if (!el) return;
   el.classList.toggle('is-active', active === true);
@@ -61,10 +61,10 @@ const LOCAL_MOCK_AGENT_IDS = {
  * @param {string} agentId
  * @param {Record<string, unknown>} payload
  */
-function dispatchTendaiUpdateAgent(agentId, payload) {
+function dispatchObriumUpdateAgent(agentId, payload) {
   if (typeof document === 'undefined') return;
   document.dispatchEvent(
-    new CustomEvent('Tendai:UpdateAgent', {
+    new CustomEvent('Obrium:UpdateAgent', {
       detail: { agentId, ...payload },
     }),
   );
@@ -94,7 +94,7 @@ function dispatchLocalMockUpdateAgentFromInput(userInput) {
     const sleepVal = sleepMatch[1] || sleepMatch[2];
     if (sleepVal) {
       console.log('[LOCAL MODE] Mock parser: sleep =', sleepVal);
-      dispatchTendaiUpdateAgent(LOCAL_MOCK_AGENT_IDS.sleep, {
+      dispatchObriumUpdateAgent(LOCAL_MOCK_AGENT_IDS.sleep, {
         value: sleepVal,
         unit: 'h',
         caption: 'Logged from Talk',
@@ -109,7 +109,7 @@ function dispatchLocalMockUpdateAgentFromInput(userInput) {
     const stepsVal = stepsMatch[1] || stepsMatch[2];
     if (stepsVal) {
       console.log('[LOCAL MODE] Mock parser: steps =', stepsVal);
-      dispatchTendaiUpdateAgent(LOCAL_MOCK_AGENT_IDS.move, {
+      dispatchObriumUpdateAgent(LOCAL_MOCK_AGENT_IDS.move, {
         value: stepsVal,
         unit: 'steps',
         caption: 'Logged from Talk',
@@ -121,7 +121,7 @@ function dispatchLocalMockUpdateAgentFromInput(userInput) {
   }
 
   if (!dispatched.length) {
-    console.log('[LOCAL MODE] Mock parser: no sleep/steps tokens — skipping Tendai:UpdateAgent');
+    console.log('[LOCAL MODE] Mock parser: no sleep/steps tokens — skipping Obrium:UpdateAgent');
   }
 
   return dispatched;
@@ -381,7 +381,7 @@ async function processGeminiTalkReply(replyText) {
 
   // Biometric intent came from the relay — clear stale "local" UI even if we were stuck offline before.
   if (typeof window !== 'undefined') {
-    window.__serronForceLocalConversation = false;
+    window.__obriumForceLocalConversation = false;
   }
   NetworkController.markReachable();
   setOfflineBrainIndicator(false);
@@ -452,7 +452,7 @@ async function fetchWithRetry(url, fetchOptions) {
 
       const delay = TALK_FETCH_RETRY_DELAYS[attempt] ?? TALK_FETCH_RETRY_DELAYS[TALK_FETCH_RETRY_DELAYS.length - 1];
       console.warn(
-        `[Serron Talk] Network error on attempt ${attempt + 1}/${totalAttempts}, retrying in ${delay}ms…`,
+        `[Obrium Talk] Network error on attempt ${attempt + 1}/${totalAttempts}, retrying in ${delay}ms…`,
         err.message,
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
@@ -469,9 +469,9 @@ function logTalkError(phase, err, extra = {}) {
     message: err && err.message,
     ...extra,
   };
-  console.error('[Serron Talk]', payload);
+  console.error('[Obrium Talk]', payload);
   if (err && err.stack) {
-    console.error('[Serron Talk] Stack:', err.stack);
+    console.error('[Obrium Talk] Stack:', err.stack);
   }
 }
 
@@ -496,7 +496,7 @@ export async function sendMessageToLLM(text, context) {
 
   // Force online priority: each send resets stale "local" gate so wake / network changes get a fresh relay attempt.
   if (typeof window !== 'undefined') {
-    window.__serronForceLocalConversation = false;
+    window.__obriumForceLocalConversation = false;
   }
   NetworkController.isBackendReachable = true;
   setOfflineBrainIndicator(false);
@@ -524,9 +524,9 @@ export async function sendMessageToLLM(text, context) {
         : {};
     const discussContext =
       typeof window !== 'undefined' &&
-      window.__serronDiscussContext &&
-      typeof window.__serronDiscussContext === 'object'
-        ? window.__serronDiscussContext
+      window.__obriumDiscussContext &&
+      typeof window.__obriumDiscussContext === 'object'
+        ? window.__obriumDiscussContext
         : null;
     const recentLedger = includeLedger
       ? selectRecentLedgerRows(getCommonLedger(), discussContext && discussContext.agent)
@@ -555,16 +555,16 @@ export async function sendMessageToLLM(text, context) {
 
   try {
     const discussContext = body.system_state && body.system_state.discuss_context ? body.system_state.discuss_context : null;
-    const mustStayLocal = typeof window !== 'undefined' && window.__serronForceLocalConversation === true;
+    const mustStayLocal = typeof window !== 'undefined' && window.__obriumForceLocalConversation === true;
     const localhostDevRelay =
       isLocalhostRelayBackend(DEFAULT_BACKEND_URL) && isLocalhostRelayBackend(BACKEND_URL);
     if ((!NetworkController.isBackendReachable || mustStayLocal) && !localhostDevRelay) {
-      if (typeof window !== 'undefined') window.__serronForceLocalConversation = true;
+      if (typeof window !== 'undefined') window.__obriumForceLocalConversation = true;
       setOfflineBrainIndicator(true);
       notSent();
       return localFallbackResponse({ discussContext, userInput: text });
     }
-    if (typeof window !== 'undefined') window.__serronForceLocalConversation = false;
+    if (typeof window !== 'undefined') window.__obriumForceLocalConversation = false;
 
     const response = await fetchWithRetry(API_URL, {
       method: 'POST',
@@ -613,7 +613,7 @@ export async function sendMessageToLLM(text, context) {
     }
 
     if (typeof window !== 'undefined') {
-      window.__serronForceLocalConversation = false;
+      window.__obriumForceLocalConversation = false;
     }
     NetworkController.markReachable();
     setOfflineBrainIndicator(false);
@@ -657,7 +657,7 @@ export async function sendMessageToLLM(text, context) {
     ) {
       setServerStatus('Offline');
       const discussContext = body.system_state && body.system_state.discuss_context ? body.system_state.discuss_context : null;
-      if (typeof window !== 'undefined') window.__serronForceLocalConversation = true;
+      if (typeof window !== 'undefined') window.__obriumForceLocalConversation = true;
       setOfflineBrainIndicator(true);
       notSent();
       return localFallbackResponse({ discussContext, userInput: text });
@@ -675,7 +675,7 @@ export async function sendMessageToLLM(text, context) {
       });
       setServerStatus('Offline');
       const discussContext = body.system_state && body.system_state.discuss_context ? body.system_state.discuss_context : null;
-      if (typeof window !== 'undefined') window.__serronForceLocalConversation = true;
+      if (typeof window !== 'undefined') window.__obriumForceLocalConversation = true;
       setOfflineBrainIndicator(true);
       notSent();
       return localFallbackResponse({ discussContext, userInput: text });
@@ -705,7 +705,7 @@ function showAdvisoryInUI(text) {
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
-      new CustomEvent('serron:show-advisory', { detail: { text } }),
+      new CustomEvent('obrium:show-advisory', { detail: { text } }),
     );
   }
 }

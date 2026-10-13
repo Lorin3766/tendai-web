@@ -68,7 +68,7 @@ function onBiometricsUpdated(event) {
 }
 
 export function initAlertsDisplay() {
-  if (window.__SERRON_ALERTS_DISPLAY_BOUND__) return;
-  window.__SERRON_ALERTS_DISPLAY_BOUND__ = true;
+  if (window.__OBRIUM_ALERTS_DISPLAY_BOUND__) return;
+  window.__OBRIUM_ALERTS_DISPLAY_BOUND__ = true;
   window.addEventListener(BIOMETRICS_EVENT_NAME, onBiometricsUpdated);
 }

@@ -80,7 +80,7 @@ export function testFeedClicks() {
  */
 export function assertNoFeedStarter() {
   if (!IS_DEV) return;
-  if (window.__serronRunMode !== 'unified') return;
+  if (window.__obriumRunMode !== 'unified') return;
 
   // Check if feed-starter ran (fact-based check, not flag-based)
   let violation = false;

@@ -2,16 +2,16 @@
 // @owner: core
 // @role: ui
 
-const GK_ID = 'tendai-gatekeeper';
+const GK_ID = 'obrium-gatekeeper';
 
 /**
- * Fade out and remove the boot gatekeeper overlay (see index.html #tendai-gatekeeper).
+ * Fade out and remove the boot gatekeeper overlay (see index.html #obrium-gatekeeper).
  */
-export function releaseTendaiGatekeeper() {
+export function releaseObriumGatekeeper() {
   const el = document.getElementById(GK_ID);
   if (!el || el.dataset.released === '1') return;
   el.dataset.released = '1';
-  el.classList.add('tendai-gatekeeper--exiting');
+  el.classList.add('obrium-gatekeeper--exiting');
   const done = () => {
     try {
       el.remove();

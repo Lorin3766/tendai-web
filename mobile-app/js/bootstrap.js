@@ -1,7 +1,7 @@
 // Serron — Bootstrap Entry Point
 // @owner: (entry point - no feature)
 // @role: init
-// Centralized module initialization. Boot gate: HealthSync first, then inits, then serron:boot-ready.
+// Centralized module initialization. Boot gate: HealthSync first, then inits, then obrium:boot-ready.
 // BUILD: 2026-04-02-uac-ghost-debug-cachebust
 
 // Utilities (must load first - no init needed, just imports)
@@ -14,7 +14,7 @@ import './features/storage/message-queue.js';
 import './features/storage/collapsible.js';
 
 // Core services (export functions, no init needed)
-import './features/feed/tendai-assistant.js';
+import './features/feed/obrium-assistant.js';
 import './features/storage/location-service.js';
 import './features/storage/weather-service.js';
 
@@ -62,12 +62,12 @@ import { initDataDispatcher } from './features/feed/data-dispatcher.js';
 import { getBackendURL } from './features/talk/llm.js';
 import { performBootHealthProbe, initBackendRetryButtons } from './core/backend-fetch.js';
 import { getSharedContextBus } from './core/shared-context-bus.js';
-import { releaseTendaiGatekeeper } from './core/gatekeeper.js';
+import { releaseObriumGatekeeper } from './core/gatekeeper.js';
 import { IS_DEV, IS_VERBOSE_BOOT_LOGS } from './env-flags.js';
 
 /**
  * Async init: Gate 1 — await HealthSync.refresh() before any other inits.
- * Then run all core inits once, set SERRON_BOOT_READY and dispatch serron:boot-ready.
+ * Then run all core inits once, set OBRIUM_BOOT_READY and dispatch obrium:boot-ready.
  */
 async function initModules() {
   // StorageManager: load Master Record, migrate legacy data if needed
@@ -154,14 +154,12 @@ async function initModules() {
     }
   }
 
-  window.SERRON_BOOT_READY = true;
-  // Legacy alias for any external tooling still polling the old flag
-  window.TENDAI_BOOT_READY = true;
+  window.OBRIUM_BOOT_READY = true;
   try {
-    window.dispatchEvent(new CustomEvent('serron:boot-ready'));
+    window.dispatchEvent(new CustomEvent('obrium:boot-ready'));
   } catch (_) {}
   if (IS_VERBOSE_BOOT_LOGS && typeof console !== 'undefined' && console.log) {
-    console.log('[BOOT] SERRON_BOOT_READY set, serron:boot-ready dispatched');
+    console.log('[BOOT] OBRIUM_BOOT_READY set, obrium:boot-ready dispatched');
   }
 
   try {
@@ -181,7 +179,7 @@ async function initModules() {
     }
   }
 
-  releaseTendaiGatekeeper();
+  releaseObriumGatekeeper();
 
   if (IS_DEV && typeof window !== 'undefined') {
     window.getNextProfileQuestion = getNextProfileQuestion;

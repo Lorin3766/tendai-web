@@ -37,7 +37,7 @@ await page.evaluate(() => {
   document
     .querySelectorAll('.profile-modal-overlay, .system-onboarding-overlay, .welcome-modal-overlay')
     .forEach((el) => el.remove());
-  window.__serronForceLocalConversation = false;
+  window.__obriumForceLocalConversation = false;
   if (window.NetworkController) window.NetworkController.isBackendReachable = true;
 });
 
@@ -59,8 +59,8 @@ await page.waitForTimeout(800);
 
 const replyText = ((await botReply.textContent()) || '').trim();
 const badgeAfter = await page.locator('#talkRuntimeIndicator').textContent().catch(() => '');
-const forceLocal = await page.evaluate(() => window.__serronForceLocalConversation === true);
-const coreText = await page.locator('[data-tendai-core-status] .sidebar-core-status__text').first().textContent().catch(() => '');
+const forceLocal = await page.evaluate(() => window.__obriumForceLocalConversation === true);
+const coreText = await page.locator('[data-obrium-core-status] .sidebar-core-status__text').first().textContent().catch(() => '');
 
 console.log('USER_MSG:', TEST_MSG);
 console.log('REPLY:', replyText);
