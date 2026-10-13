@@ -10,6 +10,7 @@ import { getMetricsByDate } from '../../core/biometrics-db.js';
 import { getUserProfile } from '../talk/talk-context.js';
 import { recordDataSent, updateDataSentOutcome, DATA_SENT_REQUEST_TYPES } from '../talk/data-sent-log.js';
 import { dayState } from '../../state.js';
+import { isAutoFeedAdviceEnabled } from '../settings/auto-requests.js';
 
 // Состояние загрузки AI-советов
 let aiAdviceLoading = false;
@@ -169,7 +170,16 @@ export async function updateFeedWithAIAdvice() {
     return;
   }
 
+  if (!isAutoFeedAdviceEnabled()) {
+    if (card) card.hidden = true;
+    return;
+  }
+
   const advice = await fetchAIAdvice();
+  if (!isAutoFeedAdviceEnabled()) {
+    if (card) card.hidden = true;
+    return;
+  }
   if (!advice) {
     if (card && !cachedAdvice) card.hidden = true;
     return;
@@ -194,7 +204,7 @@ export function resetAIAdviceCache() {
 if (typeof window !== 'undefined') {
   window.addEventListener('serron:server-status', (ev) => {
     const status = ev && ev.detail ? ev.detail.status : null;
-    if (status === 'Online' && !cachedAdvice && !aiAdviceLoading) {
+    if (status === 'Online' && !cachedAdvice && !aiAdviceLoading && isAutoFeedAdviceEnabled()) {
       void updateFeedWithAIAdvice();
     }
   });

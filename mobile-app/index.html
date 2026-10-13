@@ -980,6 +980,17 @@
             <div class="settings-field-hint">On: newly logged steps or sleep are sent to Google's Gemini API to check for a significant shortfall. Off: nothing is sent; values still save on this device, and nothing checks them for shortfalls.</div>
           </div>
 
+          <div class="settings-field">
+            <div class="settings-field-label">
+              <span>Generate advice on my Feed using AI</span>
+              <label class="settings-toggle" for="settingsAutoFeedAdvice">
+                <input type="checkbox" id="settingsAutoFeedAdvice" checked>
+                <span class="settings-toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-field-hint">On: when the app or Feed opens and after a check-in, your age, goals, diet, habits and today's logged values are sent to Google's Gemini API to write the "Today's advice" card. Off: nothing is sent and the card is hidden.</div>
+          </div>
+
           <button class="settings-row" id="settingsPrivacyPolicy">
             <div class="settings-row-content">
               <span class="settings-row-label">Privacy Policy</span>
@@ -995,7 +1006,7 @@
           </button>
 
           <div class="settings-info-text">
-            Your data is stored on your device. To write Talk replies and Feed advice and run health checks, your messages and relevant profile and health data are sent to Google's Gemini API, sometimes automatically (when you open Talk or Feed, or when new steps or sleep are logged — the Talk and health-check requests can be switched off above) — see the Privacy Policy. Obrium is not a medical service.
+            Your data is stored on your device. To write Talk replies and Feed advice and run health checks, your messages and relevant profile and health data are sent to Google's Gemini API, sometimes automatically (when you open Talk or Feed, or when new steps or sleep are logged — each of these can be switched off above) — see the Privacy Policy. Obrium is not a medical service.
           </div>
 
           <button class="settings-row settings-row-danger" id="settingsDeleteData">

@@ -21,6 +21,11 @@ export function isAutoProfileQuestionsEnabled() {
   return readSettings().autoProfileQuestionsEnabled !== false;
 }
 
+/** Feed advice card (POST /api/feed-advice). */
+export function isAutoFeedAdviceEnabled() {
+  return readSettings().autoFeedAdviceEnabled !== false;
+}
+
 /** Background biometric check (request C) on `biometricsUpdated`. */
 export function isAutoHealthChecksEnabled() {
   return readSettings().autoHealthChecksEnabled !== false;

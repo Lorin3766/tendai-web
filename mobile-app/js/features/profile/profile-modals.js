@@ -2201,6 +2201,10 @@ function countFilledFields(profile, structure) {
     if (autoHealthChecks) {
       autoHealthChecks.checked = settings.autoHealthChecksEnabled !== false;
     }
+    const autoFeedAdvice = document.getElementById('settingsAutoFeedAdvice');
+    if (autoFeedAdvice) {
+      autoFeedAdvice.checked = settings.autoFeedAdviceEnabled !== false;
+    }
     var theme = localStorage.getItem('tendai-theme');
     var graph = document.getElementById('settingsGraphiteTheme');
     if (graph) graph.checked = (theme === 'graphite');
@@ -2291,6 +2295,16 @@ function countFilledFields(profile, structure) {
         const settings = getSettingsState();
         settings.autoHealthChecksEnabled = e.target.checked;
         saveSettingsState(settings);
+      });
+    }
+    const autoFeedAdvice = document.getElementById('settingsAutoFeedAdvice');
+    if (autoFeedAdvice) {
+      autoFeedAdvice.addEventListener('change', function(e) {
+        const settings = getSettingsState();
+        settings.autoFeedAdviceEnabled = e.target.checked;
+        saveSettingsState(settings);
+        if (typeof window.resetAIAdviceCache === 'function') window.resetAIAdviceCache();
+        if (typeof window.updateFeedWithAIAdvice === 'function') void window.updateFeedWithAIAdvice();
       });
     }
     const demoModeToggle = document.getElementById('settingsDemoMode');
