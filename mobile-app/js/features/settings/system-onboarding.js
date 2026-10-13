@@ -291,7 +291,7 @@ export function initSystemOnboarding() {
     } else if (step === CONSENT_STEP) {
       body = `
         <h2 class="card-title system-onboarding-title">How Obrium uses AI</h2>
-        <p class="welcome-modal-text">Talk's replies, Feed advice and automatic health checks are written by Google's Gemini. To do that, Obrium sends the relevant profile and health data you've provided to Google's Gemini API through its relay server. You can switch off automatic profile questions, health checks and Feed advice in Settings → Privacy &amp; Security.</p>
+        <p class="welcome-modal-text">Talk's replies, Feed advice and automatic health checks are written by Google's Gemini. To do that, Obrium sends the relevant profile and health data you've provided to Google's Gemini API through its relay server. Because Obrium currently uses Gemini's free tier, Google may use this data to improve its AI models, and it may be reviewed by people at Google (<a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener" class="system-onboarding-link" data-os-google-terms-link>Google's Gemini API terms</a>). You can switch off automatic profile questions, health checks and Feed advice in Settings → Privacy &amp; Security.</p>
         <p class="welcome-modal-text"><a href="privacy-policy.html" target="_blank" rel="noopener" class="system-onboarding-link" data-os-privacy-link>Read the Privacy Policy</a></p>
       `;
       footer = `<button type="button" class="btn btn-initialize profile-modal-save" data-os-ack-ai>I understand</button>`;

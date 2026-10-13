@@ -61,10 +61,13 @@ async function launch(page) {
   const consent = await page.evaluate(() => ({
     text: document.querySelector('.system-onboarding-content')?.innerText?.replace(/\s+/g, ' ').trim(),
     link: document.querySelector('[data-os-privacy-link]')?.getAttribute('href'),
+    googleTerms: document.querySelector('[data-os-google-terms-link]')?.getAttribute('href'),
     buttons: [...document.querySelectorAll('.system-onboarding-footer button')].map((b) => b.textContent.trim()),
   }));
   console.log('[fresh] consent step:', JSON.stringify(consent, null, 1));
   if (consent.link !== 'privacy-policy.html') fail('privacy link missing');
+  if (!/Google may use this data to improve its AI models, and it may be reviewed by people at Google/.test(consent.text || '')) fail('free-tier sentence missing');
+  if (consent.googleTerms !== 'https://ai.google.dev/gemini-api/terms') fail('Google terms link missing');
   if (JSON.stringify(consent.buttons) !== JSON.stringify(['I understand'])) fail('expected a single acknowledgment button');
   await page.screenshot({ path: path.join(outDir, 'task5c-consent-step-390.png'), clip: { x: 0, y: 0, width: VW, height: VH } });
 
