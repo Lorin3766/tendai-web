@@ -12,6 +12,7 @@ import {
   LEDGER_SOURCE_ULTIMATE_CREATOR,
 } from './common-ledger.js';
 import { getUserLocation } from '../storage/location-service.js';
+import { hasThirdPartyLookupConsent } from '../settings/consent-gate.js';
 import { getHeartRateBpm } from '../storage/health-sync.js';
 import { patchBlueprintUserAgent } from './user-agents.js';
 
@@ -50,6 +51,7 @@ function recomputeIncompleteStatus(agent, blueprint) {
 }
 
 async function coordsForAgent() {
+  if (!hasThirdPartyLookupConsent()) return null;
   const loc = await getUserLocation();
   if (!loc) return null;
   if (loc.type === 'geo' && loc.coords) {

@@ -412,6 +412,7 @@ export function initSystemOnboarding() {
 
     overlay.querySelector('[data-os-ack-ai]')?.addEventListener('click', () => {
       markAiProcessingAcknowledged();
+      try { window.refreshWeatherCard?.(); } catch (_) {}
       step = 2;
       render();
     });

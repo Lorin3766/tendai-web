@@ -4,6 +4,7 @@
 // Uses Open-Meteo (no API key)
 
 import { getUserLocation } from './location-service.js';
+import { hasThirdPartyLookupConsent } from '../settings/consent-gate.js';
 
 const WEATHER_CACHE_KEY = 'tendai-weather-cache';
 const WEATHER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
@@ -66,6 +67,7 @@ export function weatherCodeToCondition(code) {
  * @returns {Promise<Object|null>} Weather object or null
  */
 export async function getWeather() {
+  if (!hasThirdPartyLookupConsent()) return null;
   const location = await getUserLocation();
   if (!location) return null;
 

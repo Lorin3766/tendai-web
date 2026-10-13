@@ -4,6 +4,7 @@
 // Handles geolocation and manual location input. Geolocation requires a secure context (HTTPS or localhost).
 
 import { profileState } from '../../state.js';
+import { hasThirdPartyLookupConsent } from '../settings/consent-gate.js';
 
 const LOCATION_CACHE_KEY = 'tendai-location';
 const LOCATION_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -32,6 +33,8 @@ function isInsecureNonLocalhost() {
  * @returns {Promise<Object|null>} Location object {type, coords?, city?, country?} or null
  */
 export async function getUserLocation() {
+  if (!hasThirdPartyLookupConsent()) return null;
+
   const manualLocation = getManualLocation();
   if (manualLocation) return manualLocation;
 
@@ -79,6 +82,7 @@ export function isLocationDenied() {
  * @returns {Promise<string|null>} City name or null
  */
 async function reverseGeocode(lat, lon) {
+  if (!hasThirdPartyLookupConsent()) return null;
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
     const res = await fetch(url, {
