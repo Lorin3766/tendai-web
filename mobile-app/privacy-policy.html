@@ -34,13 +34,22 @@
             <p>Obrium uses Google's Gemini API to write Talk's replies and Feed advice and to run automatic health checks. Each time Talk needs an AI response, Google receives the data below. Only fields you have actually provided are sent.</p>
             <ul>
               <li><strong>Conversation text:</strong> the message you send in Talk. Earlier messages in the chat are not included.</li>
-              <li><strong>Profile:</strong> name, age, approximate location (city, ZIP code, or coordinates rounded to about 1 km), stated goals, diet and habits, sex at birth, gender identity, height, weight, body build and blood type.</li>
+              <li><strong>Profile:</strong> name, age, approximate location (city, ZIP code, or coordinates rounded to about 1 km — either typed by you or estimated as described under "Location and Weather Services"), stated goals, diet and habits, sex at birth, gender identity, height, weight, body build and blood type.</li>
               <li><strong>Health and wellbeing answers:</strong> health conditions, medications, supplements, allergies, last checkup, stress, mental energy, anxiety, mood changes and sleep patterns.</li>
               <li><strong>Biometrics and daily context:</strong> today's steps and sleep, your energy check-in, and local weather.</li>
               <li><strong>App context:</strong> the latest status lines from your Focus Area cards, recent Obrium prompts, and notes Obrium has inferred about you from how you use the app (you can read these in Settings).</li>
             </ul>
             <p><strong>Feed advice</strong> is a separate, smaller request. It is sent automatically when the app opens or you open Feed, after a daily check-in, and when the connection to Obrium's relay is restored. It includes only what you have provided of: your age, goals, diet and habits, and today's steps, sleep, glasses of water and energy check-in. It does not include your name, location, messages, health answers or inferred notes.</p>
             <p>Google processes this data under its own terms for the Gemini API.</p>
+
+            <h3>Location and Weather Services</h3>
+            <p>These are independent services, not part of Google or Gemini. Each receives only what is listed here.</p>
+            <ul>
+              <li><strong>ipapi.co</strong> (operated by Kloudend, Inc.): if you have not entered a location in Settings, no location was saved in the last 7 days, and your device's precise location is unavailable (permission denied, not supported, or it fails), Obrium sends your IP address to ipapi.co to estimate your city. It is not called when you have entered a location or precise location works. The estimated city and approximate coordinates are saved as your location and may then be sent to Gemini as part of your profile, as described above. ipapi.co's own <a href="https://ipapi.co/privacy/" target="_blank" rel="noopener">privacy policy</a> applies to this request; it does not state a specific retention period for these lookups.</li>
+              <li><strong>OpenStreetMap Nominatim:</strong> when precise location works, your coordinates are sent to Nominatim to look up the name of your city.</li>
+              <li><strong>Open-Meteo:</strong> your coordinates, or the city or ZIP code you entered, are sent to Open-Meteo to get local weather.</li>
+              <li>Optional Focus Area agents that you set up with your own API key or token (OpenWeatherMap, GitHub) contact those services directly.</li>
+            </ul>
 
             <h3>Automatic Analysis</h3>
             <p>Some requests happen automatically, without you sending a message. When you open Talk while profile questions are still unanswered, Obrium asks Gemini to phrase the next question; this request includes your profile and the notes described above. When new steps or sleep values are logged (for example, when you mention them in Talk), Obrium sends only those values (date, steps, sleep) to Gemini to check for a significant shortfall. Both are on by default, and you can switch each off in Settings → Privacy &amp; Security; when off, that request is not sent at all. Feed advice (described above) is also automatic and currently has no separate switch.</p>
