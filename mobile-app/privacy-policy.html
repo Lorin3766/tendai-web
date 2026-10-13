@@ -25,10 +25,10 @@
             <p>Obrium collects information you provide directly, including profile data, health information, and messages you send through the service.</p>
 
             <h3>How We Use Your Information</h3>
-            <p>We use your information to provide personalized wellbeing advice and improve our services. We do not sell your personal information.</p>
+            <p>We use your information to provide personalized wellbeing advice. We do not sell your personal information.</p>
 
             <h3>Data Storage</h3>
-            <p>Your profile, health answers, logged metrics and chat history are stored locally on your device. To generate Talk replies and Feed advice and to run automatic health checks, parts of this data are sent through Obrium's relay server to Google's Gemini API, as described below. We do not retain chat history permanently.</p>
+            <p>Your profile, health answers, logged metrics and chat history are stored locally on your device. To generate Talk replies and Feed advice and to run automatic health checks, parts of this data are sent through Obrium's relay server to Google's Gemini API, as described below. Obrium's relay server does not store your messages or data: it passes each request to Gemini and returns the reply. If a request fails, the relay's error log may include the AI's reply text for troubleshooting. What Google does with the data is a separate matter, described in the next section.</p>
 
             <h3>AI Processing by Google Gemini</h3>
             <p>Obrium uses Google's Gemini API to write Talk's replies and Feed advice and to run automatic health checks. Each time Talk needs an AI response, Google receives the data below. Only fields you have actually provided are sent.</p>
@@ -40,7 +40,7 @@
               <li><strong>App context:</strong> the latest status lines from your Focus Area cards, recent Obrium prompts, and notes Obrium has inferred about you from how you use the app (you can read these in Settings).</li>
             </ul>
             <p><strong>Feed advice</strong> is a separate, smaller request. It is sent automatically when the app opens or you open Feed, after a daily check-in, and when the connection to Obrium's relay is restored. It includes only what you have provided of: your age, goals, diet and habits, and today's steps, sleep, glasses of water and energy check-in. It does not include your name, location, messages, health answers or inferred notes. Feed advice is on by default, and you can switch it off in Settings → Privacy &amp; Security ("Generate advice on my Feed using AI"); when off, this request is not sent at all and the advice card is hidden.</p>
-            <p>Google processes this data under its own terms for the Gemini API.</p>
+            <p><strong>Obrium currently uses the free (unpaid) tier of the Gemini API.</strong> Under <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Google's terms for unpaid use</a>, Google may use what Obrium sends — including the profile, health and biometric data listed above — and Gemini's replies to provide, improve and develop Google's products and machine-learning technologies. Human reviewers at Google may read, annotate and process this input and output; Google says it first disconnects the data from Obrium's Google account, API key and project. Google's terms also advise against sending sensitive, confidential or personal information to the unpaid tier. If you do not want your data handled this way, do not use Talk, and switch off the automatic requests in Settings → Privacy &amp; Security.</p>
 
             <h3>Location and Weather Services</h3>
             <p>These are independent services, not part of Google or Gemini. Each receives only what is listed here.</p>
@@ -62,7 +62,7 @@
               <li><strong>Notes Obrium has inferred about you:</strong> Settings → Notes Obrium has inferred about you → Clear these notes.</li>
               <li><strong>Everything, all at once:</strong> Settings → Delete all local data. This is currently the only way to remove logged steps and sleep, daily check-ins, settings, and the on-device record of what was sent to the AI.</li>
             </ul>
-            <p>Deleting data on this device does not recall data already sent to Google's Gemini API; Google handles that data under its own terms for the Gemini API.</p>
+            <p>Deleting data on this device does not recall data already sent to Google's Gemini API; Google handles that data under its Gemini API terms, as described above.</p>
 
             <h3>Contact</h3>
             <p>For privacy-related questions, contact us at: <a href="mailto:privacy@tendai.app">privacy@tendai.app</a></p>
