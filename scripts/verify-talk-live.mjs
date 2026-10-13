@@ -1,10 +1,11 @@
 /**
  * One-shot: load Talk, clear sticky offline, send a specific message, print reply + LOCAL badge.
- * Usage: SERRON_URL=http://127.0.0.1:50489 node scripts/verify-talk-live.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50489 node scripts/verify-talk-live.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 
-const base = process.env.SERRON_URL || process.env.TENDAI_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const TEST_MSG = 'I have a headache today';
 
 const browser = await chromium.launch({ headless: true });

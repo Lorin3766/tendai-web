@@ -3,16 +3,17 @@
  *  1. Fresh storage (390px): consent step appears once, after "Get Started"; full onboarding; relaunch -> nothing shown.
  *  2. Fresh storage, acknowledge, quit mid-onboarding, relaunch -> onboarding resumes without the consent step.
  *  3. Existing profile with onboarding complete -> never sees it.
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-task5c-consent.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-task5c-consent.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 fs.mkdirSync(outDir, { recursive: true });

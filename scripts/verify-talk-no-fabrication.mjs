@@ -1,15 +1,16 @@
 /**
  * Verify Talk never claims invented gap data: 12-day gap, legacy placeholders + legacy chat line seeded.
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-talk-no-fabrication.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-talk-no-fabrication.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 fs.mkdirSync(outDir, { recursive: true });

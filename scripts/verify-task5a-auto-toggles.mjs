@@ -3,16 +3,17 @@
  *  - greeting toggle OFF  -> opening Talk sends no B request and writes no B log entry
  *  - health-check toggle OFF -> biometricsUpdated sends no C request and writes no C log entry
  *  - both back ON (no reload) -> B and C return
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-task5a-auto-toggles.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-task5a-auto-toggles.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 fs.mkdirSync(outDir, { recursive: true });

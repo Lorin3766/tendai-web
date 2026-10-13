@@ -4,17 +4,18 @@
  *         Settings info text says the same. Also reports what the first-launch screen shows.
  *  4c:    Settings shows "Notes Obrium has inferred about you" with real stored user_memory notes.
  *  4d:    Feed advice with sleep/mood missing sends no placeholder values (real backend + Gemini when running).
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-task4-privacy.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-task4-privacy.mjs
  * Requires tendai-backend running on :3001 for the live 4d advice check.
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 fs.mkdirSync(outDir, { recursive: true });

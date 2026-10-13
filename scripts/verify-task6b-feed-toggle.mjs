@@ -3,16 +3,17 @@
  *  - ON (default): relay online -> one feed-advice request, card visible
  *  - OFF: card hidden at once; Feed open / relay online / direct call send nothing and log nothing
  *  - back ON (no reload): request resumes, card visible
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-task6b-feed-toggle.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-task6b-feed-toggle.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 fs.mkdirSync(outDir, { recursive: true });

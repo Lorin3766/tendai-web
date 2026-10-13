@@ -1,9 +1,10 @@
 /**
  * Part 2 checkpoint: greeting + first question once, then reopen identical.
  * PNGs are literal 390px wide (deviceScaleFactor=1).
- * Usage: SERRON_URL=http://127.0.0.1:50489 node scripts/verify-talk-greeting-checkpoint.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50489 node scripts/verify-talk-greeting-checkpoint.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -11,7 +12,7 @@ import { PNG } from 'pngjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 fs.mkdirSync(outDir, { recursive: true });

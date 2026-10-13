@@ -4,16 +4,17 @@
  *  2. Removing a value (Health modal untick, cleared allergy/medication) drops it from the payload.
  *  3. userProfile.goals = Goals & Intent; diet and habits sent separately.
  * Also: boot catch-up sync for older profiles, Focus Area fabricated-fact scrub.
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-task2-payload.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-task2-payload.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 fs.mkdirSync(outDir, { recursive: true });

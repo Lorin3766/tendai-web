@@ -11,15 +11,16 @@ import { getUserProfile } from './talk-context.js';
 import { isAutoHealthChecksEnabled } from '../settings/auto-requests.js';
 import { incrementNotification } from '../../core/notifications.js';
 import { recordDataSent, updateDataSentOutcome, DATA_SENT_REQUEST_TYPES } from './data-sent-log.js';
+import { getBackendUrlOverride, getBackendBearer } from '../../core/runtime-config.js';
 
 /**
  * Default relay URL. Port 3001 avoids clashing with repo `npm start`, which serves
  * the PWA on http://localhost:3000 (see root package.json).
- * Override anytime: window.SERRON_BACKEND_URL = 'http://127.0.0.1:3001'
- * (legacy alias: window.TENDAI_BACKEND_URL)
+ * Override anytime: window.OBRIUM_BACKEND_URL = 'http://127.0.0.1:3001'
+ * (legacy SERRON_* / TENDAI_* names still work, with a one-time warning — see core/runtime-config.js)
  *
  * OpenAI keys belong only in tendai-backend/.env (OPENAI_API_KEY). The browser does not
- * send the OpenAI secret. Optional: window.SERRON_BACKEND_BEARER for relay auth if your proxy requires it.
+ * send the OpenAI secret. Optional: window.OBRIUM_BACKEND_BEARER for relay auth if your proxy requires it.
  */
 const DEFAULT_BACKEND_URL = 'http://localhost:3001';
 const TALK_FETCH_TIMEOUT_MS = 15000;
@@ -172,7 +173,7 @@ function localFallbackResponse(opts = {}) {
  */
 export function getBackendURL() {
   if (typeof window !== 'undefined') {
-    const override = window.SERRON_BACKEND_URL || window.TENDAI_BACKEND_URL;
+    const override = getBackendUrlOverride();
     if (override) return String(override).replace(/\/$/, '');
   }
   try {
@@ -187,17 +188,13 @@ export function getBackendURL() {
   return DEFAULT_BACKEND_URL;
 }
 
-/** JSON + optional Bearer for secured relays (window.SERRON_BACKEND_BEARER). */
+/** JSON + optional Bearer for secured relays (window.OBRIUM_BACKEND_BEARER). */
 export function buildBackendHeaders() {
   const headers = {
     'Content-Type': 'application/json',
   };
   if (typeof window !== 'undefined') {
-    const bearer =
-      window.SERRON_BACKEND_BEARER ||
-      window.SERRON_TALK_BEARER ||
-      window.TENDAI_BACKEND_BEARER ||
-      window.TENDAI_TALK_BEARER;
+    const bearer = getBackendBearer();
     const token = bearer != null ? String(bearer).trim() : '';
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -671,7 +668,7 @@ export async function sendMessageToLLM(text, context) {
         backendBase: BACKEND_URL,
         retries: TALK_FETCH_MAX_RETRIES,
         hint:
-          'Start tendai-backend (npm start in tendai-backend/). Default relay is :3001 while the PWA dev server is often :3000. Set window.SERRON_BACKEND_URL if your relay URL differs.',
+          'Start tendai-backend (npm start in tendai-backend/). Default relay is :3001 while the PWA dev server is often :3000. Set window.OBRIUM_BACKEND_URL if your relay URL differs.',
       });
       setServerStatus('Offline');
       const discussContext = body.system_state && body.system_state.discuss_context ? body.system_state.discuss_context : null;

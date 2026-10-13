@@ -4,16 +4,17 @@
  *  - it survives a relaunch until acknowledged
  *  - after "Got it" it does not reappear (same view, relaunch)
  *  - the check's prompt asks for non-alarming, non-diagnostic wording
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-task6c-health-warning.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-task6c-health-warning.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 fs.mkdirSync(outDir, { recursive: true });

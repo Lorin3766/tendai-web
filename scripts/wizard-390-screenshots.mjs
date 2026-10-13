@@ -1,15 +1,16 @@
 /**
  * Capture Add Focus wizard Phase 00/01/02 at exactly 390×844 (mobile).
- * Usage: SERRON_URL=http://127.0.0.1:50489 node scripts/wizard-390-screenshots.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50489 node scripts/wizard-390-screenshots.mjs
  */
 import { chromium, devices } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || process.env.TENDAI_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 

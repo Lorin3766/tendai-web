@@ -2,6 +2,8 @@
 // @owner: infrastructure
 // @role: singleton
 
+import { getBackendUrlOverride } from '../core/runtime-config.js';
+
 /**
  * Global singleton — import `{ NetworkController }` only.
  * `isBackendReachable` is true only after a successful GET /api/health.
@@ -50,7 +52,7 @@ export const NetworkController = {
     if (/localhost:3001|127\.0\.0\.1:3001/i.test(u)) return true;
     try {
       if (typeof window !== 'undefined') {
-        const override = window.SERRON_BACKEND_URL || window.TENDAI_BACKEND_URL;
+        const override = getBackendUrlOverride();
         if (override) {
           const base = String(override).replace(/\/$/, '');
           if (base && u.startsWith(base)) return true;

@@ -1,8 +1,9 @@
 /**
  * Capture Talk / Profile / Services / wizard at literal 390px PNG width (DPR=1).
- * Usage: SERRON_URL=http://127.0.0.1:50489 node scripts/final-390-screenshots.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50489 node scripts/final-390-screenshots.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -10,7 +11,7 @@ import { PNG } from 'pngjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || process.env.TENDAI_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 

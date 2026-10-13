@@ -1,10 +1,11 @@
 /**
  * Verify Talk incomplete-profile greeting + first question.
- * Usage: SERRON_URL=http://127.0.0.1:50489 node scripts/verify-talk-profile-greeting.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50489 node scripts/verify-talk-profile-greeting.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({

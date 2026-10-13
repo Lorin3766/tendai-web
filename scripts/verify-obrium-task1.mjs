@@ -1,15 +1,16 @@
 /**
  * Verify Task 1: Obrium branding, honest booking copy, real/placeholder profile name.
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-obrium-task1.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-obrium-task1.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 fs.mkdirSync(outDir, { recursive: true });
 
 const OLD = /tend\s?ai|serron|seregin/i;

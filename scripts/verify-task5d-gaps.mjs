@@ -4,11 +4,12 @@
  *  2. "Delete all local data" also clears the IndexedDB biometrics database
  *  3. Relay-status tooltip wording (online + offline)
  *  4. Privacy policy "Your Rights" names where each thing is cleared
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-task5d-gaps.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-task5d-gaps.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 

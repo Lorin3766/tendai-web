@@ -1,8 +1,9 @@
 /**
  * Combined Parts 2–5 flow at 390px. Fresh profile.
- * Usage: SERRON_URL=http://127.0.0.1:50489 node scripts/verify-talk-final-flow.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50489 node scripts/verify-talk-final-flow.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -10,7 +11,7 @@ import { PNG } from 'pngjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 fs.mkdirSync(outDir, { recursive: true });

@@ -2,16 +2,17 @@
  * Task 3 checkpoint: trimmed Talk payloads + data-sent log.
  *  - B (profile greeting on Talk open), local profile answers, A (user message), C (background biometric check)
  *  - each produces a log entry with accurate categories; payload no longer carries the full ledger or Feed snippets.
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-task3-data-log.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-task3-data-log.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(__dirname, '..', 'mobile-app', '_audit', 'accent-review');
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const VW = 390;
 const VH = 844;
 fs.mkdirSync(outDir, { recursive: true });

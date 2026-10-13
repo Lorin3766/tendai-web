@@ -4,11 +4,12 @@
  *     requests start only after "I understand".
  *  2. Existing user who finished onboarding before the consent step existed (no consent key): lookups still run on launch.
  * Third-party responses are stubbed so the test never hits the real services.
- * Usage: SERRON_URL=http://127.0.0.1:50490 node scripts/verify-task7a-consent-gate.mjs
+ * Usage: OBRIUM_URL=http://127.0.0.1:50490 node scripts/verify-task7a-consent-gate.mjs
  */
 import { chromium } from 'playwright';
+import { baseUrl } from './lib/base-url.mjs';
 
-const base = process.env.SERRON_URL || 'http://127.0.0.1:5500';
+const base = baseUrl;
 const HOSTS = /ipapi\.co|nominatim\.openstreetmap\.org|open-meteo\.com/;
 
 let failed = false;
