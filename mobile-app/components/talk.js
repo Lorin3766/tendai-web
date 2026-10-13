@@ -741,6 +741,18 @@ export class TalkComponent {
     }
   }
 
+  /**
+   * Health-check advisory is shown once: it stays on screen for this Talk visit
+   * (Got it still dismisses it), but is not restored on later launches.
+   */
+  markAdvisorySeen() {
+    const block = document.getElementById('system-advisory-block');
+    if (!block || block.style.display === 'none') return;
+    try {
+      localStorage.removeItem('tendai_active_advisory');
+    } catch (_) {}
+  }
+
   // Show typing indicator
   showTypingIndicator() {
     const typingDiv = document.createElement('div');
@@ -945,6 +957,7 @@ export class TalkComponent {
     this._proactiveAnswersThisSession = 0;
     this._awaitingPaceChoice = false;
     this._proactivePassiveThisSession = false;
+    this.markAdvisorySeen();
     if (!isAutoProfileQuestionsEnabled()) return;
     const question = getNextProfileQuestion(profileState.get());
     if (!question) return;

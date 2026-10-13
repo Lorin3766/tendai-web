@@ -9,6 +9,7 @@ import { NetworkController } from '../../infrastructure/network-controller.js';
 import { saveMetrics, getMetricsByDate } from '../../core/biometrics-db.js';
 import { getUserProfile } from './talk-context.js';
 import { isAutoHealthChecksEnabled } from '../settings/auto-requests.js';
+import { incrementNotification } from '../../core/notifications.js';
 import { recordDataSent, updateDataSentOutcome, DATA_SENT_REQUEST_TYPES } from './data-sent-log.js';
 
 /**
@@ -700,6 +701,7 @@ function showAdvisoryInUI(text) {
   try {
     localStorage.setItem(ADVISORY_STORAGE_KEY, text);
   } catch (_) {}
+  incrementNotification('talk');
 
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
@@ -709,9 +711,8 @@ function showAdvisoryInUI(text) {
 }
 
 /**
- * Background analysis: when new biometrics arrive, ask the LLM to evaluate
- * whether a critical deficit exists. If so, persist a system advisory that
- * stays visible until the user acknowledges it.
+ * Background analysis: when new biometrics arrive, ask the LLM whether a value
+ * is clearly off. If so, persist an advisory that Talk shows the next time it opens.
  *
  * @param {Record<string, unknown>} biometricData
  */
@@ -723,7 +724,7 @@ async function triggerProactiveAnalysis(biometricData) {
   const analysisPrompt =
     'SYSTEM PROMPT: Analyze these new biometrics. Use only the values in Data; do not assume any other facts about the user. Data: ' +
     JSON.stringify(biometricData) +
-    '. IF there is a critical deficit (e.g., sleep < 6h, steps very low), generate a strict, 2-sentence hardware-grade warning about cognitive/systemic risks. IF data is normal/acceptable, reply EXACTLY with the string \'STATUS_NORMAL\'.';
+    '. IF a value is clearly outside a typical range (e.g., sleep under 6 hours, very low steps), write 2 short, calm sentences addressed to the user: name the value, then suggest one gentle, practical step for today. Frame it as worth a look, not an alert. Do not diagnose, name medical conditions, or describe health risks or consequences. IF data is normal/acceptable, reply EXACTLY with the string \'STATUS_NORMAL\'.';
 
   const fields = Object.keys(biometricData).filter((k) => biometricData[k] != null);
   const logEntry = recordDataSent({
