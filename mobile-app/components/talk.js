@@ -8,6 +8,7 @@ import { recordDataSent, DATA_SENT_REQUEST_TYPES } from '../js/features/talk/dat
 import { isAutoProfileQuestionsEnabled } from '../js/features/settings/auto-requests.js';
 import { talkState, profileState } from '../js/state.js';
 import { getNextProfileQuestion } from '../js/features/profile/profile-schema.js';
+import { setProfileQuestionsSnoozed } from '../js/features/feed/next-step.js';
 import {
   parseProfileAnswer,
   applyProfileTalkAnswer,
@@ -47,6 +48,7 @@ export class TalkComponent {
     this._proactiveAnswersThisSession = 0;
     this._awaitingPaceChoice = false;
     this._proactivePassiveThisSession = false;
+    setProfileQuestionsSnoozed(false);
     this.init();
   }
 
@@ -957,6 +959,7 @@ export class TalkComponent {
     this._proactiveAnswersThisSession = 0;
     this._awaitingPaceChoice = false;
     this._proactivePassiveThisSession = false;
+    setProfileQuestionsSnoozed(false);
     this.markAdvisorySeen();
     if (!isAutoProfileQuestionsEnabled()) return;
     const question = getNextProfileQuestion(profileState.get());
@@ -1001,6 +1004,7 @@ export class TalkComponent {
     this._proactiveAnswersThisSession = 0;
     this._awaitingPaceChoice = false;
     this._proactivePassiveThisSession = false;
+    setProfileQuestionsSnoozed(false);
   }
 
   getLastBotMessageEl() {
@@ -1073,6 +1077,7 @@ export class TalkComponent {
       );
       this._proactivePassiveThisSession = true;
       this._awaitingPaceChoice = false;
+      setProfileQuestionsSnoozed(true);
       return true;
     }
 
@@ -1155,6 +1160,7 @@ export class TalkComponent {
 
     if (choice === 'continue') {
       this._proactiveAnswersThisSession = 0;
+      setProfileQuestionsSnoozed(false);
       const next = getNextProfileQuestion(profileState.get());
       if (!next) {
         this.addMessageToChat(
@@ -1162,6 +1168,7 @@ export class TalkComponent {
           'ai',
         );
         this._proactivePassiveThisSession = true;
+        setProfileQuestionsSnoozed(true);
         return;
       }
       await this.askNextProfileQuestion(next);
@@ -1169,6 +1176,7 @@ export class TalkComponent {
     }
 
     this._proactivePassiveThisSession = true;
+    setProfileQuestionsSnoozed(true);
     this.addMessageToChat(
       "No rush — I'll pick this up next time you open Talk. Ask me anything in the meantime.",
       'ai',

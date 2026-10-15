@@ -821,6 +821,19 @@ async function updateHumanOsDashboard(weatherOrNull) {
   }
 }
 
+/** True on the day onboarding finished: a brand-new profile has no history to have missed. */
+function isOnboardingDay() {
+  try {
+    const on = localStorage.getItem('tendai_onboarding_completed_on');
+    if (!on) return false;
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return on === today;
+  } catch (_) {
+    return false;
+  }
+}
+
 /**
  * If systemStatus is Drifting for 3+ days, show the recovery prompt as first message in TALK (once per open).
  * Call when user switches to Talk view.
@@ -829,6 +842,7 @@ async function updateHumanOsDashboard(weatherOrNull) {
 export async function showDriftRecoveryPromptInTalk(conversationArea) {
   if (!conversationArea) return;
   if (conversationArea.querySelector('[data-drift-prompt]')) return;
+  if (isOnboardingDay()) return;
   const historySync = window.__obriumHistorySync || { isSyncing: false, gapDays: 0 };
   if (historySync.isSyncing && Number(historySync.gapDays || 0) > 0) {
     const onceKey = `tendai_history_gap_prompt_shown_${new Date().toISOString().slice(0, 10)}`;
@@ -846,7 +860,10 @@ export async function showDriftRecoveryPromptInTalk(conversationArea) {
     const days = Number(historySync.gapDays);
     const rawName = profileState.get()?.body?.name;
     const name = typeof rawName === 'string' && rawName.trim() ? `, ${rawName.trim()}` : '';
-    textP.textContent = `Welcome back${name}. Nothing was logged for the last ${days} day${days === 1 ? '' : 's'}, so those days are empty in your history. Want to tell me roughly how they went, or start fresh from today?`;
+    const gapText = days === 1
+      ? 'the last 1 day, so that day is empty in your history. Want to tell me roughly how it went'
+      : `the last ${days} days, so those days are empty in your history. Want to tell me roughly how they went`;
+    textP.textContent = `Welcome back${name}. Nothing was logged for ${gapText}, or start fresh from today?`;
     content.appendChild(textP);
     const actions = document.createElement('div');
     actions.className = 'drift-recovery-actions';

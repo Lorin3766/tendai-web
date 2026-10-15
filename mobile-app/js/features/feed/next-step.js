@@ -4,11 +4,65 @@
 // Shows ONE next step at a time, always relevant and clickable
 
 import { profileState, dayState } from '../../state.js';
+import { getNextProfileQuestion } from '../profile/profile-schema.js';
+
+/** Labels that don't read naturally after "Add your …". */
+const PROFILE_STEP_TEXT = {
+  'health.healthConditions': 'Add your health conditions',
+  'health.goalsConstraints': 'Add anything Obrium must consider',
+  'mind.wantToImproveFocus': 'Tell Obrium if you want to improve focus',
+  'goals.wantFromTendAI': 'Add what you want from Obrium',
+};
+
+/** Set when Talk's "Another time" defers profile questions for the rest of the Talk session. */
+const PROFILE_SNOOZE_KEY = 'tendai_profile_questions_snoozed';
+
+/**
+ * Mirror Talk's `_proactivePassiveThisSession` for the sidebar.
+ * Active while the user has deferred profile questions; cleared when Talk reopens or they continue.
+ * @param {boolean} active
+ */
+export function setProfileQuestionsSnoozed(active) {
+  try {
+    if (active) sessionStorage.setItem(PROFILE_SNOOZE_KEY, '1');
+    else sessionStorage.removeItem(PROFILE_SNOOZE_KEY);
+  } catch (_) {}
+  if (typeof window !== 'undefined') {
+    window.__obriumProfileQuestionsSnoozed = !!active;
+    try {
+      if (typeof window.updateNextStepDisplay === 'function') window.updateNextStepDisplay();
+    } catch (_) {}
+  }
+}
+
+/** @returns {boolean} */
+export function areProfileQuestionsSnoozed() {
+  try {
+    if (sessionStorage.getItem(PROFILE_SNOOZE_KEY) === '1') return true;
+  } catch (_) {}
+  return typeof window !== 'undefined' && window.__obriumProfileQuestionsSnoozed === true;
+}
+
+/**
+ * Sidebar step for the profile field Talk is asking about (same resolver as Talk).
+ * @param {Object} profile
+ * @returns {{ text: string, action: string, path: string } | null}
+ */
+export function getProfileNextStep(profile) {
+  const question = getNextProfileQuestion(profile);
+  if (!question) return null;
+  return {
+    text: PROFILE_STEP_TEXT[question.path] || `Add your ${question.fieldLabel.toLowerCase()}`,
+    action: `profile_${question.sectionKey}`,
+    path: question.path,
+  };
+}
 
 /**
  * Determine the next step based on priority
- * PRIORITY 1: Live experience (Location, Morning check-in, Today's One Action)
- * PRIORITY 2: Basic profile (Age, Sleep duration, Stress level, Primary goals)
+ * PRIORITY 0: The next unanswered profile field — the same one Talk asks (getNextProfileQuestion),
+ *             unless Talk has snoozed profile questions ("Another time").
+ * PRIORITY 1: Calendar event, then live experience (Location, Morning check-in, Today's One Action)
  * @returns {Object|null} Next step object {text: string, action: string} or null
  */
 export function getNextStep() {
@@ -16,6 +70,11 @@ export function getNextStep() {
   const todayState = dayState.loadDayStateForToday();
   const now = new Date();
   const currentHour = now.getHours();
+
+  if (!areProfileQuestionsSnoozed()) {
+    const profileStep = getProfileNextStep(profile);
+    if (profileStep) return profileStep;
+  }
 
   // ============================================================
   // PRIORITY 0 — CALENDAR EVENTS (выше всего остального)
@@ -66,47 +125,6 @@ export function getNextStep() {
     };
   }
 
-  // ============================================================
-  // PRIORITY 2 — БАЗОВЫЙ ПРОФИЛЬ (берём ПЕРВОЕ пустое)
-  // ============================================================
-
-  // 1. Age отсутствует
-  const age = profile.body?.age;
-  if (!age || age === null || age === '') {
-    return {
-      text: 'Add your age',
-      action: 'profile_body'
-    };
-  }
-
-  // 2. Sleep duration отсутствует
-  const sleepHours = profile.lifestyle?.sleepHours;
-  if (!sleepHours || sleepHours === null || sleepHours === '') {
-    return {
-      text: 'Add your sleep duration',
-      action: 'profile_lifestyle'
-    };
-  }
-
-  // 3. Stress level отсутствует (default is 3, so check if it's still 3)
-  // Check mind.stress first (primary field for stress level)
-  const mindStress = profile.mind?.stress;
-  if (!mindStress || mindStress === 3) {
-    return {
-      text: 'Set your stress level',
-      action: 'profile_mind'
-    };
-  }
-
-  // 4. Primary goals пустые
-  const primaryGoals = profile.goals?.primaryGoals;
-  if (!primaryGoals || !Array.isArray(primaryGoals) || primaryGoals.length === 0) {
-    return {
-      text: 'Pick 1–2 goals',
-      action: 'profile_goals'
-    };
-  }
-
   // No next step needed
   return null;
 }
@@ -143,6 +161,12 @@ export function handleNextStepClick(action, nextStepData = null) {
     case 'profile_body':
       if (window.openProfileModal) {
         window.openProfileModal('body');
+      }
+      break;
+
+    case 'profile_health':
+      if (window.openProfileModal) {
+        window.openProfileModal('health');
       }
       break;
 
@@ -313,6 +337,9 @@ export function initNextStep() {
   // Update on load
   updateNextStepDisplay();
 
+  // Any profile save (onboarding, Talk answers, profile modals) can change the next unanswered field.
+  window.addEventListener('obrium:profile-saved', () => updateNextStepDisplay());
+
   // Setup click handlers
   const desktopNextStep = document.getElementById('nextStepDesktop');
   const mobileNextStep = document.getElementById('nextStepMobile');
@@ -401,4 +428,6 @@ window.getNextStep = getNextStep;
 window.handleNextStepClick = handleNextStepClick;
 window.updateNextStepDisplay = updateNextStepDisplay;
 window.initNextStep = initNextStep;
+window.setProfileQuestionsSnoozed = setProfileQuestionsSnoozed;
+window.areProfileQuestionsSnoozed = areProfileQuestionsSnoozed;
 

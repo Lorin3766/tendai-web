@@ -98,9 +98,23 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
 
     const todayKey = toDateKey();
     let lastKey = null;
+    let onboarded = false;
+    let onboardedOn = null;
     try {
       lastKey = localStorage.getItem(HISTORY_SYNC_LAST_DATE_KEY);
+      onboarded = localStorage.getItem('tendai_system_onboarding_v1') === '1';
+      onboardedOn = localStorage.getItem('tendai_onboarding_completed_on');
     } catch (_) {}
+
+    // No profile yet: app opens before onboarding are not missed days.
+    if (!onboarded) {
+      try { localStorage.removeItem(HISTORY_SYNC_LAST_DATE_KEY); } catch (_) {}
+      window.__obriumHistorySync = { isSyncing: false, gapDays: 0, missingDateKeys: [] };
+      return;
+    }
+    if (onboardedOn && /^\d{4}-\d{2}-\d{2}$/.test(onboardedOn) && (!lastKey || lastKey < onboardedOn)) {
+      lastKey = onboardedOn;
+    }
 
     // First run or invalid date -> just establish baseline and continue
     if (!lastKey || !/^\d{4}-\d{2}-\d{2}$/.test(lastKey)) {

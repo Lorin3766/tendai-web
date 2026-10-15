@@ -319,6 +319,12 @@ export function clearState(stateKey) {
 }
 
 // Convenience functions for each state
+function notifyProfileSaved() {
+  try {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('obrium:profile-saved'));
+  } catch (_) {}
+}
+
 export const profileState = {
   get: () => getState(STATE_KEYS.PROFILE),
   save: (state) => {
@@ -327,9 +333,14 @@ export const profileState = {
       const sm = typeof window !== 'undefined' && window.__storageManager;
       if (ok && sm && typeof sm.syncFromProfile === 'function') sm.syncFromProfile(state);
     } catch (_) {}
+    if (ok) notifyProfileSaved();
     return ok;
   },
-  update: (path, value) => updateState(STATE_KEYS.PROFILE, path, value),
+  update: (path, value) => {
+    const ok = updateState(STATE_KEYS.PROFILE, path, value);
+    if (ok) notifyProfileSaved();
+    return ok;
+  },
   getField: (path, defaultValue) => getStateField(STATE_KEYS.PROFILE, path, defaultValue),
   clear: () => clearState(STATE_KEYS.PROFILE)
 };

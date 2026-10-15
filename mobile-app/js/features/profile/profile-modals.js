@@ -2031,11 +2031,18 @@ function countFilledFields(profile, structure) {
         e.stopPropagation();
         const confirmed = confirm('Are you sure you want to delete all local data? This cannot be undone.');
         if (confirmed) {
-          localStorage.clear();
-          try { sessionStorage.clear(); } catch (_) {}
+          const wipeWebStorage = () => {
+            try { localStorage.clear(); } catch (_) {}
+            try { sessionStorage.clear(); } catch (_) {}
+          };
+          wipeWebStorage();
           deleteBiometricsDatabase()
             .catch(() => false)
-            .then(() => location.reload());
+            .then(() => {
+              // Timers can write state back while IndexedDB is being deleted.
+              wipeWebStorage();
+              location.reload();
+            });
         }
           return;
         }

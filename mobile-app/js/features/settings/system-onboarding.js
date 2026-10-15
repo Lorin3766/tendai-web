@@ -26,6 +26,7 @@ const ONBOARDING_KEY = 'tendai_system_onboarding_v1';
 const GREETING_KEY = 'tendai_onboarding_greeting';
 const OPEN_TALK_KEY = 'tendai_open_talk_after_onboarding';
 const AI_CONSENT_KEY = 'tendai_ai_consent_v1';
+const ONBOARDING_COMPLETED_ON_KEY = 'tendai_onboarding_completed_on';
 const CONSENT_STEP = 'consent';
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -38,11 +39,22 @@ function isOnboardingComplete() {
   }
 }
 
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function markOnboardingComplete() {
   try {
     localStorage.setItem(ONBOARDING_KEY, '1');
     localStorage.setItem('tendai_welcome_accepted', '1');
+    const today = localDateKey();
+    localStorage.setItem(ONBOARDING_COMPLETED_ON_KEY, today);
+    // Missed-day detection starts from the day the profile exists, not from earlier app opens.
+    localStorage.setItem('tendai_last_sync_date', today);
   } catch (_) {}
+  if (typeof window !== 'undefined') {
+    window.__obriumHistorySync = { isSyncing: false, gapDays: 0, missingDateKeys: [] };
+  }
 }
 
 function hasAcknowledgedAiProcessing() {
@@ -89,6 +101,19 @@ function buildOnboardingGreeting(answers) {
     detailBits.length > 0 ? ` I also have ${detailBits.join(', ')}.` : '';
 
   return `${lead}${profileLine} Ask me anything — I'll answer from your personal context as it grows.`;
+}
+
+/** Persist birth year + derived age as soon as it is entered, so the sidebar never shows "Add your age" next to an age. */
+function persistBirthYear(birthYear) {
+  const profile = profileState.get();
+  profile.body = profile.body || {};
+  profile.body.birthYear = birthYear;
+  const age = resolveAgeYears({ birthYear });
+  if (age != null) profile.body.age = age;
+  profileState.save(profile);
+  try {
+    if (typeof window !== 'undefined' && typeof window.updateProfileUI === 'function') window.updateProfileUI();
+  } catch (_) {}
 }
 
 function saveProfileFromAnswers(answers) {
@@ -396,6 +421,7 @@ export function initSystemOnboarding() {
         const year = parseInt(input?.value, 10);
         if (!Number.isFinite(year) || year < 1920 || year > new Date().getFullYear()) return;
         answers.birthYear = year;
+        persistBirthYear(year);
         step = 4;
         render();
         return;
