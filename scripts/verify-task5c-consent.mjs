@@ -85,11 +85,34 @@ async function launch(page) {
   await page.waitForTimeout(200);
   await page.click('[data-os-allergies="no"]');
   await page.waitForTimeout(200);
+  const focusState = () =>
+    page.evaluate(() => ({
+      subtitle: document.querySelector('.system-onboarding-subtitle')?.textContent?.trim(),
+      count: document.querySelector('[data-os-focus-count]')?.textContent?.trim(),
+      continueDisabled: !!document.querySelector('[data-os-finish]')?.disabled,
+      selected: document.querySelectorAll('[data-os-focus-area].is-selected').length,
+    }));
   const chips = page.locator('[data-os-focus-area]');
-  for (let i = 0; i < 3; i++) {
+  const f0 = await focusState();
+  console.log('[fresh] focus areas, none picked:', JSON.stringify(f0));
+  if (f0.subtitle !== 'Pick 1 to 3 priorities to start. You can add more later.') fail(`focus subtitle: ${f0.subtitle}`);
+  if (f0.count !== '0 of 3 selected') fail(`focus counter: ${f0.count}`);
+  if (!f0.continueDisabled) fail('Continue enabled with 0 focus areas');
+  await chips.nth(0).click();
+  await page.waitForTimeout(100);
+  const f1 = await focusState();
+  console.log('[fresh] focus areas, 1 picked:', JSON.stringify(f1));
+  if (f1.continueDisabled) fail('Continue still disabled with 1 focus area (minimum is 1)');
+  if (f1.count !== '1 of 3 selected') fail(`focus counter after 1: ${f1.count}`);
+  for (let i = 1; i < 4; i++) {
     await chips.nth(i).click();
     await page.waitForTimeout(100);
   }
+  const f4 = await focusState();
+  console.log('[fresh] focus areas, tried 4:', JSON.stringify(f4));
+  if (f4.selected !== 3 || f4.count !== '3 of 3 selected') fail('more than 3 focus areas could be selected');
+  if (f4.continueDisabled) fail('Continue disabled with 3 focus areas');
+  await page.screenshot({ path: path.join(outDir, 'task-focus-areas-1to3-390.png'), clip: { x: 0, y: 0, width: VW, height: VH } });
   await page.click('[data-os-finish]');
   await page.waitForTimeout(1500);
   console.log('[fresh] onboarding complete:', await page.evaluate(() => localStorage.getItem('tendai_system_onboarding_v1')));

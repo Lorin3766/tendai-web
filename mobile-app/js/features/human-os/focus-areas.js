@@ -10,8 +10,8 @@
 
 const FOCUS_AREAS_KEY = 'tendai_focus_areas_v1';
 
-export const FOCUS_AREAS_MIN = 3;
-export const FOCUS_AREAS_MAX = 5;
+export const FOCUS_AREAS_MIN = 1;
+export const FOCUS_AREAS_MAX = 3;
 
 /**
  * Starter Focus Area catalog (exactly 9).

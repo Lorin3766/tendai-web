@@ -364,7 +364,7 @@ export function initSystemOnboarding() {
       }).join('');
       body = `
         <h2 class="card-title system-onboarding-title">Choose your Focus Areas</h2>
-        <p class="welcome-modal-text system-onboarding-subtitle">Pick ${FOCUS_AREAS_MIN} to ${FOCUS_AREAS_MAX} to start. You can add more later.</p>
+        <p class="welcome-modal-text system-onboarding-subtitle">Pick ${FOCUS_AREAS_MIN} to ${FOCUS_AREAS_MAX} priorities to start. You can add more later.</p>
         <div class="system-onboarding-focus-grid">${chips}</div>
         <p class="welcome-modal-text system-onboarding-focus-count" data-os-focus-count aria-live="polite">${answers.focusAreaIds.length} of ${FOCUS_AREAS_MAX} selected</p>
       `;
