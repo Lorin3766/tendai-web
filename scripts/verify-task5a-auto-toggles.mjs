@@ -137,8 +137,10 @@ await fireBiometrics();
 const onLog = await getLog();
 console.log('[ON, no reload] log entries:');
 for (const e of onLog) console.log(`  ${e.requestType} | ${e.trigger} | ${e.outcome} | ${e.dataCategoriesIncluded.join('; ')}`);
-if (!requests.some(isB) || !onLog.some((e) => e.requestType.startsWith('B:'))) fail('B did not return after re-enabling');
 if (!requests.some(isC) || !onLog.some((e) => e.requestType.startsWith('C:'))) fail('C did not return after re-enabling');
+const onBots = await page.locator('.talk-view .message.bot:not(.typing-indicator)').count();
+if (requests.some(isB) || onLog.some((e) => e.requestType.startsWith('B:'))) fail('scripted profile opening still sent a Gemini request');
+if (!onBots) fail('Talk did not ask a profile question after re-enabling');
 
 await browser.close();
 if (failed) process.exit(1);

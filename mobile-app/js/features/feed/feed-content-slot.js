@@ -8,13 +8,14 @@
 // PLUG-IN POINT: replace detectPersonalInsight() with the real detection engine
 // when connections / discrepancies / trends are available from user data.
 
-import { profileState, talkState, resolveAgeYears } from '../../state.js';
+import { profileState } from '../../state.js';
 import { clampMaturityStage } from '../human-os/user-agents.js';
 import {
   getFocusAreaById,
   getFocusAreaByName,
   resolveFocusAreaTrackId,
 } from '../human-os/focus-areas.js';
+import { getEntries } from './content-library.js';
 
 /** @typedef {'personal_insight' | 'grounded_science'} FeedContentKind */
 
@@ -237,33 +238,32 @@ function scoreScienceCandidate(item, ctx) {
 export function buildGroundedScience(opts = {}) {
   const maturityStage = clampMaturityStage(opts.maturityStage ?? 0);
   const focusKey = resolveFocusAreaKey(opts.focusAreaId, opts.trackId || '', opts.displayName || '');
-  const ctx = readUserContextFilters();
-  const bank = GROUNDED_SCIENCE_BANK[focusKey] || [];
-  let best = null;
-  let bestScore = -Infinity;
-  for (const item of bank) {
-    const s = scoreScienceCandidate(item, ctx);
-    if (s > bestScore) {
-      bestScore = s;
-      best = item;
-    }
-  }
-  const picked = best || FOCUS_AREA_FALLBACK_SCIENCE;
-  const ageHint =
-    ctx.age != null ? `For someone around age ${ctx.age}, ` : '';
-  const body =
-    best && ageHint && !String(picked.body).startsWith('For someone')
-      ? `${ageHint}${String(picked.body).charAt(0).toLowerCase()}${String(picked.body).slice(1)}`
-      : String(picked.body);
-
   const fa = getFocusAreaById(focusKey);
+  let entry = null;
+  try {
+    entry = getEntries({ focusArea: fa?.id || focusKey, profile: profileState.get() });
+  } catch (_) {
+    entry = null;
+  }
+  if (!entry) {
+    return {
+      kind: 'grounded_science',
+      title: '',
+      body: '',
+      sourceLabel: '',
+      focusAreaId: fa?.id || focusKey || null,
+      maturityStage,
+      noFact: true,
+    };
+  }
   return {
     kind: 'grounded_science',
     title: 'Grounded Science',
-    body,
-    sourceLabel: String(picked.sourceLabel || FOCUS_AREA_FALLBACK_SCIENCE.sourceLabel),
+    body: String(entry.text),
+    sourceLabel: String(entry.sourceLabel || ''),
     focusAreaId: fa?.id || focusKey || null,
     maturityStage,
+    noFact: false,
   };
 }
 

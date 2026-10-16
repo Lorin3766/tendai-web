@@ -9,10 +9,13 @@ import { isAutoProfileQuestionsEnabled } from '../js/features/settings/auto-requ
 import { talkState, profileState } from '../js/state.js';
 import { getNextProfileQuestion } from '../js/features/profile/profile-schema.js';
 import { setProfileQuestionsSnoozed } from '../js/features/feed/next-step.js';
+import { getSelectedFocusAreaIds } from '../js/features/human-os/focus-areas.js';
+import { getEntries } from '../js/features/feed/content-library.js';
 import {
   parseProfileAnswer,
   applyProfileTalkAnswer,
   getConversationalAsk,
+  getProfileFieldSpec,
 } from '../js/features/talk/profile-answer-parser.js';
 import { parseAndUpdateState } from '../js/features/talk/messageParser.js';
 import { extractRoutineSuggestionFromText, protocolIdForRoutine } from '../js/features/talk/talk-engine.js';
@@ -1195,6 +1198,19 @@ export class TalkComponent {
   }
 
   async composeProfileOpeningPrompt(question) {
+    const spec = getProfileFieldSpec(question?.sectionKey, question?.fieldKey);
+    if (spec?.ask) {
+      const welcome = "I'm Obrium, your personal companion. I get to know you through conversation so your Feed and advice actually fit.";
+      const parts = [welcome];
+      const first = !this.conversationArea?.querySelector('[data-profile-prompt-path]');
+      if (first) {
+        const top = getSelectedFocusAreaIds()[0];
+        const fact = top ? getEntries({ focusArea: top, profile: profileState.get() }) : null;
+        if (fact?.text) parts.push(fact.text);
+      }
+      parts.push(spec.ask);
+      return parts.join(' ');
+    }
     const systemContext = [
       'PROACTIVE TALK OPENING — this turn only.',
       'Write at most two short sentences a busy person can skim in a few seconds.',

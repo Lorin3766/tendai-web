@@ -425,7 +425,7 @@ export function createUniversalAgentCard(props) {
   };
   const maturityLabels = {
     0: 'Baseline',
-    1: 'Passive',
+    1: 'Calibrated',
     2: 'Trends',
     3: 'Biomarkers',
   };
@@ -437,12 +437,14 @@ export function createUniversalAgentCard(props) {
       : 'grounded_science';
   const slotTitle =
     String(slot?.title || (slotKind === 'personal_insight' ? 'Personal Insight' : 'Grounded Science')).trim();
-  const slotBody = String(slot?.body || props.insightText || '').trim() ||
-    'Evidence-based guidance matched to your profile will appear here while personal data accumulates.';
-  const slotSource = String(slot?.sourceLabel || '').trim();
+  const slotBody = String(slot?.body || '').trim();
+  const noFact = slot?.noFact === true || !slotBody;
+  const slotSource = noFact ? '' : String(slot?.sourceLabel || '').trim();
   const nudge = props.confidenceNudge && typeof props.confidenceNudge === 'object' ? props.confidenceNudge : null;
-  const showConfidenceNudge = Boolean(nudge?.show && String(nudge?.text || '').trim());
+  const showConfidenceNudge = maturityStage >= 1 && Boolean(nudge?.show && String(nudge?.text || '').trim());
   const confidenceNudgeText = showConfidenceNudge ? String(nudge.text).trim() : '';
+  const calibrationText = String(props.calibrationText || '').trim();
+  const showSensorPill = props.signalActive || maturityStage >= 1;
 
   const classes = ['agent-report-card', 'agent-report-card--panel', `agent-report-card--track-${trackId}`, 'heart-agent-module-card', 'universal-agent-card'];
   for (const c of props.extraCardClasses || []) {
@@ -463,6 +465,7 @@ export function createUniversalAgentCard(props) {
   const signalConfidencePct = Number(
     props.signalConfidencePct ?? props.integrityPct
   ) || 0;
+  const showSignalConfidence = maturityStage >= 1 && signalConfidencePct > 0;
   const dashboard = renderReadOnlyDashboardHtml(trackId, sd, signalConfidencePct);
   // Hide expand/PRIMARY METRIC when there's no real reading — that panel was
   // surfacing mock/awaiting copy under the Insight/Science slot.
@@ -508,17 +511,20 @@ export function createUniversalAgentCard(props) {
           </span>
         </div>
         <div class="heart-agent-module__status-row">
-          <span class="heart-agent-module__status-pill">${universalEsc(props.signalActive ? 'Sensor linked' : 'Sensor offline')}</span>
+          ${showSensorPill ? `<span class="heart-agent-module__status-pill">${universalEsc(props.signalActive ? 'Sensor linked' : 'Sensor offline')}</span>` : ''}
           <span
             class="heart-agent-module__maturity"
             data-uac-maturity
             data-maturity-stage="${maturityStage}"
             title="${universalEsc(maturityTitles[maturityStage])}"
           >Stage ${maturityStage} · ${universalEsc(maturityLabels[maturityStage])}</span>
-          <span class="heart-agent-module__signal-confidence heart-agent-module__integrity" title="Data quality: recency, consistency, and cross-source agreement">Signal Confidence: ${universalEsc(`${Math.round(signalConfidencePct)}%`)}</span>
+          ${showSignalConfidence ? `<span class="heart-agent-module__signal-confidence heart-agent-module__integrity" title="Data quality: recency, consistency, and cross-source agreement">Signal Confidence: ${universalEsc(`${Math.round(signalConfidencePct)}%`)}</span>` : ''}
           <time class="heart-agent-module__time" ${props.timeIso ? `datetime="${universalEsc(props.timeIso)}"` : ''}>${universalEsc(props.timeStr || '—')}</time>
         </div>
-        <div
+        ${
+          noFact
+            ? ''
+            : `<div
           class="heart-agent-module__content-slot heart-agent-module__content-slot--${universalEsc(slotKind)}"
           data-uac-content-slot
           data-content-kind="${universalEsc(slotKind)}"
@@ -530,7 +536,14 @@ export function createUniversalAgentCard(props) {
               ? `<div class="heart-agent-module__content-slot-source">${universalEsc(slotSource)}</div>`
               : ''
           }
-        </div>
+        </div>`
+        }
+        ${
+          calibrationText
+            ? `<p class="heart-agent-module__calibration" data-uac-calibration>${universalEsc(calibrationText)}</p>
+               <button type="button" class="heart-agent-module__btn heart-agent-module__btn--primary" data-uac-action="confidence-talk">Open Talk</button>`
+            : ''
+        }
         ${
           showConfidenceNudge
             ? `<div class="heart-agent-module__confidence-nudge" data-uac-confidence-nudge role="note">

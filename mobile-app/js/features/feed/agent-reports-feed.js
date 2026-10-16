@@ -9,7 +9,9 @@ import {
   removeAgentInsightsForAgent,
 } from '../human-os/common-ledger.js';
 import { rememberFastAlertResponse } from '../talk/user-memory.js';
+import { profileState } from '../../state.js';
 import { getState } from '../../core/app-state.js';
+import { displayMaturityStage, calibrationLine } from '../profile/focus-area-signals.js';
 import { getMetricsByDate } from '../../core/biometrics-db.js';
 import {
   openUltimateAgentCreatorModal,
@@ -931,8 +933,11 @@ function buildUniversalCardProps(p) {
       ? { kind: /** @type {'confirm'} */ ('confirm'), label: '[ CONFIRM ]' }
       : { kind: /** @type {'adjust'} */ ('adjust'), label: '[ ADJUST PROTOCOL ]' };
   const extraCardClasses = universalCardToneExtras(zoneKey, critical, success, pr, row);
-  const maturityStage = clampMaturityStage(uaRow?.maturity_stage ?? uaRow?.maturityStage ?? 0);
+  const storedStage = clampMaturityStage(uaRow?.maturity_stage ?? uaRow?.maturityStage ?? 0);
   const focusAreaId = String(uaRow?.trackingLifeAreaId || '').trim() || null;
+  const profileNow = profileState.get();
+  const maturityStage = displayMaturityStage(storedStage, profileNow, focusAreaId);
+  const calibrationText = calibrationLine(profileNow, focusAreaId);
 
   /**
    * Single-slot content: Personal Insight (if eligible) else Grounded Science.
@@ -975,7 +980,7 @@ function buildUniversalCardProps(p) {
     let verdictText = v.text;
     let verdictTone = v.tone;
     if (contentSlot.kind === 'grounded_science' && (verdictTone === 'searching' || maturityStage === 0)) {
-      verdictText = 'GROUNDED SCIENCE';
+      verdictText = contentSlot.noFact ? 'BASELINE' : 'GROUNDED SCIENCE';
       verdictTone = 'optimal';
     } else if (contentSlot.kind === 'personal_insight' && verdictTone === 'searching') {
       verdictText = 'PERSONAL INSIGHT';
@@ -993,6 +998,7 @@ function buildUniversalCardProps(p) {
       signalConfidencePct,
       integrityPct: signalConfidencePct, // Deprecated alias.
       maturityStage,
+      calibrationText,
       timeStr,
       timeIso,
       agentPaused,
@@ -1040,7 +1046,7 @@ function buildUniversalCardProps(p) {
     verdictText = critical ? 'CONDITION: INTERVENTION REQUIRED' : 'PERSONAL INSIGHT';
     verdictTone = critical ? 'alert' : 'optimal';
   } else if (contentSlot.kind === 'grounded_science') {
-    verdictText = 'GROUNDED SCIENCE';
+    verdictText = contentSlot.noFact ? 'BASELINE' : 'GROUNDED SCIENCE';
     verdictTone = critical ? 'alert' : 'optimal';
   }
 
@@ -1056,6 +1062,7 @@ function buildUniversalCardProps(p) {
     signalConfidencePct,
     integrityPct: signalConfidencePct, // Deprecated alias.
     maturityStage,
+    calibrationText,
     timeStr,
     timeIso,
     agentPaused,
@@ -1761,12 +1768,13 @@ function instantiateDynamicAgentCard(agentId, detail) {
     agentCode: profile.agentCode,
     agentTitle: profile.agentTitle,
     identityIconSvg: meta.icon,
-    verdictText: contentSlot.kind === 'personal_insight' ? 'PERSONAL INSIGHT' : 'GROUNDED SCIENCE',
+    verdictText: contentSlot.kind === 'personal_insight' ? 'PERSONAL INSIGHT' : (contentSlot.noFact ? 'BASELINE' : 'GROUNDED SCIENCE'),
     verdictTone: 'optimal',
     signalActive: true,
     signalConfidencePct,
     integrityPct: signalConfidencePct, // Deprecated alias.
     maturityStage,
+    calibrationText: '',
     timeStr: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     timeIso: now.toISOString(),
     agentPaused: false,

@@ -142,13 +142,12 @@ await page.evaluate(async () => {
   mod.clearDataSentLog();
 });
 
-// B: profile greeting on Talk open
+// B: profile greeting on Talk open — scripted on device, no Gemini request
 await page.evaluate(() => window.switchView && window.switchView('talk'));
 await waitBotIdle();
 await page.waitForTimeout(400);
 const reqB = requests.find((r) => /opened Talk/.test(r.body.message || ''));
-if (!reqB) fail('no greeting (B) request captured');
-else if (reqB.body.system_state?.common_ledger_recent || reqB.body.system_state?.common_ledger) fail('greeting (B) still carries the ledger');
+if (reqB) fail('scripted profile opening still called Gemini');
 
 // Local profile answers (no network)
 const beforeLocal = requests.length;
@@ -209,8 +208,7 @@ const [eB] = byType('B:');
 const eLocal = byType('profile-answer');
 const [eA] = byType('A:');
 const [eC] = byType('C:');
-if (!eB || eB.outcome !== 'sent' || !eB.dataCategoriesIncluded.some((c) => /profile question being asked: Your Body · Sex at birth/i.test(c))) fail('B log entry wrong');
-if (eB && eB.dataCategoriesIncluded.some((c) => /^ledger/.test(c))) fail('B log entry claims a ledger');
+if (eB) fail('scripted profile opening wrote a data-sent entry');
 if (eLocal.length !== 3 || eLocal.some((e) => e.sentOffDevice !== false)) fail('expected 3 on-device profile-answer entries');
 if (!eA || eA.outcome !== 'sent') fail('A log entry missing/outcome wrong');
 const catsA = eA ? eA.dataCategoriesIncluded.join(' | ') : '';

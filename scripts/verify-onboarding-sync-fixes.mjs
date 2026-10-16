@@ -109,23 +109,23 @@ const lastBotText = (page) =>
   console.log('[fresh] Talk asks:', JSON.stringify(talkText.slice(0, 140)), '| resolver path:', qPath, '| sidebar:', JSON.stringify(step.mobile));
   if (prompt) fail('missed-days banner shown on a freshly onboarded profile');
   if (sync.gapDays) fail(`gapDays ${sync.gapDays} on a fresh profile`);
-  if (qPath !== 'body.sexAtBirth') fail(`resolver expected body.sexAtBirth, got ${qPath}`);
-  if (step.mobile !== 'Add your sex at birth' || step.desktop !== 'Add your sex at birth') fail(`sidebar not aligned with Talk: ${JSON.stringify(step)}`);
-  if (!/male or female/i.test(talkText)) fail('Talk is not asking the sex-at-birth question');
+  if (qPath !== 'lifestyle.sleepDuration') fail(`resolver expected lifestyle.sleepDuration, got ${qPath}`);
+  if (step.mobile !== 'Add your sleep duration' || step.desktop !== 'Add your sleep duration') fail(`sidebar not aligned with Talk: ${JSON.stringify(step)}`);
+  if (!/how many hours do you usually sleep/i.test(talkText)) fail('Talk is not asking the sleep-duration question');
   await page.screenshot({ path: path.join(outDir, 'sync-fix-fresh-talk-390.png'), clip: { x: 0, y: 0, width: VW, height: VH } });
 
   // A profile save (as Talk does after an answer) moves both to the next field.
   await page.evaluate(async () => {
     const { profileState } = await import('/js/state.js');
     const p = profileState.get();
-    p.body = { ...(p.body || {}), sexAtBirth: 'female' };
+    p.lifestyle = { ...(p.lifestyle || {}), sleepDuration: '7-8h' };
     profileState.save(p);
   });
   await page.waitForTimeout(300);
   const step2 = await nextStep(page);
   const qPath2 = await talkQuestionPath(page);
-  console.log('[fresh] after saving sex at birth: resolver', qPath2, '| sidebar', JSON.stringify(step2.mobile));
-  if (qPath2 !== 'body.genderIdentity' || step2.mobile !== 'Add your gender identity') fail('sidebar did not follow the profile save');
+  console.log('[fresh] after one sleep signal: resolver', qPath2, '| sidebar', JSON.stringify(step2.mobile));
+  if (qPath2 !== 'body.sexAtBirth' || step2.mobile !== 'Add your sex at birth') fail('sidebar did not return to standard order after the focus area had a signal');
 
   // "Another time" snooze: Talk stops asking; sidebar falls through to operational prompts.
   await page.evaluate(() => {
@@ -149,7 +149,7 @@ const lastBotText = (page) =>
   await page.waitForTimeout(200);
   const unsnoozed = await nextStep(page);
   console.log('[fresh] after clearing snooze:', JSON.stringify(unsnoozed.mobile));
-  if (unsnoozed.mobile !== 'Add your gender identity') fail('sidebar did not return to the profile question after snooze cleared');
+  if (unsnoozed.mobile !== 'Add your sex at birth') fail('sidebar did not return to the profile question after snooze cleared');
 
   // Relaunch the same day: still no banner.
   await page.reload({ waitUntil: 'domcontentloaded' });

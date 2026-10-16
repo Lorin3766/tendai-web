@@ -9,6 +9,8 @@
 //   - Any other profile-related logic
 // ============================================================
 
+import { nextFocusAreaSignal } from './focus-area-signals.js';
+
 /**
  * Get profile schema - the single source of truth for profile structure
  * @returns {Object} Profile schema with all sections and fields
@@ -301,6 +303,21 @@ export function isProfileFieldAnswered(value, key) {
  */
 export function getNextProfileQuestion(profileData) {
   const profile = profileData && typeof profileData === 'object' ? profileData : {};
+
+  const priority = nextFocusAreaSignal(profile);
+  if (priority) {
+    const section = PROFILE_QUESTION_CATALOG.find((s) => s.key === priority.section);
+    const field = section?.fields.find((f) => f.key === priority.field);
+    if (field) {
+      return {
+        sectionKey: section.key,
+        sectionLabel: PROFILE_SECTION_LABELS[section.key],
+        fieldKey: field.key,
+        fieldLabel: field.label,
+        path: `${section.key}.${field.key}`,
+      };
+    }
+  }
 
   for (const section of PROFILE_QUESTION_CATALOG) {
     const sectionData = profile[section.key] && typeof profile[section.key] === 'object'
