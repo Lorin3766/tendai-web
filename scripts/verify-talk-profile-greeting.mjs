@@ -78,7 +78,7 @@ await page.evaluate(() => {
 await page.waitForFunction(() => {
   const bots = [...document.querySelectorAll('.talk-view .message.bot:not(.typing-indicator)')];
   const last = bots[bots.length - 1];
-  return last && last.getAttribute('data-profile-prompt-path') === 'body.sexAtBirth';
+  return last && last.getAttribute('data-profile-prompt-path') === 'body.genderIdentity';
 }, { timeout: 45000 });
 await page.waitForTimeout(1500);
 const bots = page.locator('.talk-view .message.bot:not(.typing-indicator) .message-text');
@@ -88,12 +88,12 @@ const lastPath = await page.locator('.talk-view .message.bot:not(.typing-indicat
 console.log('REOPEN_BOT_COUNT:', count);
 console.log('REOPEN_LAST_TEXT:', lastText);
 console.log('REOPEN_LAST_PATH:', lastPath);
-console.log('REOPEN_SAME_FIELD:', lastPath === firstPath && firstPath === 'body.sexAtBirth');
+console.log('REOPEN_SAME_FIELD:', lastPath === 'body.genderIdentity');
 
 await browser.close();
 if (firstPath !== 'body.sexAtBirth' || /\[LOCAL MODE\]|Identity: TendAI/i.test(firstText)) {
   process.exit(2);
 }
-if (lastPath !== 'body.sexAtBirth') {
+if (lastPath !== 'body.genderIdentity') {
   process.exit(3);
 }

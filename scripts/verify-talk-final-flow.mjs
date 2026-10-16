@@ -286,7 +286,7 @@ console.log('INPUT_BORDER', inputBorder);
 await browser.close();
 
 const ok =
-  open.path === 'body.sexAtBirth' && /Serron, your personal companion/i.test(open.text) && !open.tendai &&
+  open.path === 'body.sexAtBirth' && /Obrium, your personal companion/i.test(open.text) && !open.tendai &&
   q1.path === 'body.genderIdentity' && q1.profile?.body?.sexAtBirth === 'male' && /in progress/i.test(q1.bodyStatus) &&
   q2.path === 'body.age' && q2.profile?.body?.genderIdentity === 'man' &&
   pause1.pace && pause1.hasContinue && pause1.hasLater && pause1.profile?.body?.age === 43 &&
@@ -297,7 +297,7 @@ const ok =
   fillResult.next == null && !fillResult.error &&
   sidebar.body === 'Complete' && sidebar.health === 'Complete' && sidebar.mind === 'Complete' &&
   sidebar.lifestyle === 'Complete' && sidebar.goals === 'Complete' &&
-  !passive.path && /Welcome/i.test(header) && /Serron v1\.0/i.test(passive.text) && !passive.tendai &&
+  !passive.path && /Welcome/i.test(header) && /Obrium v1\.0/i.test(passive.text) && !passive.tendai &&
   /rgba\(255, 248, 235, 0\.28\)/.test(inputBorder || '');
 
 console.log('PRODUCED', produced.join('\n'));

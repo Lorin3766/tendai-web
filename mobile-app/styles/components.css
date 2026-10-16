@@ -3486,6 +3486,17 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   background: rgba(255, 248, 235, 0.06);
   box-shadow: inset 0 0 0 1px rgba(255, 248, 235, 0.04);
 }
+.heart-agent-module__payoff,
+.heart-agent-module__payoff-context,
+.heart-agent-module__calibration {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.universal-agent-card.uac-highlight {
+  outline: 2px solid #e6c27a;
+  outline-offset: 3px;
+}
 .heart-agent-module__time {
   font-family: var(--font-ui);
   font-size: 11px;

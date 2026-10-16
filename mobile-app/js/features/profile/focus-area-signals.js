@@ -3,7 +3,7 @@
 // @role: config
 
 import { isProfileFieldAnswered } from './profile-schema.js';
-import { getSelectedFocusAreaIds } from '../human-os/focus-areas.js';
+import { getFocusAreaById, getSelectedFocusAreaIds } from '../human-os/focus-areas.js';
 
 /**
  * Least sensitive first. `echo` is how Feed may repeat the answer (9c).
@@ -105,6 +105,68 @@ export function nextFocusAreaSignal(profile) {
     }
   }
   return null;
+}
+
+const SLEEP_HOURS = {
+  '<6h': 'under 6 hours',
+  '6-7h': '6 to 7 hours',
+  '7-8h': '7 to 8 hours',
+  '8h+': '8 or more hours',
+};
+
+function readSignalValue(profile, signal) {
+  const section = profile?.[signal.section];
+  return section && typeof section === 'object' ? section[signal.field] : undefined;
+}
+
+function formatValueEcho(signal, value) {
+  const path = `${signal.section}.${signal.field}`;
+  const shown = Array.isArray(value) ? value.filter(Boolean).join(', ') : String(value ?? '').trim();
+  if (path === 'lifestyle.sleepDuration') return `You noted about ${SLEEP_HOURS[shown] || shown} of sleep.`;
+  if (path === 'lifestyle.sleepQuality') return `You noted sleep quality at ${shown} on a 1 to 5 scale.`;
+  if (path === 'body.physicalActivity') return `You noted your activity level: ${shown}.`;
+  if (path === 'lifestyle.dietType') return `You noted your diet: ${shown}.`;
+  if (path === 'lifestyle.eatingPattern') return `You noted your eating pattern: ${shown}.`;
+  if (path === 'health.lastCheckup') return `You noted your last checkup: ${shown}.`;
+  if (path === 'mind.stressLevel') return `You noted a stress level of ${shown}.`;
+  if (path === 'goals.primaryGoals') return `You noted your goal: ${shown}.`;
+  if (path === 'health.smoking') return `You noted smoking: ${shown}.`;
+  if (path === 'health.alcohol') return `You noted alcohol: ${shown}.`;
+  return `You noted ${shown}.`;
+}
+
+const lastTouched = new Map();
+
+/** Remember which mapped field just changed so the card echoes that answer. Not persisted. */
+export function noteSignalSaved(section, field) {
+  const path = `${section}.${field}`;
+  for (const area of focusAreasForField(section, field)) lastTouched.set(area, path);
+}
+
+/** Last answered signal, preferring the field just saved. Null when none are answered. */
+export function payoffDetail(profile, areaId) {
+  const answered = signalsFor(areaId).filter((signal) => isSignalAnswered(profile, signal));
+  if (!answered.length) return null;
+  const touched = lastTouched.get(areaId);
+  const signal = answered.find((s) => `${s.section}.${s.field}` === touched) || answered[answered.length - 1];
+  const name = getFocusAreaById(areaId)?.name || areaId;
+  const echo = signal.echo === 'generic'
+    ? `Your ${name} card now reflects your answer.`
+    : formatValueEcho(signal, readSignalValue(profile, signal));
+  return { echo, field: signal.field, section: signal.section };
+}
+
+export function payoffEcho(profile, areaId) {
+  return payoffDetail(profile, areaId)?.echo || '';
+}
+
+/** Stage, calibration, and payoff. Callers compare this to decide whether Feed actually changed. */
+export function visibleCardSnapshot(profile, areaId, storedStage = 0) {
+  return [
+    displayMaturityStage(storedStage, profile, areaId),
+    calibrationLine(profile, areaId),
+    payoffEcho(profile, areaId),
+  ].join('|');
 }
 
 /** Focus areas whose visible card should change when this profile path is saved. */

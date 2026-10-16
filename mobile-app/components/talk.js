@@ -9,8 +9,10 @@ import { isAutoProfileQuestionsEnabled } from '../js/features/settings/auto-requ
 import { talkState, profileState } from '../js/state.js';
 import { getNextProfileQuestion } from '../js/features/profile/profile-schema.js';
 import { setProfileQuestionsSnoozed } from '../js/features/feed/next-step.js';
-import { getSelectedFocusAreaIds } from '../js/features/human-os/focus-areas.js';
+import { getSelectedFocusAreaIds, getFocusAreaById } from '../js/features/human-os/focus-areas.js';
 import { getEntries } from '../js/features/feed/content-library.js';
+import { findUserAgentByFocusAreaId } from '../js/features/human-os/user-agents.js';
+import { focusAreasForField, visibleCardSnapshot } from '../js/features/profile/focus-area-signals.js';
 import {
   parseProfileAnswer,
   applyProfileTalkAnswer,
@@ -1027,6 +1029,33 @@ export class TalkComponent {
     return next;
   }
 
+  appendSeeInFeed(messageDiv, areaId) {
+    if (!messageDiv || !areaId) return;
+    const content = messageDiv.querySelector('.message-content');
+    if (!content || content.querySelector('.talk-see-feed')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn talk-see-feed';
+    btn.textContent = 'See it in Feed';
+    btn.addEventListener('click', () => {
+      if (typeof window.highlightFocusAreaCard === 'function') window.highlightFocusAreaCard(areaId);
+    });
+    const timeEl = content.querySelector('.message-time');
+    if (timeEl) content.insertBefore(btn, timeEl);
+    else content.appendChild(btn);
+  }
+
+  cardSnapshot(areaId) {
+    let stored = 0;
+    try {
+      const ua = findUserAgentByFocusAreaId(areaId);
+      stored = Number(ua?.maturity_stage ?? ua?.maturityStage ?? 0);
+    } catch (_) {
+      stored = 0;
+    }
+    return visibleCardSnapshot(profileState.get(), areaId, stored);
+  }
+
   async askNextProfileQuestion(question) {
     if (!question) return;
     const text = getConversationalAsk(question);
@@ -1061,7 +1090,14 @@ export class TalkComponent {
       return true;
     }
 
+    const areas = focusAreasForField(question.sectionKey, question.fieldKey);
+    const before = Object.fromEntries(areas.map((id) => [id, this.cardSnapshot(id)]));
     applyProfileTalkAnswer(question.sectionKey, question.fieldKey, parsed.value);
+    const changed = areas.filter((id) => this.cardSnapshot(id) !== before[id]);
+    const claim = changed
+      .map((id) => getFocusAreaById(id)?.name || id)
+      .map((name) => `Updated your ${name} card.`)
+      .join(' ');
     recordDataSent({
       requestType: DATA_SENT_REQUEST_TYPES.PROFILE_ANSWER_LOCAL,
       sentOffDevice: false,
@@ -1073,11 +1109,13 @@ export class TalkComponent {
     this._proactiveAnswersThisSession += 1;
 
     const next = getNextProfileQuestion(profileState.get());
+    const say = (text, options) => {
+      const el = this.addMessageToChat(claim ? `${claim} ${text}` : text, 'ai', true, null, options);
+      if (claim) this.appendSeeInFeed(el, changed[0]);
+      return el;
+    };
     if (!next) {
-      this.addMessageToChat(
-        "That's everything I needed on your profile for now. Ask me anything whenever you like.",
-        'ai',
-      );
+      say("That's everything I needed on your profile for now. Ask me anything whenever you like.");
       this._proactivePassiveThisSession = true;
       this._awaitingPaceChoice = false;
       setProfileQuestionsSnoozed(true);
@@ -1085,11 +1123,14 @@ export class TalkComponent {
     }
 
     if (this._proactiveAnswersThisSession >= PROACTIVE_TALK_SESSION_LIMIT) {
-      this.showPacePrompt();
+      this._awaitingPaceChoice = true;
+      const el = say("We've covered a few things. Want to keep going now, or pick this up another time?");
+      if (el) el.setAttribute('data-talk-pace-prompt', '1');
+      this.appendPaceChoiceButtons(el?.querySelector('.message-content'));
       return true;
     }
 
-    await this.askNextProfileQuestion(next);
+    say(getConversationalAsk(next), this.profilePromptChatOptions(next));
     return true;
   }
 

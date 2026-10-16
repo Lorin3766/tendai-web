@@ -459,6 +459,9 @@ export function createUniversalAgentCard(props) {
   el.dataset.agentName = agentName;
   el.dataset.trackId = trackId;
   el.dataset.maturityStage = String(maturityStage);
+  el.dataset.focusAreaId = String(props.focusAreaId || '');
+  el.dataset.storedStage = String(props.storedStage ?? 0);
+  el.dataset.signalActive = props.signalActive ? '1' : '0';
   el.dataset.contentKind = slotKind;
 
   const sd = props.sensorData && typeof props.sensorData === 'object' && !Array.isArray(props.sensorData) ? props.sensorData : {};
@@ -466,6 +469,9 @@ export function createUniversalAgentCard(props) {
     props.signalConfidencePct ?? props.integrityPct
   ) || 0;
   const showSignalConfidence = maturityStage >= 1 && signalConfidencePct > 0;
+  el.dataset.signalConfidence = String(signalConfidencePct);
+  const payoffEchoText = String(props.payoffEchoText || '').trim();
+  const payoffContext = String(props.payoffContext || '').trim();
   const dashboard = renderReadOnlyDashboardHtml(trackId, sd, signalConfidencePct);
   // Hide expand/PRIMARY METRIC when there's no real reading — that panel was
   // surfacing mock/awaiting copy under the Insight/Science slot.
@@ -539,9 +545,15 @@ export function createUniversalAgentCard(props) {
         </div>`
         }
         ${
+          payoffEchoText
+            ? `<p class="heart-agent-module__payoff" data-uac-payoff>${universalEsc(payoffEchoText)}</p>
+               ${payoffContext ? `<p class="heart-agent-module__payoff-context" data-uac-payoff-context>${universalEsc(payoffContext)}</p>` : ''}`
+            : ''
+        }
+        ${
           calibrationText
             ? `<p class="heart-agent-module__calibration" data-uac-calibration>${universalEsc(calibrationText)}</p>
-               <button type="button" class="heart-agent-module__btn heart-agent-module__btn--primary" data-uac-action="confidence-talk">Open Talk</button>`
+               <button type="button" class="heart-agent-module__btn heart-agent-module__btn--primary" data-uac-action="confidence-talk" data-uac-calibration-talk>Open Talk</button>`
             : ''
         }
         ${

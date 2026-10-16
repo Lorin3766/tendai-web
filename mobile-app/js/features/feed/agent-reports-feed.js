@@ -11,7 +11,7 @@ import {
 import { rememberFastAlertResponse } from '../talk/user-memory.js';
 import { profileState } from '../../state.js';
 import { getState } from '../../core/app-state.js';
-import { displayMaturityStage, calibrationLine } from '../profile/focus-area-signals.js';
+import { displayMaturityStage, calibrationLine, payoffDetail, noteSignalSaved, FOCUS_AREA_SIGNALS } from '../profile/focus-area-signals.js';
 import { getMetricsByDate } from '../../core/biometrics-db.js';
 import {
   openUltimateAgentCreatorModal,
@@ -41,6 +41,7 @@ import {
   resolveFeedContentSlot,
   buildSignalConfidenceNudge,
 } from './feed-content-slot.js';
+import { getEntries } from './content-library.js';
 
 /** @typedef {{ zone: string, zoneKey: string, icon: string }} AgentZone */
 
@@ -938,6 +939,12 @@ function buildUniversalCardProps(p) {
   const profileNow = profileState.get();
   const maturityStage = displayMaturityStage(storedStage, profileNow, focusAreaId);
   const calibrationText = calibrationLine(profileNow, focusAreaId);
+  const payoff = payoffDetail(profileNow, focusAreaId);
+  const payoffContextEntry = payoff
+    ? getEntries({ focusArea: focusAreaId, field: payoff.field, profile: profileNow })
+    : null;
+  const payoffEchoText = payoff?.echo || '';
+  const payoffContext = payoffContextEntry?.text || '';
 
   /**
    * Single-slot content: Personal Insight (if eligible) else Grounded Science.
@@ -999,6 +1006,10 @@ function buildUniversalCardProps(p) {
       integrityPct: signalConfidencePct, // Deprecated alias.
       maturityStage,
       calibrationText,
+      focusAreaId,
+      storedStage,
+      payoffEchoText,
+      payoffContext,
       timeStr,
       timeIso,
       agentPaused,
@@ -1063,6 +1074,10 @@ function buildUniversalCardProps(p) {
     integrityPct: signalConfidencePct, // Deprecated alias.
     maturityStage,
     calibrationText,
+    focusAreaId,
+    storedStage,
+    payoffEchoText,
+    payoffContext,
     timeStr,
     timeIso,
     agentPaused,
@@ -1775,6 +1790,10 @@ function instantiateDynamicAgentCard(agentId, detail) {
     integrityPct: signalConfidencePct, // Deprecated alias.
     maturityStage,
     calibrationText: '',
+    focusAreaId: detail.trackingLifeAreaId || detail.focusAreaId || null,
+    storedStage: maturityStage,
+    payoffEchoText: '',
+    payoffContext: '',
     timeStr: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     timeIso: now.toISOString(),
     agentPaused: false,
@@ -2205,10 +2224,139 @@ async function hydrateAgentCardsFromStorage() {
   }
 }
 
+const MATURITY_BADGE = ['Baseline', 'Calibrated', 'Trends', 'Biomarkers'];
+let profileBeforeCardSync = null;
+
+function readMappedValue(profile, signal) {
+  const section = profile?.[signal.section];
+  return section && typeof section === 'object' ? section[signal.field] : undefined;
+}
+
+function noteChangedFocusSignals(profile) {
+  const prev = profileBeforeCardSync;
+  try {
+    profileBeforeCardSync = JSON.parse(JSON.stringify(profile || {}));
+  } catch (_) {
+    profileBeforeCardSync = null;
+  }
+  if (!prev) return;
+  for (const signals of Object.values(FOCUS_AREA_SIGNALS)) {
+    for (const signal of signals) {
+      const before = JSON.stringify(readMappedValue(prev, signal) ?? null);
+      const after = JSON.stringify(readMappedValue(profile, signal) ?? null);
+      if (before !== after) {
+        noteSignalSaved(signal.section, signal.field);
+        break;
+      }
+    }
+  }
+}
+
+function syncFocusCardsFromProfile() {
+  const profile = profileState.get();
+  noteChangedFocusSignals(profile);
+  document.querySelectorAll('.universal-agent-card[data-focus-area-id]').forEach((el) => {
+    const id = el.dataset.focusAreaId;
+    if (!id) return;
+    const stored = Number(el.dataset.storedStage || 0);
+    const stage = displayMaturityStage(stored, profile, id);
+    const cal = calibrationLine(profile, id);
+    const payoff = payoffDetail(profile, id);
+    const fact = payoff ? getEntries({ focusArea: id, field: payoff.field, profile }) : null;
+    const badge = el.querySelector('[data-uac-maturity]');
+    if (badge) {
+      badge.dataset.maturityStage = String(stage);
+      badge.textContent = `Stage ${stage} · ${MATURITY_BADGE[stage] || ''}`;
+    }
+    el.dataset.maturityStage = String(stage);
+
+    const actions = el.querySelector('.heart-agent-module__actions');
+    let calEl = el.querySelector('[data-uac-calibration]');
+    let calBtn = el.querySelector('[data-uac-calibration-talk]');
+    if (cal) {
+      if (!calEl) {
+        calEl = document.createElement('p');
+        calEl.className = 'heart-agent-module__calibration';
+        calEl.dataset.uacCalibration = '';
+        if (actions) actions.parentNode.insertBefore(calEl, actions);
+      }
+      calEl.textContent = cal;
+      if (!calBtn) {
+        calBtn = document.createElement('button');
+        calBtn.type = 'button';
+        calBtn.className = 'heart-agent-module__btn heart-agent-module__btn--primary';
+        calBtn.dataset.uacAction = 'confidence-talk';
+        calBtn.dataset.uacCalibrationTalk = '';
+        calBtn.textContent = 'Open Talk';
+        calEl.insertAdjacentElement('afterend', calBtn);
+      }
+    } else {
+      calEl?.remove();
+      calBtn?.remove();
+    }
+
+    let pay = el.querySelector('[data-uac-payoff]');
+    let ctx = el.querySelector('[data-uac-payoff-context]');
+    if (payoff?.echo) {
+      if (!pay) {
+        pay = document.createElement('p');
+        pay.className = 'heart-agent-module__payoff';
+        pay.dataset.uacPayoff = '';
+        const slot = el.querySelector('[data-uac-content-slot]');
+        const anchor = el.querySelector('[data-uac-calibration]') || actions;
+        if (slot) slot.insertAdjacentElement('afterend', pay);
+        else if (anchor) anchor.parentNode.insertBefore(pay, anchor);
+      }
+      pay.textContent = payoff.echo;
+      if (fact?.text) {
+        if (!ctx) {
+          ctx = document.createElement('p');
+          ctx.className = 'heart-agent-module__payoff-context';
+          ctx.dataset.uacPayoffContext = '';
+          pay.insertAdjacentElement('afterend', ctx);
+        }
+        ctx.textContent = fact.text;
+      } else {
+        ctx?.remove();
+      }
+    } else {
+      pay?.remove();
+      ctx?.remove();
+    }
+
+    const statusRow = el.querySelector('.heart-agent-module__status-row');
+    const pill = statusRow?.querySelector('.heart-agent-module__status-pill');
+    const showPill = el.dataset.signalActive === '1' || stage >= 1;
+    if (statusRow && showPill && !pill) {
+      const next = document.createElement('span');
+      next.className = 'heart-agent-module__status-pill';
+      next.textContent = el.dataset.signalActive === '1' ? 'Sensor linked' : 'Sensor offline';
+      statusRow.prepend(next);
+    } else if (!showPill && pill) {
+      pill.remove();
+    }
+    const conf = el.querySelector('.heart-agent-module__signal-confidence');
+    const pct = Number(el.dataset.signalConfidence || 0);
+    if (!(stage >= 1 && pct > 0)) conf?.remove();
+  });
+}
+
+function highlightFocusAreaCard(areaId) {
+  if (typeof window.switchView === 'function') window.switchView('feed');
+  const el = document.querySelector(`.universal-agent-card[data-focus-area-id="${CSS.escape(areaId)}"]`);
+  if (!el) return;
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+  el.classList.add('uac-highlight');
+  window.setTimeout(() => el.classList.remove('uac-highlight'), reduce ? 0 : 1600);
+}
+
 if (typeof window !== 'undefined') {
   installDelegatedAddAgentListener();
   installBiometricsRealtimeSubscriber();
   installObriumUpdateAgentListener();
+  window.highlightFocusAreaCard = highlightFocusAreaCard;
+  window.addEventListener('obrium:profile-saved', () => syncFocusCardsFromProfile());
 
   const initFeedStateLifecycle = () => {
     hydrateFeedStateFromStorage();
