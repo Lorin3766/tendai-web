@@ -9704,6 +9704,46 @@ button.sidebar-core-retry[hidden] {
 #feed-view > article.card-soft:last-child {
   margin-bottom: 0;
 }
+.today-block__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.today-block__slot {
+  margin: 0;
+  color: var(--fg-soft, #d4cdc4);
+  font-size: 13px;
+}
+.today-block__text {
+  margin: 8px 0 12px;
+  line-height: 1.4;
+}
+.today-block__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.today-block__btn,
+.today-block__chip {
+  min-height: 44px;
+  min-width: 44px;
+}
+.today-block__btn--quiet,
+.today-block__chip--quiet {
+  background: transparent;
+}
+.today-block__ack {
+  margin: 10px 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .today-block,
+  .today-block * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 #feed-view #myDayCard {
   margin-bottom: 24px;
 }

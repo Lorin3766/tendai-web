@@ -1213,6 +1213,7 @@ export async function updateFeedUI() {
   updateWellbeing();
   renderProtocolCards();
   renderAgentReportsSection();
+  if (typeof window.renderTodayBlock === 'function') window.renderTodayBlock();
 }
 
 // Time ticker: refresh header time every minute (no seconds in display)

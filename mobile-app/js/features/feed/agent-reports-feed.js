@@ -1399,9 +1399,11 @@ export function renderAgentReportsSection() {
     section.id = 'agentReportsSection';
     section.className = 'agent-reports-section agent-reports-section--cyber';
     section.setAttribute('aria-label', 'Adaptive agent feed');
+    const today = feedView.querySelector('#todayBlock');
     const stack = feedView.querySelector('#feedCoreStack');
-    if (stack && stack.parentNode === feedView) {
-      feedView.insertBefore(section, stack.nextSibling);
+    const anchor = today || stack;
+    if (anchor && anchor.parentNode === feedView) {
+      feedView.insertBefore(section, anchor.nextSibling);
     } else {
       feedView.appendChild(section);
     }

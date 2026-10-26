@@ -40,3 +40,36 @@ All entries ship with reviewed=false and sourceVerified=false. Do not flip eithe
 | mental-walk | mental | to be verified | observational | false | false | A short walk outside is a simple activity many people use when thinking feels crowded. |
 | mental-talk | mental | to be verified | consensus | false | false | Talking with someone you trust is a common support next to any self-care routine. |
 | mental-steps | mental | to be verified | observational | false | false | Splitting a full day into smaller steps is a practical way to lower mental load. |
+
+## Actions
+
+Kind `action`. Same review flags as facts. `slot` is morning, evening, or any. `effort` is low or medium. Text is a "try" step, at most 140 characters, with no digits. All ship unreviewed.
+
+| id | area | slot | effort | reviewed | sourceVerified | text |
+| --- | --- | --- | --- | --- | --- | --- |
+| act-sleep-lights | sleep | morning | low | false | false | Try leaving the lights low for a few quiet minutes after you wake. |
+| act-sleep-dim | sleep | evening | low | false | false | Try dimming the lights for a short wind-down before bed. |
+| act-sleep-dark | sleep | any | low | false | false | Try keeping the room dark and quiet when you go to sleep. |
+| act-move-stand | move | any | low | false | false | Try standing up and walking a little after you have been sitting. |
+| act-move-morning | move | morning | low | false | false | Try a short easy walk sometime this morning. |
+| act-move-longer | move | any | medium | false | false | Try a slightly longer easy walk than your usual one, still at a talking pace. |
+| act-nutrition-protein | nutrition | any | low | false | false | Try including a protein source at one meal today. |
+| act-nutrition-water | nutrition | morning | low | false | false | Try a glass of water with breakfast. |
+| act-nutrition-timing | nutrition | evening | low | false | false | Try eating your evening meal at about your usual time. |
+| act-labs-copy | labs | any | low | false | false | Try putting a recent result somewhere easy to find later. |
+| act-labs-question | labs | any | low | false | false | Try writing down one question about a result for a later visit. |
+| act-stress-breath | stress | any | low | false | false | Try a few slow breaths when you feel wound up. |
+| act-stress-daylight | stress | morning | low | false | false | Try stepping outside for a little daylight this morning. |
+| act-stress-pause | stress | evening | low | false | false | Try a short pause before the evening gets busy. |
+| act-long-small | longevity | any | low | false | false | Try one small habit you could also do tomorrow. |
+| act-long-people | longevity | any | low | false | false | Try a few unrushed minutes with someone you like. |
+| act-long-walk | longevity | morning | medium | false | false | Try an easy morning walk you can still talk through. |
+| act-skin-shade | skin | morning | low | false | false | Try shade or a hat if you will be out in the sun. |
+| act-skin-moist | skin | evening | low | false | false | Try a gentle cleanse and a plain moisturizer this evening. |
+| act-skin-sting | skin | any | low | false | false | Try setting aside a product that stings. |
+| act-cardio-walk | cardio | any | low | false | false | Try an easy walk at a pace where you can still talk. |
+| act-cardio-start | cardio | morning | low | false | false | Try a few easy minutes of walking to start the day. |
+| act-cardio-notice | cardio | evening | low | false | false | Try noticing how rested you feel, without chasing a number. |
+| act-mental-walk | mental | morning | low | false | false | Try a short walk outside if thinking feels crowded. |
+| act-mental-bed | mental | evening | low | false | false | Try keeping bedtime roughly where it usually is tonight. |
+| act-mental-quiet | mental | any | low | false | false | Try one quiet minute before you pick the next task. |

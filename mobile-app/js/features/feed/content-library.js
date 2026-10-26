@@ -103,7 +103,7 @@ export function getEntries(query = {}, env) {
   const preview = isContentPreviewEnabled(env);
   const focusArea = String(query.focusArea || '').trim();
   if (!AREAS.includes(focusArea)) return null;
-  let pool = getLibraryEntries().filter((e) => e && e.focusArea === focusArea);
+  let pool = getLibraryEntries().filter((e) => e && e.focusArea === focusArea && e.kind !== 'action');
   if (!preview) pool = pool.filter((e) => e.reviewed === true);
   if (query.field) {
     const field = String(query.field);
@@ -117,27 +117,64 @@ export function getEntries(query = {}, env) {
   return pool[idx];
 }
 
+const ACTION_SLOTS = new Set(['morning', 'evening', 'any']);
+const ACTION_EFFORT = new Set(['low', 'medium']);
+const ACTION_FORBIDDEN = [
+  /diagnos/i,
+  /\bcure\b/i,
+  /\btreat/i,
+  /prevent\w*\s+disease/i,
+  /\bdose\b/i,
+  /\bdosage\b/i,
+  /\bmedication\b/i,
+  /repeat the test/i,
+  /\bfast/i,
+  /intense/i,
+  /supplement/i,
+  /this will/i,
+];
+
+export function actionEntries(entries = getLibraryEntries()) {
+  return entries.filter((e) => e && e.kind === 'action');
+}
+
 export function validateLibrary(entries = getLibraryEntries()) {
   const errors = [];
   const ids = new Set();
-  const byArea = {};
-  for (const area of AREAS) byArea[area] = 0;
+  const factsByArea = {};
+  const actionsByArea = {};
+  for (const area of AREAS) {
+    factsByArea[area] = 0;
+    actionsByArea[area] = 0;
+  }
   for (const e of entries) {
+    const kind = e.kind === 'action' ? 'action' : 'fact';
     for (const key of ['id', 'focusArea', 'text', 'sourceLabel', 'sourceVerified', 'evidenceLevel', 'reviewed']) {
       if (e[key] == null || e[key] === '') errors.push(`${e.id || '?'} missing ${key}`);
     }
-    if (!('field' in e)) errors.push(`${e.id} missing field`);
+    if (kind === 'fact' && !('field' in e)) errors.push(`${e.id} missing field`);
     if (ids.has(e.id)) errors.push(`duplicate id ${e.id}`);
     ids.add(e.id);
     if (!AREAS.includes(e.focusArea)) errors.push(`${e.id} bad focusArea`);
-    else byArea[e.focusArea] += 1;
-    if (String(e.text || '').length > 220) errors.push(`${e.id} text over 220`);
+    else if (kind === 'action') actionsByArea[e.focusArea] += 1;
+    else factsByArea[e.focusArea] += 1;
+    const limit = kind === 'action' ? 140 : 220;
+    if (String(e.text || '').length > limit) errors.push(`${e.id} text over ${limit}`);
     if (!EVIDENCE.has(e.evidenceLevel)) errors.push(`${e.id} bad evidenceLevel`);
     if (typeof e.reviewed !== 'boolean') errors.push(`${e.id} reviewed not boolean`);
     if (typeof e.sourceVerified !== 'boolean') errors.push(`${e.id} sourceVerified not boolean`);
+    if (kind === 'action') {
+      if (!ACTION_SLOTS.has(e.slot)) errors.push(`${e.id} bad slot`);
+      if (!ACTION_EFFORT.has(e.effort)) errors.push(`${e.id} bad effort`);
+      if (/\d/.test(String(e.text || ''))) errors.push(`${e.id} action text has a number`);
+      for (const re of ACTION_FORBIDDEN) {
+        if (re.test(String(e.text || ''))) errors.push(`${e.id} action forbidden ${re}`);
+      }
+    }
   }
   for (const area of AREAS) {
-    if (byArea[area] < 3 || byArea[area] > 5) errors.push(`${area} has ${byArea[area]} entries`);
+    if (factsByArea[area] < 3 || factsByArea[area] > 5) errors.push(`${area} has ${factsByArea[area]} facts`);
+    if (actionsByArea[area] < 2 || actionsByArea[area] > 3) errors.push(`${area} has ${actionsByArea[area]} actions`);
   }
   return errors;
 }

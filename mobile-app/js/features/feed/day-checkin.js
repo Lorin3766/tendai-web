@@ -26,7 +26,7 @@ import { getSliderConfig } from '../storage/slider-config.js';
   }
 
   // Open check-in modal
-  function openCheckinModal() {
+  function openCheckinModal(focusId) {
     if (!initCheckinModal()) {
       return;
     }
@@ -70,6 +70,20 @@ import { getSliderConfig } from '../storage/slider-config.js';
     // Show modal
     checkinModalOverlay.classList.add('is-active');
     document.body.style.overflow = 'hidden';
+    if (focusId) {
+      const target = document.getElementById(focusId);
+      if (target) {
+        // visibility on the overlay stays hidden for the first half of its
+        // 200ms fade, and focus is ignored until it is visible.
+        const focusField = () => {
+          if (!target.isConnected) return;
+          if (getComputedStyle(target).visibility === 'hidden') return;
+          target.focus({ preventScroll: true });
+        };
+        focusField();
+        setTimeout(focusField, 120);
+      }
+    }
   }
 
   // Close check-in modal
@@ -117,6 +131,9 @@ import { getSliderConfig } from '../storage/slider-config.js';
 
     // Save to localStorage
     dayState.saveDayStateForToday(todayState);
+    try {
+      window.dispatchEvent(new CustomEvent('obrium:checkin-saved'));
+    } catch (_) {}
 
     // Close modal
     closeCheckinModal();

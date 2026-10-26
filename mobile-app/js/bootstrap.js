@@ -29,6 +29,7 @@ import './features/feed/ai-feed-advice.js'; // Just exports, no init
 
 // Check-ins (export functions, called on demand)
 import './features/feed/day-checkin.js'; // Auto-initializes via IIFE
+import './features/feed/today-block.js'; // Today step, local only
 import './features/feed/morning-checkin.js'; // Just exports, called from next-step
 import './features/feed/evening-checkin.js'; // Just exports, called from next-step
 
