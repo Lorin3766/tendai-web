@@ -1319,7 +1319,6 @@ function countFilledFields(profile, structure) {
       // Setup interactions after content is added
       setTimeout(() => {
         setupModalInteractions(section);
-        setupCardInteractions(); // Настройка интерактивов для карточек
       }, 50);
       
       // Show modal
