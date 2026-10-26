@@ -28,6 +28,8 @@ import {
   persistCompletedStep,
   persistTalkSession,
 } from '../mobile-app/js/features/metrics/local-metrics.js';
+import { classifyProfileReply } from '../mobile-app/js/features/talk/profile-answer-parser.js';
+import { focusCues, formatWaterStat, wellbeingSummaryText } from '../mobile-app/js/features/feed/checkin-display.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'mobile-app', '_audit', 'accent-review');
@@ -272,6 +274,29 @@ if (cappedCount > 400) fail('metrics kept more than 400 days');
 if (cappedState.days['2024-01-01']) fail('metrics kept a day older than the cap');
 metricStore.clear();
 
+const emptyDay = { energy: null, stressLevel: null, sleep: { hours: null }, water: { current: null, target: 8 } };
+if (formatWaterStat(emptyDay.water) !== '- / 8') fail(`empty water ${formatWaterStat(emptyDay.water)}`);
+if (formatWaterStat({ current: 0, target: 8 }) !== '0 / 8') fail('logged zero water');
+if (wellbeingSummaryText(emptyDay) !== 'No check-in yet') fail(`empty wellbeing ${wellbeingSummaryText(emptyDay)}`);
+if (wellbeingSummaryText({ ...emptyDay, stressLevel: 3 }) !== 'Energy not set • Stress moderate') {
+  fail(`logged stress ${wellbeingSummaryText({ ...emptyDay, stressLevel: 3 })}`);
+}
+if (focusCues(emptyDay).includes('reduce stress')) fail('missing stress became a focus');
+if (!focusCues({ stressLevel: 4, energy: null, sleep: { hours: null } }).includes('reduce stress')) {
+  fail('logged high stress was ignored');
+}
+const sexQuestion = { sectionKey: 'body', fieldKey: 'sexAtBirth', fieldLabel: 'Sex at birth' };
+const wife = classifyProfileReply(sexQuestion, 'my wife is female and has a headache');
+if (wife.kind !== 'message') fail(`wife sentence saved: ${JSON.stringify(wife)}`);
+const firstPerson = classifyProfileReply(sexQuestion, 'I am female');
+if (firstPerson.kind !== 'save' || firstPerson.value !== 'female') fail('first-person sex did not save');
+const shortSex = classifyProfileReply(sexQuestion, 'female');
+if (shortSex.kind !== 'save' || shortSex.value !== 'female') fail('short sex did not save');
+const genderQuestion = { sectionKey: 'body', fieldKey: 'genderIdentity', fieldLabel: 'Gender identity' };
+const longGender = classifyProfileReply(genderQuestion, 'my wife is a woman and has a headache');
+if (longGender.kind !== 'message') fail(`long gender saved: ${JSON.stringify(longGender)}`);
+console.log('[10d] display and identity');
+
 if (process.env.OBRIUM_URL) {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -310,6 +335,25 @@ if (process.env.OBRIUM_URL) {
   if (strict.hidden || strict.text !== 'Log how you slept') fail(`strict check-in missing: ${strict.text}`);
   if (!strict.buttons.includes('Log sleep')) fail('strict check-in button missing');
   await page.screenshot({ path: path.join(outDir, 'task10-today-strict-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
+  const waterText = await page.locator('#dayStatWater').textContent();
+  if (waterText !== '- / 8') fail(`water stat ${waterText}`);
+  await page.evaluate(() => window.openProfileModal?.('body'));
+  await page.waitForTimeout(400);
+  const bodySliders = await page.evaluate(() => ({
+    age: document.getElementById('bodyAge-value')?.textContent || '',
+    height: document.getElementById('bodyHeight-value')?.textContent || '',
+    weight: document.getElementById('bodyWeight-value')?.textContent || '',
+  }));
+  console.log('[10d] body sliders', JSON.stringify(bodySliders));
+  if (bodySliders.age !== 'Not set' || bodySliders.height !== 'Not set' || bodySliders.weight !== 'Not set') {
+    fail(`body sliders look set: ${JSON.stringify(bodySliders)}`);
+  }
+  await page.screenshot({ path: path.join(outDir, 'task10-profile-unset-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
+  await page.evaluate(() => window.openProfileModal?.('mind'));
+  await page.waitForTimeout(300);
+  const stressLabel = await page.locator('#mindStressLevel-value').textContent();
+  if (stressLabel !== 'Not set') fail(`stress slider ${stressLabel}`);
+  await page.evaluate(() => document.getElementById('profileModalClose')?.click());
 
   const before = apiHits.length;
   await page.click('#todayBlockActions .btn');

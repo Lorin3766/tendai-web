@@ -635,7 +635,8 @@ function numberFieldLooksLikeAttempt(spec, text) {
  * A failed parse is an attempt only when the reply is not a question, is very short
  * (at most 4 words and 40 characters), and partly matches the pending field:
  * a digit or unit for a number field, or a 3+ character overlap with one option.
- * A successful parse is always an answer, including a longer sentence that names one option.
+ * A successful parse is an answer, except sex at birth and gender identity:
+ * a free sentence for those saves only at 6 words or fewer, or when it is clearly first-person.
  */
 export function looksLikeProfileAnswerAttempt(question, text) {
   const raw = String(text || '').trim();
@@ -649,13 +650,27 @@ export function looksLikeProfileAnswerAttempt(question, text) {
   return false;
 }
 
+const IDENTITY_FIELDS = new Set(['body.sexAtBirth', 'body.genderIdentity']);
+
+function identityReplyMaySave(text) {
+  const raw = String(text || '').trim().replace(/[’‘]/g, "'");
+  const words = raw.split(/\s+/).filter(Boolean);
+  if (words.length <= 6) return true;
+  return /^(i am|i'm)\b/i.test(raw);
+}
+
 /**
  * save: the reply parsed. clarify: it looks like an attempt but did not parse.
  * message: ordinary Talk input; do not force the pending question.
+ * Sex at birth and gender identity save a longer sentence only when it is first-person.
  * @returns {{ kind: 'save', value: * } | { kind: 'clarify', clarify: string } | { kind: 'message' }}
  */
 export function classifyProfileReply(question, text) {
   const parsed = parseProfileAnswer(question, text);
+  const path = `${question?.sectionKey}.${question?.fieldKey}`;
+  if (parsed.ok && IDENTITY_FIELDS.has(path) && !identityReplyMaySave(text)) {
+    return { kind: 'message' };
+  }
   if (parsed.ok) return { kind: 'save', value: parsed.value };
   if (looksLikeProfileAnswerAttempt(question, text)) {
     return { kind: 'clarify', clarify: parsed.clarify };

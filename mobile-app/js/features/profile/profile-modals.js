@@ -432,6 +432,12 @@ function countFilledFields(profile, structure) {
   // SMART QUESTIONNAIRE v2 - Модульная система карточек
   // ============================================================
   
+  /** Thumb stays on a neutral position; the label stays "Not set" until the user moves it. */
+  function unsetSlider(stored, fallback) {
+    const unset = stored == null || stored === '';
+    return { value: unset ? fallback : stored, unset };
+  }
+
   /**
    * Генерация карточки в стиле ChatGPT
    */
@@ -477,7 +483,9 @@ function countFilledFields(profile, structure) {
         const max = sliderConfig ? sliderConfig.max : (card.max || 5);
         const step = sliderConfig ? sliderConfig.step : (card.step || 1);
         const currentValue = card.value !== undefined ? card.value : (card.min || min);
-        const displayValue = sliderConfig ? sliderConfig.displayFormatter(currentValue) : currentValue;
+        const displayValue = card.unset
+          ? 'Not set'
+          : (sliderConfig ? sliderConfig.displayFormatter(currentValue) : currentValue);
         
         html += `
           <div class="card-slider">
@@ -489,7 +497,7 @@ function countFilledFields(profile, structure) {
                 <div class="slider-scale" aria-hidden="true"></div>
                 <div class="slider-labels">
                   <span>${card.minLabel || min}</span>
-                  <span class="slider-value" id="${card.id}-value">${displayValue}</span>
+                  <span class="slider-value${card.unset ? ' is-unset' : ''}" id="${card.id}-value">${displayValue}</span>
                   <span>${card.maxLabel || max}</span>
                 </div>
               </div>
@@ -586,7 +594,7 @@ function countFilledFields(profile, structure) {
         
         // Card B: Priority level
         const healthPriorityConfig = getSliderConfig('healthGoalsPriority');
-        const healthPriorityValue = healthData.goalsPriority || 2;
+        const healthPrioritySlider = unsetSlider(profileData.health?.goalsPriority, 2);
         html += generateCard({
           id: 'healthGoalsPriority',
           title: 'How important is this right now?',
@@ -597,7 +605,8 @@ function countFilledFields(profile, structure) {
           step: healthPriorityConfig?.step || 1,
           minLabel: 'Low',
           maxLabel: 'Top priority',
-          value: healthPriorityValue,
+          value: healthPrioritySlider.value,
+          unset: healthPrioritySlider.unset,
           whyMatters: 'AI will adjust the intensity of recommendations'
         });
         
@@ -649,7 +658,7 @@ function countFilledFields(profile, structure) {
         });
         
         const mindPriorityConfig = getSliderConfig('mindGoalsPriority');
-        const mindPriorityValue = mindData.goalsPriority || 2;
+        const mindPrioritySlider = unsetSlider(profileData.mind?.goalsPriority, 2);
         html += generateCard({
           id: 'mindGoalsPriority',
           title: 'How important is this right now?',
@@ -660,7 +669,8 @@ function countFilledFields(profile, structure) {
           step: mindPriorityConfig?.step || 1,
           minLabel: 'Low',
           maxLabel: 'Top priority',
-          value: mindPriorityValue,
+          value: mindPrioritySlider.value,
+          unset: mindPrioritySlider.unset,
           whyMatters: 'AI will adjust the intensity of recommendations'
         });
         break;
@@ -683,7 +693,7 @@ function countFilledFields(profile, structure) {
         });
         
         const lifestylePriorityConfig = getSliderConfig('lifestyleGoalsPriority');
-        const lifestylePriorityValue = lifestyleData.goalsPriority || 2;
+        const lifestylePrioritySlider = unsetSlider(profileData.lifestyle?.goalsPriority, 2);
         html += generateCard({
           id: 'lifestyleGoalsPriority',
           title: 'How important is this right now?',
@@ -694,7 +704,8 @@ function countFilledFields(profile, structure) {
           step: lifestylePriorityConfig?.step || 1,
           minLabel: 'Low',
           maxLabel: 'Top priority',
-          value: lifestylePriorityValue,
+          value: lifestylePrioritySlider.value,
+          unset: lifestylePrioritySlider.unset,
           whyMatters: 'AI will adjust the intensity of recommendations'
         });
         break;
@@ -718,7 +729,7 @@ function countFilledFields(profile, structure) {
         });
         
         const bodyPriorityConfig = getSliderConfig('bodyGoalsPriority');
-        const bodyPriorityValue = bodyData.goalsPriority || 2;
+        const bodyPrioritySlider = unsetSlider(profileData.body?.goalsPriority, 2);
         html += generateCard({
           id: 'bodyGoalsPriority',
           title: 'How important is this right now?',
@@ -729,7 +740,8 @@ function countFilledFields(profile, structure) {
           step: bodyPriorityConfig?.step || 1,
           minLabel: 'Low',
           maxLabel: 'Top priority',
-          value: bodyPriorityValue,
+          value: bodyPrioritySlider.value,
+          unset: bodyPrioritySlider.unset,
           whyMatters: 'AI will adjust the intensity of recommendations'
         });
         break;
@@ -801,7 +813,7 @@ function countFilledFields(profile, structure) {
         
         // Age (slider 18-90)
         const ageConfig = getSliderConfig('bodyAge');
-        const ageValue = bodyData.age || 30;
+        const ageSlider = unsetSlider(bodyData.age, 30);
         html += generateCard({
           id: 'bodyAge',
           title: 'Age',
@@ -809,7 +821,8 @@ function countFilledFields(profile, structure) {
           min: ageConfig?.min || 18,
           max: ageConfig?.max || 90,
           step: ageConfig?.step || 1,
-          value: ageValue,
+          value: ageSlider.value,
+          unset: ageSlider.unset,
           minLabel: '18',
           maxLabel: '90'
           // No description - value is shown in slider-value element
@@ -817,7 +830,7 @@ function countFilledFields(profile, structure) {
         
         // Height (slider, cm) - with dual units
         const heightConfig = getSliderConfig('bodyHeight');
-        const heightValue = bodyData.height || 170;
+        const heightSlider = unsetSlider(bodyData.height, 170);
         html += generateCard({
           id: 'bodyHeight',
           title: 'Height',
@@ -825,7 +838,8 @@ function countFilledFields(profile, structure) {
           min: heightConfig?.min || 140,
           max: heightConfig?.max || 210,
           step: heightConfig?.step || 1,
-          value: heightValue,
+          value: heightSlider.value,
+          unset: heightSlider.unset,
           minLabel: '140 cm',
           maxLabel: '210 cm'
           // No description - value is shown in slider-value element with dual units
@@ -833,7 +847,7 @@ function countFilledFields(profile, structure) {
         
         // Weight (slider, kg) - with dual units
         const weightConfig = getSliderConfig('bodyWeight');
-        const weightValue = bodyData.weight || 70;
+        const weightSlider = unsetSlider(bodyData.weight, 70);
         html += generateCard({
           id: 'bodyWeight',
           title: 'Weight',
@@ -841,7 +855,8 @@ function countFilledFields(profile, structure) {
           min: weightConfig?.min || 40,
           max: weightConfig?.max || 150,
           step: weightConfig?.step || 0.5,
-          value: weightValue,
+          value: weightSlider.value,
+          unset: weightSlider.unset,
           minLabel: '40 kg',
           maxLabel: '150 kg'
           // No description - value is shown in slider-value element with dual units
@@ -1007,7 +1022,7 @@ function countFilledFields(profile, structure) {
         
         // Stress level (slider 1-5)
         const stressConfig = getSliderConfig('mindStressLevel');
-        const stressValue = mindData.stressLevel || 3;
+        const stressSlider = unsetSlider(mindData.stressLevel, 3);
         html += generateCard({
           id: 'mindStressLevel',
           title: 'Stress level',
@@ -1015,7 +1030,8 @@ function countFilledFields(profile, structure) {
           min: stressConfig?.min || 1,
           max: stressConfig?.max || 5,
           step: stressConfig?.step || 1,
-          value: stressValue,
+          value: stressSlider.value,
+          unset: stressSlider.unset,
           minLabel: 'Very calm',
           maxLabel: 'Very stressed'
           // No description - value is shown in slider-value element
@@ -1023,7 +1039,7 @@ function countFilledFields(profile, structure) {
         
         // Mental energy (slider 1-5)
         const mentalEnergyConfig = getSliderConfig('mindMentalEnergy');
-        const mentalEnergyValue = mindData.mentalEnergy || 3;
+        const mentalEnergySlider = unsetSlider(mindData.mentalEnergy, 3);
         html += generateCard({
           id: 'mindMentalEnergy',
           title: 'Mental energy',
@@ -1031,7 +1047,8 @@ function countFilledFields(profile, structure) {
           min: mentalEnergyConfig?.min || 1,
           max: mentalEnergyConfig?.max || 5,
           step: mentalEnergyConfig?.step || 1,
-          value: mentalEnergyValue,
+          value: mentalEnergySlider.value,
+          unset: mentalEnergySlider.unset,
           minLabel: 'Clear',
           maxLabel: 'Exhausted'
           // No description - value is shown in slider-value element
@@ -1188,7 +1205,7 @@ function countFilledFields(profile, structure) {
         
         // Sleep quality (slider 1-5)
         const sleepQualityConfig = getSliderConfig('lifestyleSleepQuality');
-        const sleepQualityValue = lifestyleData.sleepQuality || 3;
+        const sleepQualitySlider = unsetSlider(lifestyleData.sleepQuality, 3);
         html += generateCard({
           id: 'lifestyleSleepQuality',
           title: 'Sleep quality',
@@ -1196,7 +1213,8 @@ function countFilledFields(profile, structure) {
           min: sleepQualityConfig?.min || 1,
           max: sleepQualityConfig?.max || 5,
           step: sleepQualityConfig?.step || 1,
-          value: sleepQualityValue,
+          value: sleepQualitySlider.value,
+          unset: sleepQualitySlider.unset,
           minLabel: 'Poor',
           maxLabel: 'Excellent'
           // No description - value is shown in slider-value element
@@ -1227,7 +1245,7 @@ function countFilledFields(profile, structure) {
         
         // Motivation level (slider 1-5)
         const motivationConfig = getSliderConfig('goalsMotivationLevel');
-        const motivationValue = goalsData.motivationLevel || 3;
+        const motivationSlider = unsetSlider(goalsData.motivationLevel, 3);
         html += generateCard({
           id: 'goalsMotivationLevel',
           title: 'Motivation level',
@@ -1235,7 +1253,8 @@ function countFilledFields(profile, structure) {
           min: motivationConfig?.min || 1,
           max: motivationConfig?.max || 5,
           step: motivationConfig?.step || 1,
-          value: motivationValue,
+          value: motivationSlider.value,
+          unset: motivationSlider.unset,
           minLabel: 'Low',
           maxLabel: 'High'
           // No description - value is shown in slider-value element
@@ -1352,8 +1371,8 @@ function countFilledFields(profile, structure) {
         const normalized = sliderConfig.normalize(value);
         // Update slider value to normalized value
         e.target.value = normalized;
-        // Update display
         valueLabel.textContent = sliderConfig.displayFormatter(normalized);
+        valueLabel.classList.remove('is-unset');
       });
       
       // Setup +/- buttons

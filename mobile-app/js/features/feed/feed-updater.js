@@ -11,6 +11,7 @@ import { getCurrentDailyAction, markActionAsDone, markActionAsSkipped } from './
 import { getCurrentContext } from './context-engine.js';
 import { renderAgentReportsSection } from './agent-reports-feed.js';
 import { withFeedRefreshBodyShield } from '../../core/gatekeeper.js';
+import { focusCues, formatWaterStat, wellbeingSummaryText } from './checkin-display.js';
 
 /** Set when user denied location; weather card shows "Location denied" and keeps link clickable */
 let locationDenied = false;
@@ -68,18 +69,14 @@ export function updateFeedHeaderStats() {
   // Update Water
   const waterElement = document.getElementById('dayStatWater');
   if (waterElement) {
-    const waterCurrent = todayState.water?.current || 0;
-    const waterTarget = todayState.water?.target || 8;
-    waterElement.textContent = `${waterCurrent} / ${waterTarget}`;
+    waterElement.textContent = formatWaterStat(todayState.water);
   }
 
   // Also update mobile version
   mobileSleepElements.forEach(el => {
     const label = el.previousElementSibling;
     if (label && label.textContent.includes('Water:')) {
-      const waterCurrent = todayState.water?.current || 0;
-      const waterTarget = todayState.water?.target || 8;
-      el.textContent = `${waterCurrent} / ${waterTarget}`;
+      el.textContent = formatWaterStat(todayState.water);
     }
   });
 
@@ -971,12 +968,6 @@ export function updateDailyFocus() {
   
   if (!focusElement) return;
 
-  const sleepHours = todayState.sleep?.hours;
-  const waterCurrent = todayState.water?.current || 0;
-  const waterTarget = todayState.water?.target || 8;
-  const stressLevel = todayState.stressLevel || 3;
-  const energy = todayState.energy;
-  
   // Check morning check-in first (highest priority)
   const morningCheckin = todayState.morningCheckin;
   if (morningCheckin && morningCheckin.answered) {
@@ -999,23 +990,8 @@ export function updateDailyFocus() {
     return;
   }
 
-  const focusItems = [];
-
-  // Generate focus based on state
-  if (sleepHours !== null && sleepHours < 6) {
-    focusItems.push('rest & recovery');
-  }
-  // No "hydration" focus in Feed — FEED informs only, no program/reminder tone
-  // if (waterCurrent < waterTarget * 0.6) focusItems.push('hydration');
-  if (stressLevel >= 4) {
-    focusItems.push('reduce stress');
-  }
-  if (energy === 'Low') {
-    focusItems.push('gentle activities');
-  }
-  if (sleepHours !== null && sleepHours >= 7 && energy === 'Good') {
-    focusItems.push('focused work');
-  }
+  // Missing stress and water are ignored. No hydration cue in Feed.
+  const focusItems = focusCues(todayState);
 
   let focusText = '';
   if (focusItems.length > 0) {
@@ -1155,41 +1131,7 @@ export function updateWellbeing() {
   
   if (!wellbeingElement) return;
 
-  const energy = todayState.energy;
-  const stressLevel = todayState.stressLevel || 3;
-  const sleepHours = todayState.sleep?.hours;
-
-  const parts = [];
-
-  // Energy status
-  if (energy === 'Low') {
-    parts.push('Energy low');
-  } else if (energy === 'Normal' || energy === 'Good') {
-    parts.push('Energy steady');
-  } else if (energy === 'High') {
-    parts.push('Energy high');
-  } else {
-    parts.push('Energy not set');
-  }
-
-  // Stress status
-  if (stressLevel <= 2) {
-    parts.push('Stress low');
-  } else if (stressLevel === 3) {
-    parts.push('Stress moderate');
-  } else if (stressLevel >= 4) {
-    parts.push('Stress high');
-  }
-
-  // Sleep status (if available)
-  if (sleepHours !== null && sleepHours < 6) {
-    parts.push('Sleep insufficient');
-  } else if (sleepHours !== null && sleepHours >= 7) {
-    parts.push('Sleep good');
-  }
-
-  const summaryText = parts.length > 0 ? parts.join(' • ') : 'Wellbeing data not set.';
-  wellbeingElement.textContent = summaryText;
+  wellbeingElement.textContent = wellbeingSummaryText(todayState);
 }
 
 /**

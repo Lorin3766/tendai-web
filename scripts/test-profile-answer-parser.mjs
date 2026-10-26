@@ -68,6 +68,12 @@ expectKind('classify headache is a message', sex, 'I have a headache today', 'me
 expectKind('classify why is a message', sex, 'why do you ask?', 'message');
 expectKind('classify fem clarifies', sex, 'fem', 'clarify');
 expectKind('classify age number saves', q('body', 'age', 'Age'), '43', 'save', 43);
+expectKind('classify wife headache is a message', sex, 'my wife is female and has a headache', 'message');
+expectKind('classify first person sex saves', sex, 'I am female', 'save', 'female');
+expectKind('classify short sex still saves', sex, 'female', 'save', 'female');
+const gender = q('body', 'genderIdentity', 'Gender identity');
+expectKind('classify first person gender saves', gender, "I'm a woman", 'save', 'woman');
+expectKind('classify long gender about someone else is a message', gender, 'my wife is a woman and has a headache', 'message');
 
 const afterTwo = {
   body: { sexAtBirth: 'male', genderIdentity: 'man' },

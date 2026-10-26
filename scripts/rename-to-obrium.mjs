@@ -16,7 +16,6 @@ const FILES = [
   'mobile-app/privacy-policy.html',
   'mobile-app/terms-of-use.html',
   'mobile-app/manifest.json',
-  'mobile-app/js/ai-feed-advice.js',
   'mobile-app/js/calendar/events.js',
   'mobile-app/js/calendar/ui.js',
   'mobile-app/js/core/backend-fetch.js',

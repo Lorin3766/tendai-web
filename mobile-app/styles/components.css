@@ -7032,6 +7032,12 @@ button.sidebar-core-retry[hidden] {
   text-align: center;
 }
 
+.slider-value.is-unset {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-muted);
+}
+
 /* Choice (radio) ÑÑ‚Ð¸Ð»ÑŒ */
 .card-choice-group {
   display: flex;
