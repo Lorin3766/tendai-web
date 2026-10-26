@@ -25,6 +25,7 @@ import {
   followUpAcknowledgment,
   loadFollowups,
   loadMutedAreas,
+  noteFollowUpDeferred,
   noteProfileFactsSeen,
   saveFollowUpAnswer,
   saveFollowups,
@@ -1163,6 +1164,7 @@ export class TalkComponent {
       this._proactivePassiveThisSession = true;
       this._awaitingPaceChoice = false;
       setProfileQuestionsSnoozed(true);
+      saveFollowups(noteFollowUpDeferred(loadFollowups(), pending, today).state);
       this.addMessageToChat(followUpAcknowledgment('later', areaName), 'ai', true, null, { followUpAck: true });
       return;
     }
@@ -1203,8 +1205,15 @@ export class TalkComponent {
       return true;
     }
 
-    // A typed reply is ordinary Talk. Chips are the only local follow-up answers.
-    if (this._pendingFollowUp) return false;
+    // A typed reply still uses the normal Talk path. Remember it so this item is not asked again.
+    if (this._pendingFollowUp) {
+      const pending = this._pendingFollowUp;
+      this._pendingFollowUp = null;
+      this._followUpAskedThisSession = true;
+      this.disableFollowUpButtons();
+      saveFollowups(saveFollowUpAnswer(loadFollowups(), pending, 'typed', localDateKey(obriumNow())));
+      return false;
+    }
 
     const question = this.getPendingProfileQuestion();
     if (!question) return false;

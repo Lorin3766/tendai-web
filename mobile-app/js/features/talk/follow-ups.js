@@ -8,7 +8,7 @@ import { stepTextForRecord } from '../feed/today-steps.js';
 export const FOLLOWUPS_KEY = 'tendai_followups_v1';
 export const FOLLOWUP_MUTED_KEY = 'tendai_followup_muted_areas_v1';
 
-const EMPTY = { answers: [], seen: [] };
+const EMPTY = { answers: [], seen: [], deferrals: [] };
 
 export function localDayOffset(fromKey, toKey) {
   const a = new Date(`${fromKey}T12:00:00`);
@@ -31,6 +31,7 @@ export function loadFollowups() {
   return {
     answers: Array.isArray(raw.answers) ? raw.answers : [],
     seen: Array.isArray(raw.seen) ? raw.seen : [],
+    deferrals: Array.isArray(raw.deferrals) ? raw.deferrals : [],
   };
 }
 
@@ -38,6 +39,7 @@ export function saveFollowups(state) {
   const next = {
     answers: Array.isArray(state?.answers) ? state.answers : [],
     seen: Array.isArray(state?.seen) ? state.seen : [],
+    deferrals: Array.isArray(state?.deferrals) ? state.deferrals : [],
   };
   localStorage.setItem(FOLLOWUPS_KEY, JSON.stringify(next));
   return next;
@@ -84,6 +86,7 @@ export function noteProfileFactsSeen(profile, today, state, areas) {
   const next = {
     answers: [...(state?.answers || [])],
     seen: [...(state?.seen || [])],
+    deferrals: [...(state?.deferrals || [])],
   };
   let changed = false;
   const known = new Set(next.seen.map((row) => `${row.path}|${row.value}`));
@@ -194,6 +197,7 @@ export function saveFollowUpAnswer(state, due, answer, today) {
   const next = {
     answers: [...(state?.answers || [])].filter((row) => row.ref !== due.ref),
     seen: [...(state?.seen || [])],
+    deferrals: [...(state?.deferrals || [])],
   };
   next.answers.push({
     ref: due.ref,
@@ -203,6 +207,23 @@ export function saveFollowUpAnswer(state, due, answer, today) {
     on: today,
   });
   return next;
+}
+
+/** Count an "Another time". The second one expires the item with answer code "deferred". */
+export function noteFollowUpDeferred(state, due, today) {
+  const deferrals = [...(state?.deferrals || [])];
+  const index = deferrals.findIndex((row) => row && row.ref === due.ref);
+  const count = (index >= 0 ? Number(deferrals[index].count) || 0 : 0) + 1;
+  const row = { ref: due.ref, count };
+  if (index >= 0) deferrals[index] = row;
+  else deferrals.push(row);
+  const next = {
+    answers: [...(state?.answers || [])],
+    seen: [...(state?.seen || [])],
+    deferrals,
+  };
+  if (count < 2) return { state: next, expired: false };
+  return { state: saveFollowUpAnswer(next, due, 'deferred', today), expired: true };
 }
 
 export function followUpAcknowledgment(choice, areaName) {

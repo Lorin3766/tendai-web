@@ -16,6 +16,7 @@ import { localDateKey, slotForTime, isClockOverrideAllowed } from '../mobile-app
 import {
   followUpAcknowledgment,
   localDayOffset,
+  noteFollowUpDeferred,
   noteProfileFactsSeen,
   selectDueFollowUp,
 } from '../mobile-app/js/features/talk/follow-ups.js';
@@ -209,6 +210,22 @@ if (genericOnly.changed) fail('generic echo was stored for a revisit');
 if (localDayOffset('2026-10-25', '2026-10-26') !== 1) fail('day offset');
 if (!followUpAcknowledgment('went-well').startsWith('Noted.')) fail('ack');
 if (followUpAcknowledgment('later').includes('No rush')) console.log('[10b] snooze line ok');
+const deferOnce = noteFollowUpDeferred({ answers: [], seen: [], deferrals: [] }, nextDay, '2026-10-26');
+if (deferOnce.expired || deferOnce.state.answers.length) fail('first Another time expired the follow-up');
+const stillDue = selectDueFollowUp({ ...followOpts, state: deferOnce.state });
+if (stillDue?.ref !== nextDay.ref) fail('follow-up disappeared after one Another time');
+const deferTwice = noteFollowUpDeferred(deferOnce.state, nextDay, '2026-10-27');
+if (!deferTwice.expired || deferTwice.state.answers.at(-1)?.answer !== 'deferred') {
+  fail('second Another time did not defer the follow-up');
+}
+const afterDefer = selectDueFollowUp({ ...followOpts, today: '2026-10-27', state: deferTwice.state });
+if (afterDefer) fail('deferred follow-up was offered again');
+const typedState = {
+  answers: [{ ref: nextDay.ref, kind: 'action', area: 'move', answer: 'typed', on: '2026-10-26' }],
+  seen: [],
+  deferrals: [],
+};
+if (selectDueFollowUp({ ...followOpts, state: typedState })) fail('typed follow-up was offered again');
 
 if (process.env.OBRIUM_URL) {
   const browser = await chromium.launch({ headless: true });
@@ -399,25 +416,6 @@ if (process.env.OBRIUM_URL) {
   await pageB.waitForTimeout(500);
   await pageB.screenshot({ path: path.join(outDir, 'task10-followup-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
 
-  const logBeforeTyped = await pageB.evaluate(() => JSON.parse(localStorage.getItem('tendai_data_sent_log_v1') || '[]').map((row) => row.requestType));
-  const hitsBeforeTyped = talkHits.length;
-  await pageB.fill('#chatInput', 'I have a headache today');
-  await pageB.click('#sendBtn');
-  await pageB.waitForFunction(() => {
-    const bots = [...document.querySelectorAll('.message.bot:not(.typing-indicator)')];
-    const last = bots[bots.length - 1];
-    return last && !last.classList.contains('message-typing') && (last.querySelector('.message-text')?.textContent || '').includes('STUB');
-  }, { timeout: 20000 });
-  const afterTyped = await pageB.evaluate(() => ({
-    answers: JSON.parse(localStorage.getItem('tendai_followups_v1') || '{"answers":[]}').answers.length,
-    log: JSON.parse(localStorage.getItem('tendai_data_sent_log_v1') || '[]').map((row) => row.requestType),
-  }));
-  const newLog = afterTyped.log.slice(logBeforeTyped.length);
-  const newHits = talkHits.slice(hitsBeforeTyped);
-  if (afterTyped.answers !== 0) fail('typed reply was stored as a follow-up');
-  if (!newLog.some((type) => String(type).includes('talk-message'))) fail(`typed reply log ${newLog.join(',')}`);
-  if (!newHits.some((url) => /\/api\/talk/.test(url))) fail('typed reply did not use the Talk path');
-
   await pageB.locator('[data-followup-choice="later"]:not([disabled])').last().click();
   await pageB.waitForTimeout(200);
   const snoozed = await pageB.evaluate(() => ({
@@ -536,6 +534,118 @@ if (process.env.OBRIUM_URL) {
   await pageQ.waitForTimeout(500);
   const toggledOff = await pageQ.evaluate(() => document.querySelectorAll('[data-follow-up-ref]').length);
   if (toggledOff !== 0) fail('follow-up appeared while automatic questions are off');
+
+  const contextAmend = await browserB.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const pageAmend = await contextAmend.newPage();
+  const amendHits = [];
+  pageAmend.on('request', (req) => {
+    if (/\/api\//.test(req.url())) amendHits.push(req.url());
+  });
+  await pageAmend.route('**/api/**', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ reply: 'STUB' }),
+  }));
+  await pageAmend.addInitScript((profile) => {
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem('tendai_system_onboarding_v1', '1');
+    localStorage.setItem('tendai_quick_setup_v1', JSON.stringify({ completed: true, skipped: true }));
+    localStorage.setItem('tendai_welcome_accepted', '1');
+    localStorage.setItem('tendai_focus_areas_v1', JSON.stringify(['move', 'sleep']));
+    localStorage.setItem('tendai-profile-state', JSON.stringify(profile));
+  }, completeProfile);
+  await pageAmend.goto(process.env.OBRIUM_URL + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await pageAmend.waitForTimeout(1600);
+  await pageAmend.evaluate(() => {
+    document.querySelectorAll('.system-onboarding-overlay, .welcome-modal-overlay').forEach((el) => el.remove());
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    localStorage.setItem('tendai_today_steps_v1', JSON.stringify([{
+      date: key(yesterday), slot: 'morning', actionId: 'act-move-morning', area: 'move', status: 'done',
+    }]));
+    localStorage.removeItem('tendai_chat_history');
+    window.setObriumClockOverride(today);
+  });
+  const openAmend = async () => {
+    await pageAmend.evaluate(() => window.switchView('talk'));
+    await pageAmend.waitForFunction(() => {
+      const nodes = [...document.querySelectorAll('[data-follow-up-ref]')];
+      const el = nodes[nodes.length - 1];
+      const chip = el?.querySelector('[data-followup-choice="later"]');
+      return chip && !chip.disabled;
+    }, { timeout: 15000 });
+  };
+  await openAmend();
+  await pageAmend.locator('[data-followup-choice="later"]:not([disabled])').last().click();
+  await pageAmend.waitForTimeout(200);
+  const once = await pageAmend.evaluate(() => JSON.parse(localStorage.getItem('tendai_followups_v1') || '{}'));
+  if ((once.deferrals || []).at(-1)?.count !== 1) fail('first Another time did not record one deferral');
+  if ((once.answers || []).some((row) => row.answer === 'deferred')) fail('first Another time expired the item');
+  await pageAmend.evaluate(() => window.switchView('feed'));
+  await openAmend();
+  await pageAmend.locator('[data-followup-choice="later"]:not([disabled])').last().click();
+  await pageAmend.waitForTimeout(200);
+  const twice = await pageAmend.evaluate(() => JSON.parse(localStorage.getItem('tendai_followups_v1') || '{"answers":[]}').answers);
+  if (twice.at(-1)?.answer !== 'deferred') fail(`second Another time stored ${twice.at(-1)?.answer}`);
+  await pageAmend.evaluate(() => {
+    const today = window.obriumNow();
+    const next = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 12, 0, 0);
+    window.setObriumClockOverride(next);
+    window.switchView('feed');
+  });
+  await pageAmend.evaluate(() => window.switchView('talk'));
+  await pageAmend.waitForTimeout(500);
+  const moveStillOffered = await pageAmend.evaluate(() => [...document.querySelectorAll('[data-follow-up-ref]')].some((el) => {
+    const chip = el.querySelector('[data-followup-choice="later"]');
+    return (el.getAttribute('data-follow-up-ref') || '').includes('act-move-morning') && chip && !chip.disabled;
+  }));
+  if (moveStillOffered) fail('deferred follow-up was offered the next day');
+
+  await pageAmend.evaluate(() => {
+    const today = window.obriumNow ? window.obriumNow() : new Date();
+    const older = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 2, 12, 0, 0);
+    const key = `${older.getFullYear()}-${String(older.getMonth() + 1).padStart(2, '0')}-${String(older.getDate()).padStart(2, '0')}`;
+    const steps = JSON.parse(localStorage.getItem('tendai_today_steps_v1') || '[]');
+    steps.push({ date: key, slot: 'evening', actionId: 'act-sleep-dim', area: 'sleep', status: 'skipped' });
+    localStorage.setItem('tendai_today_steps_v1', JSON.stringify(steps));
+    window.switchView('feed');
+  });
+  await openAmend();
+  const hitsBeforeTyped = amendHits.length;
+  await pageAmend.fill('#chatInput', 'I have a headache today');
+  await pageAmend.click('#sendBtn');
+  await pageAmend.waitForFunction(() => {
+    const bots = [...document.querySelectorAll('.message.bot:not(.typing-indicator)')];
+    const last = bots[bots.length - 1];
+    return last && !last.classList.contains('message-typing') && (last.querySelector('.message-text')?.textContent || '').includes('STUB');
+  }, { timeout: 20000 });
+  const typed = await pageAmend.evaluate(() => JSON.parse(localStorage.getItem('tendai_followups_v1') || '{"answers":[]}').answers);
+  if (typed.at(-1)?.answer !== 'typed') fail(`typed reply stored ${typed.at(-1)?.answer}`);
+  if (!amendHits.slice(hitsBeforeTyped).some((url) => /\/api\/talk/.test(url))) fail('typed reply did not use the Talk path');
+  const typedRef = typed.at(-1)?.ref || '';
+  await pageAmend.evaluate(() => {
+    const today = window.obriumNow();
+    const next = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 12, 0, 0);
+    window.setObriumClockOverride(next);
+    window.switchView('feed');
+  });
+  await pageAmend.evaluate(() => window.switchView('talk'));
+  await pageAmend.waitForTimeout(500);
+  const typedStillOffered = await pageAmend.evaluate((ref) => [...document.querySelectorAll('[data-follow-up-ref]')].some((el) => {
+    const chip = el.querySelector('[data-followup-choice="later"]');
+    return el.getAttribute('data-follow-up-ref') === ref && chip && !chip.disabled;
+  }), typedRef);
+  if (typedStillOffered) fail('typed follow-up was asked again the next day');
+  console.log('[10b] deferred and typed');
+
   await browserB.close();
 }
 
