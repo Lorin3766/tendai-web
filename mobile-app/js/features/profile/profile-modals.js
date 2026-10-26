@@ -43,9 +43,41 @@ const PROFILE_NAME_PLACEHOLDER = 'Guest';
  * null when the group is not on screen (leave the stored value alone).
  */
 function readCheckboxGroup(name) {
-  const inputs = document.querySelectorAll(`input[name="${name}"]`);
+  const inputs = [...document.querySelectorAll(`input[name="${name}"]`)];
   if (!inputs.length) return null;
-  return Array.from(inputs).filter((input) => input.checked).map((input) => input.value);
+  const touched = inputs.some((input) => input.dataset.userTouched === '1');
+  const values = inputs.filter((input) => input.checked).map((input) => input.value);
+  // An untouched empty group is the display default, not an answer. A touch can clear a real answer to [].
+  if (!touched && values.length === 0) return null;
+  return values;
+}
+
+/** Number from a slider the user moved or stepped. Undefined when the thumb is still on the display default. */
+function readTouchedSlider(id) {
+  const el = document.getElementById(id);
+  if (!el || el.dataset.userTouched !== '1') return undefined;
+  const raw = parseFloat(el.value);
+  if (!Number.isFinite(raw)) return undefined;
+  const config = getSliderConfig(id);
+  return config ? config.normalize(raw) : raw;
+}
+
+function trackProfileControlTouches(root) {
+  if (!root || root.dataset.touchTracking === '1') return;
+  root.dataset.touchTracking = '1';
+  const mark = (el) => {
+    el.dataset.userTouched = '1';
+  };
+  root.querySelectorAll('input, select, textarea').forEach((el) => {
+    el.addEventListener('input', () => mark(el));
+    el.addEventListener('change', () => mark(el));
+  });
+  root.querySelectorAll('.slider-btn-minus, .slider-btn-plus').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const slider = document.getElementById(btn.getAttribute('data-slider-id') || '');
+      if (slider) mark(slider);
+    });
+  });
 }
 
 // Import helper functions from profile-completeness.js
@@ -1261,6 +1293,7 @@ function countFilledFields(profile, structure) {
       
       const content = generateModalContent(section);
       profileModalContent.innerHTML = content;
+      trackProfileControlTouches(profileModalContent);
       
       // Reset tabs to Profile
       const tabs = profileModal?.querySelectorAll('.profile-modal-tab');
@@ -1421,9 +1454,6 @@ function countFilledFields(profile, structure) {
           // New questionnaire fields
           const sexAtBirth = document.querySelector('input[name="bodySexAtBirth"]:checked');
           const genderIdentity = document.querySelector('input[name="bodyGenderIdentity"]:checked');
-          const ageSlider = document.getElementById('bodyAge');
-          const heightSlider = document.getElementById('bodyHeight');
-          const weightSlider = document.getElementById('bodyWeight');
           const bodyBuild = document.querySelector('input[name="bodyBuild"]:checked');
           const bloodType = document.getElementById('bodyBloodType');
           const physicalActivity = document.querySelector('input[name="bodyPhysicalActivity"]:checked');
@@ -1431,18 +1461,12 @@ function countFilledFields(profile, structure) {
           
           if (sexAtBirth) profileData.body.sexAtBirth = sexAtBirth.value;
           if (genderIdentity) profileData.body.genderIdentity = genderIdentity.value;
-          if (ageSlider) {
-            const ageConfig = getSliderConfig('bodyAge');
-            profileData.body.age = ageConfig ? ageConfig.normalize(parseFloat(ageSlider.value)) : parseInt(ageSlider.value, 10);
-          }
-          if (heightSlider) {
-            const heightConfig = getSliderConfig('bodyHeight');
-            profileData.body.height = heightConfig ? heightConfig.normalize(parseFloat(heightSlider.value)) : parseInt(heightSlider.value, 10);
-          }
-          if (weightSlider) {
-            const weightConfig = getSliderConfig('bodyWeight');
-            profileData.body.weight = weightConfig ? weightConfig.normalize(parseFloat(weightSlider.value)) : parseFloat(weightSlider.value);
-          }
+          const ageTouched = readTouchedSlider('bodyAge');
+          if (ageTouched !== undefined) profileData.body.age = ageTouched;
+          const heightTouched = readTouchedSlider('bodyHeight');
+          if (heightTouched !== undefined) profileData.body.height = heightTouched;
+          const weightTouched = readTouchedSlider('bodyWeight');
+          if (weightTouched !== undefined) profileData.body.weight = weightTouched;
           if (bodyBuild) profileData.body.bodyBuild = bodyBuild.value;
           if (bloodType) profileData.body.bloodType = bloodType.value || null;
           if (physicalActivity) profileData.body.physicalActivity = physicalActivity.value;
@@ -1457,7 +1481,7 @@ function countFilledFields(profile, structure) {
           const goalIntensitySelect = document.getElementById('editGoalIntensity');
           const targetWeightInput = document.getElementById('editTargetWeight');
 
-          if (ageInput && !ageSlider) {
+          if (ageInput && !document.getElementById('bodyAge') && ageInput.dataset.userTouched === '1') {
             const ageValue = ageInput.value.trim();
             if (ageValue) profileData.body.age = parseInt(ageValue, 10);
           }
@@ -1465,11 +1489,11 @@ function countFilledFields(profile, structure) {
             const genderValue = genderSelect.value.trim();
             if (genderValue) profileData.body.gender = genderValue;
           }
-          if (heightInput && !heightSlider) {
+          if (heightInput && !document.getElementById('bodyHeight') && heightInput.dataset.userTouched === '1') {
             const heightValue = heightInput.value.trim();
             if (heightValue) profileData.body.height = parseInt(heightValue, 10);
           }
-          if (weightInput && !weightSlider) {
+          if (weightInput && !document.getElementById('bodyWeight') && weightInput.dataset.userTouched === '1') {
             const weightValue = weightInput.value.trim();
             if (weightValue) profileData.body.weight = parseFloat(weightValue);
           }
@@ -1488,13 +1512,10 @@ function countFilledFields(profile, structure) {
           
           // Goals tab cards
           const bodyGoalsFocus = document.querySelector('input[name="bodyGoalsFocus"]:checked');
-          const bodyGoalsPriority = document.getElementById('bodyGoalsPriority');
           
           if (bodyGoalsFocus) profileData.body.goalsFocus = bodyGoalsFocus.value;
-          if (bodyGoalsPriority) {
-            const bodyPriorityConfig = getSliderConfig('bodyGoalsPriority');
-            profileData.body.goalsPriority = bodyPriorityConfig ? bodyPriorityConfig.normalize(parseFloat(bodyGoalsPriority.value)) : (parseInt(bodyGoalsPriority.value) || 2);
-          }
+          const bodyPriorityTouched = readTouchedSlider('bodyGoalsPriority');
+          if (bodyPriorityTouched !== undefined) profileData.body.goalsPriority = bodyPriorityTouched;
           break;
 
         case 'health':
@@ -1530,15 +1551,12 @@ function countFilledFields(profile, structure) {
           
           // Goals tab cards
           const healthGoalsFocus = document.querySelector('input[name="healthGoalsFocus"]:checked');
-          const healthGoalsPriority = document.getElementById('healthGoalsPriority');
           const healthGoalsConstraints = readCheckboxGroup('healthGoalsConstraints');
           const healthGoalsNotes = document.getElementById('healthGoalsNotes');
           
           if (healthGoalsFocus) profileData.health.goalsFocus = healthGoalsFocus.value;
-          if (healthGoalsPriority) {
-            const healthPriorityConfig = getSliderConfig('healthGoalsPriority');
-            profileData.health.goalsPriority = healthPriorityConfig ? healthPriorityConfig.normalize(parseFloat(healthGoalsPriority.value)) : (parseInt(healthGoalsPriority.value) || 2);
-          }
+          const healthPriorityTouched = readTouchedSlider('healthGoalsPriority');
+          if (healthPriorityTouched !== undefined) profileData.health.goalsPriority = healthPriorityTouched;
           if (healthGoalsConstraints) profileData.health.goalsConstraints = healthGoalsConstraints;
           if (healthGoalsNotes) profileData.health.goalsNotes = healthGoalsNotes.value || '';
           
@@ -1547,43 +1565,34 @@ function countFilledFields(profile, structure) {
           const chronicDiseasesCheckboxes = document.querySelectorAll('.chronic-disease-checkbox:checked');
           const takesMedications = document.getElementById('editTakesMedications');
           const medications = document.getElementById('editMedications');
-          if (hasChronicDiseases) profileData.health.hasChronicDiseases = hasChronicDiseases.checked;
+          if (hasChronicDiseases && hasChronicDiseases.dataset.userTouched === '1') profileData.health.hasChronicDiseases = hasChronicDiseases.checked;
           if (chronicDiseasesCheckboxes && chronicDiseasesCheckboxes.length > 0) {
             profileData.health.chronicDiseases = Array.from(chronicDiseasesCheckboxes).map(cb => cb.value);
           }
-          if (takesMedications) profileData.health.takesMedications = takesMedications.checked;
+          if (takesMedications && takesMedications.dataset.userTouched === '1') profileData.health.takesMedications = takesMedications.checked;
           if (medications && !healthMedications) profileData.health.medications = medications.value || '';
           break;
 
         case 'mind':
           // New questionnaire fields
-          const mindStressLevel = document.getElementById('mindStressLevel');
-          const mindMentalEnergy = document.getElementById('mindMentalEnergy');
+          const mindStressLevel = readTouchedSlider('mindStressLevel');
+          const mindMentalEnergy = readTouchedSlider('mindMentalEnergy');
           const anxietyFrequency = document.querySelector('input[name="mindAnxietyFrequency"]:checked');
           const moodChanges = document.querySelector('input[name="mindMoodChanges"]:checked');
           const wantToImproveFocus = document.querySelector('input[name="mindWantToImproveFocus"]:checked');
           
-          if (mindStressLevel) {
-            const stressConfig = getSliderConfig('mindStressLevel');
-            profileData.mind.stressLevel = stressConfig ? stressConfig.normalize(parseFloat(mindStressLevel.value)) : parseInt(mindStressLevel.value, 10);
-          }
-          if (mindMentalEnergy) {
-            const energyConfig = getSliderConfig('mindMentalEnergy');
-            profileData.mind.mentalEnergy = energyConfig ? energyConfig.normalize(parseFloat(mindMentalEnergy.value)) : parseInt(mindMentalEnergy.value, 10);
-          }
+          if (mindStressLevel !== undefined) profileData.mind.stressLevel = mindStressLevel;
+          if (mindMentalEnergy !== undefined) profileData.mind.mentalEnergy = mindMentalEnergy;
           if (anxietyFrequency) profileData.mind.anxietyFrequency = anxietyFrequency.value;
           if (moodChanges) profileData.mind.moodChanges = moodChanges.value;
           if (wantToImproveFocus) profileData.mind.wantToImproveFocus = wantToImproveFocus.value;
           
           // Goals tab cards
           const mindGoalsFocus = document.querySelector('input[name="mindGoalsFocus"]:checked');
-          const mindGoalsPriority = document.getElementById('mindGoalsPriority');
           
           if (mindGoalsFocus) profileData.mind.goalsFocus = mindGoalsFocus.value;
-          if (mindGoalsPriority) {
-            const mindPriorityConfig = getSliderConfig('mindGoalsPriority');
-            profileData.mind.goalsPriority = mindPriorityConfig ? mindPriorityConfig.normalize(parseFloat(mindGoalsPriority.value)) : (parseInt(mindGoalsPriority.value) || 2);
-          }
+          const mindPriorityTouched = readTouchedSlider('mindGoalsPriority');
+          if (mindPriorityTouched !== undefined) profileData.mind.goalsPriority = mindPriorityTouched;
           
           // Legacy fields for backward compatibility
           const mindCalmness = document.getElementById('mindCalmness');
@@ -1592,13 +1601,13 @@ function countFilledFields(profile, structure) {
           const mindMood = document.getElementById('editMindMood');
           const mindStress = document.getElementById('editMindStress');
           
-          if (mindCalmness) profileData.mind.calmnessLevel = parseInt(mindCalmness.value) || 2;
+          if (mindCalmness && mindCalmness.dataset.userTouched === '1') profileData.mind.calmnessLevel = parseInt(mindCalmness.value, 10);
           if (mindImprovements) profileData.mind.mainImprovement = mindImprovements.value;
           if (mindStressTriggers && mindStressTriggers.length > 0) {
             profileData.mind.stressTriggers = Array.from(mindStressTriggers).map(cb => cb.value);
           }
           if (mindMood) profileData.mind.mood = mindMood.value || null;
-          if (mindStress) profileData.mind.stress = parseInt(mindStress.value) || 3;
+          if (mindStress && mindStress.dataset.userTouched === '1') profileData.mind.stress = parseInt(mindStress.value, 10);
           break;
 
         case 'lifestyle':
@@ -1619,20 +1628,15 @@ function countFilledFields(profile, structure) {
           if (lateEating) profileData.lifestyle.lateEating = lateEating.value;
           if (hydration) profileData.lifestyle.hydration = hydration.value;
           if (sleepDuration) profileData.lifestyle.sleepDuration = sleepDuration.value;
-          if (sleepQuality) {
-            const sleepQualityConfig = getSliderConfig('lifestyleSleepQuality');
-            profileData.lifestyle.sleepQuality = sleepQualityConfig ? sleepQualityConfig.normalize(parseFloat(sleepQuality.value)) : parseInt(sleepQuality.value, 10);
-          }
+          const sleepQualityTouched = readTouchedSlider('lifestyleSleepQuality');
+          if (sleepQualityTouched !== undefined) profileData.lifestyle.sleepQuality = sleepQualityTouched;
           
           // Goals tab cards
           const lifestyleGoalsFocus = document.querySelector('input[name="lifestyleGoalsFocus"]:checked');
-          const lifestyleGoalsPriority = document.getElementById('lifestyleGoalsPriority');
           
           if (lifestyleGoalsFocus) profileData.lifestyle.goalsFocus = lifestyleGoalsFocus.value;
-          if (lifestyleGoalsPriority) {
-            const lifestylePriorityConfig = getSliderConfig('lifestyleGoalsPriority');
-            profileData.lifestyle.goalsPriority = lifestylePriorityConfig ? lifestylePriorityConfig.normalize(parseFloat(lifestyleGoalsPriority.value)) : (parseInt(lifestyleGoalsPriority.value) || 2);
-          }
+          const lifestylePriorityTouched = readTouchedSlider('lifestyleGoalsPriority');
+          if (lifestylePriorityTouched !== undefined) profileData.lifestyle.goalsPriority = lifestylePriorityTouched;
           
           // Legacy fields for backward compatibility
           const lifestyleSleep = document.querySelector('input[name="lifestyleSleep"]:checked');
@@ -1643,7 +1647,10 @@ function countFilledFields(profile, structure) {
           const sleepHours = document.getElementById('editSleepHours');
           
           if (lifestyleSleep && !sleepDuration) profileData.lifestyle.sleepQuality = lifestyleSleep.value;
-          if (lifestyleActivity) profileData.lifestyle.activeDays = parseInt(lifestyleActivity.value) || 0;
+          if (lifestyleActivity && lifestyleActivity.dataset.userTouched === '1') {
+            const days = parseInt(lifestyleActivity.value, 10);
+            if (Number.isFinite(days)) profileData.lifestyle.activeDays = days;
+          }
           if (lifestyleSubstances && lifestyleSubstances.length > 0) {
             profileData.lifestyle.substances = Array.from(lifestyleSubstances).map(cb => cb.value);
           }
@@ -1655,14 +1662,11 @@ function countFilledFields(profile, structure) {
         case 'goals':
           // New questionnaire fields
           const primaryGoals = readCheckboxGroup('goalsPrimaryGoals');
-          const motivationLevel = document.getElementById('goalsMotivationLevel');
           const wantFromTendAI = readCheckboxGroup('goalsWantFromTendAI');
           
           if (primaryGoals) profileData.goals.primaryGoals = primaryGoals;
-          if (motivationLevel) {
-            const motivationConfig = getSliderConfig('goalsMotivationLevel');
-            profileData.goals.motivationLevel = motivationConfig ? motivationConfig.normalize(parseFloat(motivationLevel.value)) : parseInt(motivationLevel.value, 10);
-          }
+          const motivationTouched = readTouchedSlider('goalsMotivationLevel');
+          if (motivationTouched !== undefined) profileData.goals.motivationLevel = motivationTouched;
           if (wantFromTendAI) profileData.goals.wantFromTendAI = wantFromTendAI;
           
           // Legacy fields (kept for backward compatibility)
@@ -1674,9 +1678,10 @@ function countFilledFields(profile, structure) {
             if (!profileData.goals) profileData.goals = {};
             profileData.goals.purpose = goalsPurpose.value;
           }
-          if (goalsPriority) {
+          if (goalsPriority && goalsPriority.dataset.userTouched === '1') {
             if (!profileData.goals) profileData.goals = {};
-            profileData.goals.healthVsEnergy = parseInt(goalsPriority.value) || 3;
+            const priority = parseInt(goalsPriority.value, 10);
+            if (Number.isFinite(priority)) profileData.goals.healthVsEnergy = priority;
           }
           if (goalsSuccess) {
             if (!profileData.goals) profileData.goals = {};
