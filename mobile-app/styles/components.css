@@ -2755,6 +2755,53 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   cursor: default;
 }
 
+.talk-followup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 6px;
+  width: 100%;
+}
+
+.talk-followup-chip {
+  flex: 1 1 140px;
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-sizing: border-box;
+  background: rgba(255, 248, 235, 0.06);
+  border: 1px solid rgba(255, 248, 235, 0.22);
+  color: var(--fg-soft, #d4cdc4);
+}
+
+.talk-followup-chip:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.settings-followup-muted-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.settings-followup-unmute {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talk-followup-chip,
+  .settings-followup-unmute {
+    transition: none;
+  }
+}
+
 /* Feed â€” glass utility (TendAI depth) */
 .feed-card-glass {
   backdrop-filter: blur(10px);

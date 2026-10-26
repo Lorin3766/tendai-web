@@ -19,6 +19,18 @@ import {
   getConversationalAsk,
   getProfileFieldSpec,
 } from '../js/features/talk/profile-answer-parser.js';
+import { obriumNow, localDateKey } from '../js/core/obrium-clock.js';
+import { loadTodaySteps } from '../js/features/feed/today-steps.js';
+import {
+  followUpAcknowledgment,
+  loadFollowups,
+  loadMutedAreas,
+  noteProfileFactsSeen,
+  saveFollowUpAnswer,
+  saveFollowups,
+  selectDueFollowUp,
+  setAreaMuted,
+} from '../js/features/talk/follow-ups.js';
 import { parseAndUpdateState } from '../js/features/talk/messageParser.js';
 import { extractRoutineSuggestionFromText, protocolIdForRoutine } from '../js/features/talk/talk-engine.js';
 import { getUserMemory, learnFromUserMessage } from '../js/features/talk/user-memory.js';
@@ -53,6 +65,8 @@ export class TalkComponent {
     this._proactiveAnswersThisSession = 0;
     this._awaitingPaceChoice = false;
     this._proactivePassiveThisSession = false;
+    this._pendingFollowUp = null;
+    this._followUpAskedThisSession = false;
     setProfileQuestionsSnoozed(false);
     this.init();
   }
@@ -477,6 +491,9 @@ export class TalkComponent {
 
     const isProfilePrompt = Boolean(options.profilePrompt);
     const profilePromptPath = options.profilePromptPath ? String(options.profilePromptPath) : '';
+    const isFollowUp = Boolean(options.followUp);
+    const isFollowUpAck = Boolean(options.followUpAck);
+    const isLocalTemplate = isProfilePrompt || isFollowUp || isFollowUpAck;
 
     if (timestamp === null) {
       timestamp = Date.now();
@@ -495,6 +512,9 @@ export class TalkComponent {
     messageDiv.setAttribute('data-msg-id', msgId);
     if (isProfilePrompt && profilePromptPath) {
       messageDiv.setAttribute('data-profile-prompt-path', profilePromptPath);
+    }
+    if (isFollowUp && options.followUpRef) {
+      messageDiv.setAttribute('data-follow-up-ref', String(options.followUpRef));
     }
 
     const messageContent = document.createElement('div');
@@ -524,7 +544,7 @@ export class TalkComponent {
       textP.textContent = displayText;
       messageDiv.classList.remove('message-typing');
       messageDiv.classList.add('message-visible');
-      if (!isProfilePrompt) {
+      if (!isLocalTemplate) {
         if (signal) this.appendSignalSaveButton(messageContent, signal, displayText);
         const routine = extractRoutineSuggestionFromText(displayText);
         if (routine) {
@@ -556,7 +576,7 @@ export class TalkComponent {
         textP.textContent = displayText;
         requestAnimationFrame(() => messageDiv.classList.add('message-visible'));
         if (shouldSave) this.saveChatHistory();
-      } else if (isProfilePrompt) {
+      } else if (isLocalTemplate) {
         textP.textContent = displayText;
         requestAnimationFrame(() => messageDiv.classList.add('message-visible'));
         if (shouldSave) this.saveChatHistory();
@@ -680,7 +700,7 @@ export class TalkComponent {
     const timeEl = messageContent.querySelector('.message-time');
     if (!timeEl || messageContent.querySelector('.talk-quick-replies')) return;
     const host = messageContent.closest('.message');
-    if (host && host.getAttribute('data-profile-prompt-path')) return;
+    if (host && (host.getAttribute('data-profile-prompt-path') || host.getAttribute('data-follow-up-ref'))) return;
     const wrap = document.createElement('div');
     wrap.className = 'talk-quick-replies';
     const replies = [
@@ -926,6 +946,7 @@ export class TalkComponent {
     let removed = false;
     this.conversationArea.querySelectorAll('.message.bot:not(.typing-indicator)').forEach((el) => {
       if (el.getAttribute('data-profile-prompt-path')) return;
+      if (el.getAttribute('data-follow-up-ref')) return;
       if (el.getAttribute('data-talk-pace-prompt') === '1') return;
       const msgId = el.getAttribute('data-msg-id') || '';
       const header = el.querySelector('.message-system-header');
@@ -957,17 +978,38 @@ export class TalkComponent {
   }
 
   /**
-   * On Talk open: if the profile is incomplete, greet briefly and ask the next unanswered field.
-   * Skips when the last visible message is already that same prompt. Profile-complete: no-op.
+   * On Talk open: one due follow-up, if any, then the next profile question.
+   * A complete profile still gets a follow-up. Nothing due and nothing to ask: stay quiet.
    */
   async onTalkOpened() {
     this._proactiveAnswersThisSession = 0;
     this._awaitingPaceChoice = false;
     this._proactivePassiveThisSession = false;
+    this._pendingFollowUp = null;
+    this._followUpAskedThisSession = false;
     setProfileQuestionsSnoozed(false);
     this.markAdvisorySeen();
     if (!isAutoProfileQuestionsEnabled()) return;
-    const question = getNextProfileQuestion(profileState.get());
+
+    const today = localDateKey(obriumNow());
+    const profile = profileState.get();
+    const areas = getSelectedFocusAreaIds();
+    const noted = noteProfileFactsSeen(profile, today, loadFollowups(), areas);
+    if (noted.changed) saveFollowups(noted.state);
+    const due = selectDueFollowUp({
+      today,
+      steps: loadTodaySteps(),
+      profile,
+      areas,
+      state: noted.state,
+      muted: loadMutedAreas(),
+    });
+    if (due) {
+      this.showFollowUp(due);
+      return;
+    }
+
+    const question = getNextProfileQuestion(profile);
     if (!question) return;
 
     this.clearStaleWelcomeMessagesForProactiveFlow();
@@ -1009,6 +1051,8 @@ export class TalkComponent {
     this._proactiveAnswersThisSession = 0;
     this._awaitingPaceChoice = false;
     this._proactivePassiveThisSession = false;
+    this._pendingFollowUp = null;
+    this._followUpAskedThisSession = false;
     setProfileQuestionsSnoozed(false);
   }
 
@@ -1062,6 +1106,89 @@ export class TalkComponent {
     this.addMessageToChat(text, 'ai', true, null, this.profilePromptChatOptions(question));
   }
 
+  showFollowUp(due) {
+    if (!due) return;
+    const last = this.getLastBotMessageEl();
+    if (last && last.getAttribute('data-follow-up-ref') === due.ref) {
+      this._pendingFollowUp = due;
+      this.attachFollowUpChips(last, due);
+      return;
+    }
+    this.clearStaleWelcomeMessagesForProactiveFlow();
+    const el = this.addMessageToChat(due.text, 'ai', true, null, { followUp: true, followUpRef: due.ref });
+    this._pendingFollowUp = due;
+    this.attachFollowUpChips(el, due);
+  }
+
+  attachFollowUpChips(messageDiv, due) {
+    const content = messageDiv?.querySelector('.message-content');
+    if (!content || content.querySelector('.talk-followup-actions')) return;
+    const timeEl = content.querySelector('.message-time');
+    const wrap = document.createElement('div');
+    wrap.className = 'talk-followup-actions';
+    for (const chip of due.chips || []) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn talk-followup-chip';
+      btn.dataset.followupChoice = chip.id;
+      btn.textContent = chip.label;
+      btn.addEventListener('click', () => {
+        if (!this._pendingFollowUp || this._pendingFollowUp.ref !== due.ref) return;
+        this.addMessageToChat(chip.label, 'user');
+        void this.resolveFollowUp(chip.id);
+      });
+      wrap.appendChild(btn);
+    }
+    if (timeEl) content.insertBefore(wrap, timeEl);
+    else content.appendChild(wrap);
+  }
+
+  disableFollowUpButtons() {
+    if (!this.conversationArea) return;
+    this.conversationArea.querySelectorAll('.talk-followup-actions button').forEach((btn) => {
+      btn.disabled = true;
+    });
+  }
+
+  async resolveFollowUp(choice) {
+    const pending = this._pendingFollowUp;
+    if (!pending) return;
+    this._pendingFollowUp = null;
+    this._followUpAskedThisSession = true;
+    this.disableFollowUpButtons();
+
+    const areaName = getFocusAreaById(pending.area)?.name || 'that area';
+    const today = localDateKey(obriumNow());
+    if (choice === 'later') {
+      this._proactivePassiveThisSession = true;
+      this._awaitingPaceChoice = false;
+      setProfileQuestionsSnoozed(true);
+      this.addMessageToChat(followUpAcknowledgment('later', areaName), 'ai', true, null, { followUpAck: true });
+      return;
+    }
+    if (choice === 'mute') {
+      setAreaMuted(pending.area, true);
+    } else {
+      saveFollowups(saveFollowUpAnswer(loadFollowups(), pending, choice, today));
+    }
+    this._proactiveAnswersThisSession += 1;
+    this.addMessageToChat(followUpAcknowledgment(choice, areaName), 'ai', true, null, { followUpAck: true });
+
+    const next = getNextProfileQuestion(profileState.get());
+    if (!next) return;
+    if (this._proactiveAnswersThisSession >= PROACTIVE_TALK_SESSION_LIMIT) {
+      this._awaitingPaceChoice = true;
+      const el = this.addMessageToChat(
+        "We've covered a few things. Want to keep going now, or pick this up another time?",
+        'ai',
+      );
+      if (el) el.setAttribute('data-talk-pace-prompt', '1');
+      this.appendPaceChoiceButtons(el?.querySelector('.message-content'));
+      return;
+    }
+    await this.askNextProfileQuestion(next);
+  }
+
   /**
    * If Talk is waiting on a proactive profile answer, parse/save it instead of sending to the LLM.
    * @returns {Promise<boolean>} true when the reply was handled here
@@ -1075,6 +1202,9 @@ export class TalkComponent {
       await this.resolvePaceChoice(choice, { fromText: true });
       return true;
     }
+
+    // A typed reply is ordinary Talk. Chips are the only local follow-up answers.
+    if (this._pendingFollowUp) return false;
 
     const question = this.getPendingProfileQuestion();
     if (!question) return false;
@@ -1299,6 +1429,7 @@ export class TalkComponent {
           const ts = timestamp ? parseInt(timestamp) : Date.now();
           const promptPath = msgEl.getAttribute('data-profile-prompt-path');
           const pacePrompt = msgEl.getAttribute('data-talk-pace-prompt');
+          const followUpRef = msgEl.getAttribute('data-follow-up-ref');
           messages.push({
             id: msgEl.getAttribute('data-msg-id') || 'msg-' + ts + '-' + idx,
             text,
@@ -1306,6 +1437,7 @@ export class TalkComponent {
             timestamp: ts,
             ...(promptPath ? { profilePromptPath: promptPath } : {}),
             ...(pacePrompt ? { talkPacePrompt: true } : {}),
+            ...(followUpRef ? { followUpRef } : {}),
           });
           idx++;
         }
@@ -1368,6 +1500,7 @@ export class TalkComponent {
           if (msg.type === 'user') return true;
           if (msg.profilePromptPath) return true;
           if (msg.talkPacePrompt) return true;
+          if (msg.followUpRef) return true;
           return false;
         });
       }
@@ -1402,6 +1535,9 @@ export class TalkComponent {
           }
           if (msg.talkPacePrompt) {
             messageDiv.setAttribute('data-talk-pace-prompt', '1');
+          }
+          if (msg.followUpRef) {
+            messageDiv.setAttribute('data-follow-up-ref', msg.followUpRef);
           }
           
           const messageContent = document.createElement('div');

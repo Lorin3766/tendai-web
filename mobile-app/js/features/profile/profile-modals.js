@@ -35,6 +35,8 @@ import { getState, updateState } from '../../core/app-state.js';
 import { getProfileSchema, getSectionSchema, getSectionKeys, getProfileQuestionCatalog, isProfileFieldAnswered } from './profile-schema.js';
 import { getSliderConfig } from '../storage/slider-config.js';
 import { deleteBiometricsDatabase } from '../../core/biometrics-db.js';
+import { getFocusAreaById } from '../human-os/focus-areas.js';
+import { loadMutedAreas, setAreaMuted } from '../talk/follow-ups.js';
 
 const PROFILE_NAME_PLACEHOLDER = 'Guest';
 
@@ -2189,6 +2191,28 @@ function countFilledFields(profile, structure) {
     }
   }
   
+  function renderFollowupMuted() {
+    const host = document.getElementById('settingsFollowupMuted');
+    const list = document.getElementById('settingsFollowupMutedList');
+    if (!host || !list) return;
+    const muted = loadMutedAreas();
+    host.hidden = muted.length === 0;
+    list.replaceChildren();
+    muted.forEach((id) => {
+      const row = document.createElement('div');
+      row.className = 'settings-followup-muted-row';
+      const name = document.createElement('span');
+      name.textContent = getFocusAreaById(id)?.name || id;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn settings-followup-unmute';
+      btn.dataset.followupUnmute = id;
+      btn.textContent = 'Ask again';
+      row.append(name, btn);
+      list.appendChild(row);
+    });
+  }
+
   function restoreSettingsState() {
     const settings = getSettingsState();
     const dailyCheckins = document.getElementById('settingsDailyCheckins');
@@ -2216,6 +2240,7 @@ function countFilledFields(profile, structure) {
     if (autoFeedAdvice) {
       autoFeedAdvice.checked = settings.autoFeedAdviceEnabled !== false;
     }
+    renderFollowupMuted();
     var theme = localStorage.getItem('tendai-theme');
     var graph = document.getElementById('settingsGraphiteTheme');
     if (graph) graph.checked = (theme === 'graphite');
@@ -2298,6 +2323,15 @@ function countFilledFields(profile, structure) {
         const settings = getSettingsState();
         settings.autoProfileQuestionsEnabled = e.target.checked;
         saveSettingsState(settings);
+      });
+    }
+    const followupMutedList = document.getElementById('settingsFollowupMutedList');
+    if (followupMutedList) {
+      followupMutedList.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-followup-unmute]');
+        if (!btn) return;
+        setAreaMuted(btn.dataset.followupUnmute, false);
+        renderFollowupMuted();
       });
     }
     const autoHealthChecks = document.getElementById('settingsAutoHealthChecks');

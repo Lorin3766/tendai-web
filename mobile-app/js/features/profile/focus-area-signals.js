@@ -177,6 +177,20 @@ export function payoffEcho(profile, areaId) {
   return payoffDetail(profile, areaId)?.echo || '';
 }
 
+/**
+ * The value-echo sentence for one signal, plus the stored value.
+ * Null for generic echoes and for signals the user has not answered.
+ */
+export function statedValueEcho(profile, signal) {
+  if (!signal || signal.echo !== 'value') return null;
+  if (!isSignalAnswered(profile, signal)) return null;
+  const value = readSignalValue(profile, signal);
+  const echo = formatValueEcho(signal, value);
+  if (!echo) return null;
+  const stored = Array.isArray(value) ? value.filter(Boolean).join(', ') : String(value);
+  return { echo, stored };
+}
+
 /** Stage, calibration, and payoff. Callers compare this to decide whether Feed actually changed. */
 export function visibleCardSnapshot(profile, areaId, storedStage = 0) {
   return [
