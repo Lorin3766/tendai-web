@@ -27,6 +27,7 @@ const FORBIDDEN = [
   /\bdose\b/i,
   /\bdosage\b/i,
   /\bmedication\b/i,
+  /repeat the test/i,
 ];
 
 const entries = getLibraryEntries();

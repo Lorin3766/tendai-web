@@ -17,7 +17,7 @@ All entries ship with reviewed=false and sourceVerified=false. Do not flip eithe
 | nutrition-water | nutrition | to be verified | consensus | false | false | Sipping water across the day sits alongside any eating pattern as a basic daily habit. |
 | nutrition-timing | nutrition | to be verified | observational | false | false | Eating at roughly similar times is one plain structure for days that otherwise feel rushed. |
 | labs-context | labs | to be verified | consensus | false | false | A lab number is usually looked at together with how you feel, medicines, and any recent illness, rather than by itself. |
-| labs-repeat | labs | to be verified | consensus | false | false | When one result looks unfamiliar, repeating the test before changing daily habits is a cautious approach. |
+| labs-repeat | labs | to be verified | consensus | false | false | A single unfamiliar result is usually discussed with a clinician rather than acted on alone. |
 | labs-records | labs | to be verified | observational | false | false | Keeping past result copies makes a later conversation with a clinician easier to follow. |
 | labs-prep | labs | to be verified | guideline | false | false | Fasting or timing notes on a lab order exist so the sample matches how that test was designed. |
 | stress-rhythm | stress | to be verified | consensus | false | false | Stress often feels lighter when sleep and daylight stay fairly regular, even before adding a new technique. |
