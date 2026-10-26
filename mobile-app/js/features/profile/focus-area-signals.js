@@ -51,7 +51,8 @@ export function isSignalAnswered(profile, signal) {
   if (!signal || !profile) return false;
   if (signal.section === 'location') {
     const loc = profile.location;
-    return !!(loc && (loc.city || loc.zip || loc.coords));
+    // GPS and IP lookup still fill this object for weather. Only a city or ZIP the user typed counts.
+    return !!(loc && loc.type === 'manual' && (loc.city || loc.zip));
   }
   const section = profile[signal.section];
   const value = section && typeof section === 'object' ? section[signal.field] : undefined;
