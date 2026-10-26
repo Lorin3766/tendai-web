@@ -20,6 +20,7 @@ import {
   getProfileFieldSpec,
 } from '../js/features/talk/profile-answer-parser.js';
 import { obriumNow, localDateKey } from '../js/core/obrium-clock.js';
+import { persistTalkSession } from '../js/features/metrics/local-metrics.js';
 import { loadTodaySteps } from '../js/features/feed/today-steps.js';
 import {
   followUpAcknowledgment,
@@ -983,6 +984,9 @@ export class TalkComponent {
    * A complete profile still gets a follow-up. Nothing due and nothing to ask: stay quiet.
    */
   async onTalkOpened() {
+    try {
+      persistTalkSession();
+    } catch (_) {}
     this._proactiveAnswersThisSession = 0;
     this._awaitingPaceChoice = false;
     this._proactivePassiveThisSession = false;

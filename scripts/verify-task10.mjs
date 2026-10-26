@@ -20,6 +20,14 @@ import {
   noteProfileFactsSeen,
   selectDueFollowUp,
 } from '../mobile-app/js/features/talk/follow-ups.js';
+import {
+  LOCAL_METRICS_KEY,
+  addDays,
+  getObriumLocalMetrics,
+  persistAppOpen,
+  persistCompletedStep,
+  persistTalkSession,
+} from '../mobile-app/js/features/metrics/local-metrics.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'mobile-app', '_audit', 'accent-review');
@@ -227,6 +235,43 @@ const typedState = {
 };
 if (selectDueFollowUp({ ...followOpts, state: typedState })) fail('typed follow-up was offered again');
 
+const metricStore = new Map();
+globalThis.localStorage = {
+  getItem: (key) => (metricStore.has(key) ? metricStore.get(key) : null),
+  setItem: (key, value) => metricStore.set(key, String(value)),
+  removeItem: (key) => metricStore.delete(key),
+  clear: () => metricStore.clear(),
+};
+globalThis.location = { hostname: '127.0.0.1' };
+globalThis.window = {};
+for (const day of ['2026-09-01', '2026-09-02', '2026-09-08', '2026-09-11', '2026-10-01']) persistAppOpen(day);
+persistCompletedStep('2026-09-02');
+persistCompletedStep('2026-09-11');
+persistTalkSession('2026-09-08');
+persistTalkSession('2026-09-08');
+const metrics = getObriumLocalMetrics('2026-10-01');
+console.log('[10c] metrics', JSON.stringify(metrics));
+if (metrics.firstOpen !== '2026-09-01') fail(`first open ${metrics.firstOpen}`);
+if (!metrics.d1 || !metrics.d7 || !metrics.d30) fail(`return flags ${metrics.d1} ${metrics.d7} ${metrics.d30}`);
+if (metrics.activeDays7 !== 1 || metrics.activeDays30 !== 4) {
+  fail(`active days ${metrics.activeDays7}/${metrics.activeDays30}`);
+}
+if (Math.abs(metrics.stepShare - 0.4) > 0.001) fail(`step share ${metrics.stepShare}`);
+if (Math.abs(metrics.talkSessionsPerDay - 0.4) > 0.001) fail(`talk sessions per day ${metrics.talkSessionsPerDay}`);
+if (addDays('2026-09-01', 30) !== '2026-10-01') fail('metrics day offset');
+const storedMetrics = metricStore.get(LOCAL_METRICS_KEY) || '';
+if (/try|sleep|headache/i.test(storedMetrics)) fail('metrics stored content');
+metricStore.delete(LOCAL_METRICS_KEY);
+const cleared = getObriumLocalMetrics();
+if (cleared.d1 || cleared.d30 || cleared.activeDays30 || cleared.stepShare) fail('reset did not clear metrics');
+let cappedCount = 0;
+for (let i = 0; i < 401; i += 1) persistAppOpen(addDays('2024-01-01', i));
+const cappedState = JSON.parse(metricStore.get(LOCAL_METRICS_KEY));
+cappedCount = Object.keys(cappedState.days).length;
+if (cappedCount > 400) fail('metrics kept more than 400 days');
+if (cappedState.days['2024-01-01']) fail('metrics kept a day older than the cap');
+metricStore.clear();
+
 if (process.env.OBRIUM_URL) {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -333,6 +378,29 @@ if (process.env.OBRIUM_URL) {
     fail('Talk request during Today');
   }
   console.log('[10a] api hits', apiHits.length);
+  const clockMetrics = await page.evaluate(async () => {
+    const mod = await import('/js/features/metrics/local-metrics.js');
+    localStorage.removeItem(mod.LOCAL_METRICS_KEY);
+    for (const day of ['2026-09-01', '2026-09-02', '2026-09-08', '2026-09-11', '2026-10-01']) {
+      mod.persistAppOpen(day);
+    }
+    mod.persistCompletedStep('2026-09-02');
+    mod.persistCompletedStep('2026-09-11');
+    mod.persistTalkSession('2026-09-08');
+    mod.persistTalkSession('2026-09-08');
+    window.setObriumClockOverride(new Date(2026, 9, 1, 12, 0, 0));
+    const summary = window.getObriumLocalMetrics();
+    localStorage.removeItem(mod.LOCAL_METRICS_KEY);
+    return { summary, cleared: window.getObriumLocalMetrics() };
+  });
+  console.log('[10c] browser', JSON.stringify(clockMetrics.summary));
+  if (!clockMetrics.summary?.d1 || !clockMetrics.summary?.d7 || !clockMetrics.summary?.d30) {
+    fail(`clock metrics flags ${JSON.stringify(clockMetrics.summary)}`);
+  }
+  if (clockMetrics.summary.activeDays7 !== 1 || clockMetrics.summary.activeDays30 !== 4) {
+    fail(`clock metrics active ${clockMetrics.summary.activeDays7}/${clockMetrics.summary.activeDays30}`);
+  }
+  if (clockMetrics.cleared?.d1 || clockMetrics.cleared?.activeDays30) fail('browser reset left metrics');
   await browser.close();
 
   const browserB = await chromium.launch({ headless: true });

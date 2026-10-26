@@ -8,6 +8,7 @@
 import { profileState } from './state.js';
 import './core/shared-context-bus.js';
 import { storageManager } from './core/storage.js';
+import { persistAppOpen } from './features/metrics/local-metrics.js';
 import './features/storage/units.js';
 import './features/storage/slider-config.js';
 import './features/storage/message-queue.js';
@@ -71,6 +72,9 @@ import { IS_DEV, IS_VERBOSE_BOOT_LOGS } from './env-flags.js';
  * Then run all core inits once, set OBRIUM_BOOT_READY and dispatch obrium:boot-ready.
  */
 async function initModules() {
+  try {
+    persistAppOpen();
+  } catch (_) {}
   // StorageManager: load Master Record, migrate legacy data if needed
   storageManager.load();
   if (typeof window !== 'undefined') window.__storageManager = storageManager;

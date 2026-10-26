@@ -4,6 +4,7 @@
 
 import { actionEntries, isContentPreviewEnabled } from './content-library.js';
 import { localDateKey, slotForTime } from '../../core/obrium-clock.js';
+import { persistCompletedStep } from '../metrics/local-metrics.js';
 
 export const TODAY_STEPS_KEY = 'tendai_today_steps_v1';
 export const CONTACT_FREQUENCY_KEY = 'tendai_contact_frequency_v1';
@@ -197,6 +198,11 @@ export function saveTodayStep(record) {
   if (record.rating != null) stored.rating = record.rating;
   rows.push(stored);
   localStorage.setItem(TODAY_STEPS_KEY, JSON.stringify(rows));
+  if (stored.status === 'done') {
+    try {
+      persistCompletedStep(stored.date);
+    } catch (_) {}
+  }
   return stored;
 }
 
