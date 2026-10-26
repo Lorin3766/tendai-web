@@ -41,21 +41,29 @@ import { getSliderConfig } from '../storage/slider-config.js';
     const stressSlider = document.getElementById('checkinStress');
     const stressDisplay = document.getElementById('checkinStressDisplay');
 
+    clearCheckinTouched(sleepInput);
+    clearCheckinTouched(waterInput);
+    clearCheckinTouched(energySelect);
+    clearCheckinTouched(stressSlider);
+
     if (sleepInput) {
-      sleepInput.value = todayState.sleep?.hours || '';
+      const hours = todayState.sleep?.hours;
+      sleepInput.value = hours == null || hours === '' ? '' : String(hours);
     }
     if (waterInput) {
-      waterInput.value = todayState.water?.current || 0;
+      const current = todayState.water?.current;
+      waterInput.value = current == null || current === '' ? '' : String(current);
     }
     if (energySelect) {
       energySelect.value = todayState.energy || '';
     }
     if (stressSlider) {
-      const stressValue = todayState.stressLevel || 3;
+      const stored = todayState.stressLevel;
+      const stressValue = stored == null || stored === '' ? 3 : stored;
       stressSlider.value = stressValue;
       const stressConfig = getSliderConfig('checkinStress');
       if (stressDisplay) {
-        stressDisplay.textContent = stressConfig ? stressConfig.displayFormatter(stressValue) : stressValue.toString();
+        stressDisplay.textContent = stressConfig ? stressConfig.displayFormatter(stressValue) : String(stressValue);
       }
     }
 
@@ -82,20 +90,29 @@ import { getSliderConfig } from '../storage/slider-config.js';
     const stressSlider = document.getElementById('checkinStress');
 
     const todayState = dayState.loadDayStateForToday();
+    if (!todayState.sleep || typeof todayState.sleep !== 'object') todayState.sleep = { hours: null, target: 7.5 };
+    if (!todayState.water || typeof todayState.water !== 'object') todayState.water = { current: null, target: 8 };
 
-    // Update state with form values
-    if (sleepInput && sleepInput.value) {
-      todayState.sleep.hours = parseFloat(sleepInput.value);
+    // Persist a field only after the user moved, tapped, or typed that control.
+    if (isCheckinTouched(sleepInput)) {
+      const raw = String(sleepInput.value).trim();
+      const hours = parseFloat(raw);
+      todayState.sleep.hours = raw === '' || !Number.isFinite(hours) ? null : hours;
     }
-    if (waterInput) {
-      todayState.water.current = parseInt(waterInput.value) || 0;
+    if (isCheckinTouched(waterInput)) {
+      const raw = String(waterInput.value).trim();
+      const glasses = parseInt(raw, 10);
+      todayState.water.current = raw === '' || !Number.isFinite(glasses) ? null : glasses;
     }
-    if (energySelect && energySelect.value) {
-      todayState.energy = energySelect.value;
+    if (isCheckinTouched(energySelect)) {
+      todayState.energy = energySelect.value || null;
     }
-    if (stressSlider) {
+    if (isCheckinTouched(stressSlider)) {
       const stressConfig = getSliderConfig('checkinStress');
-      todayState.stressLevel = stressConfig ? stressConfig.normalize(parseFloat(stressSlider.value)) : (parseInt(stressSlider.value) || 3);
+      const raw = parseFloat(stressSlider.value);
+      todayState.stressLevel = Number.isFinite(raw)
+        ? (stressConfig ? stressConfig.normalize(raw) : Math.round(raw))
+        : null;
     }
 
     // Save to localStorage
@@ -189,6 +206,23 @@ import { getSliderConfig } from '../storage/slider-config.js';
       });
     }
 
+    ['checkinSleep', 'checkinWater', 'checkinEnergy', 'checkinStress'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', () => markCheckinTouched(el));
+      el.addEventListener('change', () => markCheckinTouched(el));
+    });
+    document.querySelectorAll('.slider-btn-minus[data-slider-id="checkinStress"], .slider-btn-plus[data-slider-id="checkinStress"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const slider = document.getElementById('checkinStress');
+        if (slider) markCheckinTouched(slider);
+      });
+    });
+    const stressTap = document.getElementById('checkinStress');
+    if (stressTap) {
+      stressTap.addEventListener('pointerdown', () => markCheckinTouched(stressTap));
+    }
+
     // Stress slider with new system
     const stressSlider = document.getElementById('checkinStress');
     const stressDisplay = document.getElementById('checkinStressDisplay');
@@ -229,6 +263,18 @@ import { getSliderConfig } from '../storage/slider-config.js';
         });
       }
     }
+  }
+
+  function markCheckinTouched(el) {
+    if (el) el.dataset.userTouched = '1';
+  }
+
+  function clearCheckinTouched(el) {
+    if (el) delete el.dataset.userTouched;
+  }
+
+  function isCheckinTouched(el) {
+    return !!(el && el.dataset.userTouched === '1');
   }
 
   // Initialize on DOM ready

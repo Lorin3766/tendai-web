@@ -79,12 +79,12 @@ const initialState = {
       sleepEndMinutes: null
     },
     water: {
-      current: 0,
+      current: null,
       target: 8
     },
     energy: null,
     moodToday: null,
-    stressLevel: 3,
+    stressLevel: null,
     activityToday: null,
     weather: {
       temperature: null,
@@ -373,12 +373,12 @@ export const dayState = {
           sleepEndMinutes: null
         },
         water: {
-          current: 0,
+          current: null,
           target: 8
         },
         energy: null,
         moodToday: null,
-        stressLevel: 3,
+        stressLevel: null,
         activityToday: null,
         weather: {
           temperature: null,
