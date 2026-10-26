@@ -5,10 +5,11 @@
 // BUILD: 2026-04-02-uac-ghost-debug-cachebust
 
 // Utilities (must load first - no init needed, just imports)
-import { profileState } from './state.js';
+import { dayState, profileState } from './state.js';
 import './core/shared-context-bus.js';
 import { storageManager } from './core/storage.js';
 import { persistAppOpen } from './features/metrics/local-metrics.js';
+import { seedCheckinHistory } from './features/metrics/checkin-history.js';
 import './features/storage/units.js';
 import './features/storage/slider-config.js';
 import './features/storage/message-queue.js';
@@ -74,6 +75,7 @@ import { IS_DEV, IS_VERBOSE_BOOT_LOGS } from './env-flags.js';
 async function initModules() {
   try {
     persistAppOpen();
+    seedCheckinHistory(dayState.loadDayStateForToday());
   } catch (_) {}
   // StorageManager: load Master Record, migrate legacy data if needed
   storageManager.load();

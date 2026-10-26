@@ -6,6 +6,8 @@
 // (activeView, plan, checkins, demo) use app-state.js as the primary store. See core/state-bridge.js.
 // Master Record (StorageManager) syncs from profile on save.
 
+import { recordCheckinHistory } from './features/metrics/checkin-history.js';
+
 // In-memory cache — loaded once per session, never re-read from localStorage after init
 const __memory = {};
 const __loaded = {};
@@ -405,6 +407,7 @@ export const dayState = {
       date: today
     };
     this.save(stateToSave);
+    recordCheckinHistory(stateToSave);
   }
 };
 

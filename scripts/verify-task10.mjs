@@ -30,6 +30,12 @@ import {
 } from '../mobile-app/js/features/metrics/local-metrics.js';
 import { classifyProfileReply } from '../mobile-app/js/features/talk/profile-answer-parser.js';
 import { focusCues, formatWaterStat, wellbeingSummaryText } from '../mobile-app/js/features/feed/checkin-display.js';
+import {
+  CHECKIN_HISTORY_KEY,
+  getObriumCheckinHistory,
+  recordCheckinHistory,
+  seedCheckinHistory,
+} from '../mobile-app/js/features/metrics/checkin-history.js';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'mobile-app', '_audit', 'accent-review');
@@ -297,6 +303,48 @@ const longGender = classifyProfileReply(genderQuestion, 'my wife is a woman and 
 if (longGender.kind !== 'message') fail(`long gender saved: ${JSON.stringify(longGender)}`);
 console.log('[10d] display and identity');
 
+const historyDays = [
+  { date: '2026-10-24', sleep: { hours: 6 }, water: { current: null }, energy: null, stressLevel: null },
+  { date: '2026-10-25', sleep: { hours: null }, water: { current: 3 }, energy: 'Low', stressLevel: null },
+  { date: '2026-10-26', sleep: { hours: null }, water: { current: null }, energy: null, stressLevel: 4 },
+];
+metricStore.delete(CHECKIN_HISTORY_KEY);
+for (const day of historyDays) recordCheckinHistory(day);
+const history = getObriumCheckinHistory();
+console.log('[10e] history', JSON.stringify(history));
+if (history.length !== 3) fail(`history length ${history.length}`);
+const sleepDay = history.find((row) => row.date === '2026-10-24');
+const waterDay = history.find((row) => row.date === '2026-10-25');
+const stressDay = history.find((row) => row.date === '2026-10-26');
+if (sleepDay?.sleepHours !== 6 || 'water' in sleepDay || 'energy' in sleepDay || 'stress' in sleepDay) {
+  fail(`sleep day kept untouched fields ${JSON.stringify(sleepDay)}`);
+}
+if (waterDay?.water !== 3 || waterDay?.energy !== 'Low' || 'sleepHours' in waterDay || 'stress' in waterDay) {
+  fail(`water day ${JSON.stringify(waterDay)}`);
+}
+if (stressDay?.stress !== 4 || Object.keys(stressDay).length !== 2) fail(`stress day ${JSON.stringify(stressDay)}`);
+if (metricStore.has('tendai_data_sent_log_v1')) fail('check-in history wrote a data-sent log');
+seedCheckinHistory({ date: '2026-10-26', sleep: { hours: 9 }, water: { current: null }, energy: null, stressLevel: null });
+if (getObriumCheckinHistory().find((row) => row.date === '2026-10-26')?.stress !== 4) {
+  fail('seed overwrote an existing history');
+}
+metricStore.delete(CHECKIN_HISTORY_KEY);
+seedCheckinHistory({
+  date: '2026-10-26',
+  sleep: { hours: 8 },
+  water: { current: null },
+  energy: null,
+  stressLevel: null,
+});
+const seeded = getObriumCheckinHistory();
+if (seeded.length !== 1 || seeded[0].sleepHours !== 8 || 'water' in seeded[0]) {
+  fail(`seed missed today's record ${JSON.stringify(seeded)}`);
+}
+localStorage.clear();
+if (getObriumCheckinHistory().length || localStorage.getItem(CHECKIN_HISTORY_KEY) != null) {
+  fail('delete-all left check-in history');
+}
+
 if (process.env.OBRIUM_URL) {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -375,6 +423,18 @@ if (process.env.OBRIUM_URL) {
   if (afterCheckin.buttons.includes('Done')) fail('check-in offered a Done button');
   if (afterCheckin.stored[0]?.status !== 'done' || afterCheckin.stored[0]?.actionId !== 'checkin-sleep') {
     fail('check-in outcome was not stored');
+  }
+  const savedHistory = await page.evaluate(() => ({
+    history: JSON.parse(localStorage.getItem('tendai_checkin_history_v1') || '{"days":[]}').days,
+    sent: JSON.parse(localStorage.getItem('tendai_data_sent_log_v1') || '[]'),
+  }));
+  const historyRow = savedHistory.history.find((row) => row.sleepHours === 7);
+  console.log('[10e] browser', JSON.stringify(savedHistory.history));
+  if (!historyRow || 'water' in historyRow || 'stress' in historyRow || 'energy' in historyRow) {
+    fail(`saved check-in history ${JSON.stringify(savedHistory.history)}`);
+  }
+  if (savedHistory.sent.some((entry) => /history/i.test(String(entry?.requestType || '')))) {
+    fail('check-in history created a data-sent entry');
   }
 
   await page.evaluate(() => localStorage.removeItem('tendai_today_steps_v1'));
