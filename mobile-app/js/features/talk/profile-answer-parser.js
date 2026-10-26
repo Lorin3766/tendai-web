@@ -578,6 +578,91 @@ export function getProfileFieldSpec(sectionKey, fieldKey) {
   return FIELD_SPECS[`${sectionKey}.${fieldKey}`] || null;
 }
 
+const QUESTION_START = /^(why|what|whats|what's|how|when|where|who|can|could|would|will|do|does|did|is|are|am|should)\b/i;
+
+function isQuestionReply(text) {
+  const raw = String(text || '').trim();
+  if (!raw || raw.includes('?')) return true;
+  return QUESTION_START.test(raw);
+}
+
+function isVeryShortReply(text) {
+  const raw = String(text || '').trim();
+  const words = raw.split(/\s+/).filter(Boolean);
+  return words.length > 0 && words.length <= 4 && raw.length <= 40;
+}
+
+function optionTokens(spec) {
+  const tokens = [];
+  for (const option of spec.options || []) {
+    for (const raw of [option.value, option.label, ...(option.aliases || [])]) {
+      const token = normalizeText(raw);
+      if (token.length >= 3) tokens.push(token);
+    }
+  }
+  return tokens;
+}
+
+function choiceLooksLikeAttempt(spec, text) {
+  const normalized = normalizeText(text);
+  const words = normalized.split(' ').filter((word) => word.length >= 3);
+  for (const token of optionTokens(spec)) {
+    if (normalized === token || normalized.startsWith(token)) return true;
+    if (token.startsWith(normalized) && normalized.length >= 3) return true;
+    for (const word of words) {
+      if (token.startsWith(word) || word.startsWith(token)) return true;
+    }
+  }
+  return false;
+}
+
+function numberFieldLooksLikeAttempt(spec, text) {
+  const raw = String(text || '').trim();
+  if (/\d/.test(raw)) return true;
+  if (spec.type === 'height' && /\b(cm|ft|feet|foot|inches|inch)\b/i.test(raw)) return true;
+  if (spec.type === 'weight' && /\b(kg|kilos?|lb|lbs|pounds?)\b/i.test(raw)) return true;
+  if (spec.type === 'scale') {
+    const normalized = normalizeText(raw);
+    return Object.keys(spec.words || {}).some((word) => {
+      const token = normalizeText(word);
+      return token.length >= 3 && (normalized === token || normalized.split(' ').includes(token));
+    });
+  }
+  return false;
+}
+
+/**
+ * A failed parse is an attempt only when the reply is not a question, is very short
+ * (at most 4 words and 40 characters), and partly matches the pending field:
+ * a digit or unit for a number field, or a 3+ character overlap with one option.
+ * A successful parse is always an answer, including a longer sentence that names one option.
+ */
+export function looksLikeProfileAnswerAttempt(question, text) {
+  const raw = String(text || '').trim();
+  if (!raw || isQuestionReply(raw) || !isVeryShortReply(raw)) return false;
+  const spec = getProfileFieldSpec(question?.sectionKey, question?.fieldKey);
+  if (!spec) return false;
+  if (spec.type === 'choice' || spec.type === 'multi') return choiceLooksLikeAttempt(spec, raw);
+  if (spec.type === 'age' || spec.type === 'height' || spec.type === 'weight' || spec.type === 'scale') {
+    return numberFieldLooksLikeAttempt(spec, raw);
+  }
+  return false;
+}
+
+/**
+ * save: the reply parsed. clarify: it looks like an attempt but did not parse.
+ * message: ordinary Talk input; do not force the pending question.
+ * @returns {{ kind: 'save', value: * } | { kind: 'clarify', clarify: string } | { kind: 'message' }}
+ */
+export function classifyProfileReply(question, text) {
+  const parsed = parseProfileAnswer(question, text);
+  if (parsed.ok) return { kind: 'save', value: parsed.value };
+  if (looksLikeProfileAnswerAttempt(question, text)) {
+    return { kind: 'clarify', clarify: parsed.clarify };
+  }
+  return { kind: 'message' };
+}
+
 export function getConversationalAsk(question) {
   if (!question) return 'Could I ask one more detail?';
   const spec = getProfileFieldSpec(question.sectionKey, question.fieldKey);

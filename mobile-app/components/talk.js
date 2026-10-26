@@ -14,7 +14,7 @@ import { getEntries } from '../js/features/feed/content-library.js';
 import { findUserAgentByFocusAreaId } from '../js/features/human-os/user-agents.js';
 import { focusAreasForField, visibleCardSnapshot } from '../js/features/profile/focus-area-signals.js';
 import {
-  parseProfileAnswer,
+  classifyProfileReply,
   applyProfileTalkAnswer,
   getConversationalAsk,
   getProfileFieldSpec,
@@ -1079,16 +1079,22 @@ export class TalkComponent {
     const question = this.getPendingProfileQuestion();
     if (!question) return false;
 
+    const classified = classifyProfileReply(question, messageText);
+    // A real message is ordinary Talk input. Do not clarify and do not ask again in this turn.
+    // The same question is offered again the next time Talk opens, unless pacing or snooze says otherwise.
+    if (classified.kind === 'message') return false;
+
     await new Promise((resolve) => setTimeout(resolve, 250));
     this.showTypingIndicator();
-    const parsed = parseProfileAnswer(question, messageText);
     await new Promise((resolve) => setTimeout(resolve, 180));
     this.removeTypingIndicator();
 
-    if (!parsed.ok) {
-      this.addMessageToChat(parsed.clarify, 'ai', true, null, this.profilePromptChatOptions(question));
+    if (classified.kind === 'clarify') {
+      this.addMessageToChat(classified.clarify, 'ai', true, null, this.profilePromptChatOptions(question));
       return true;
     }
+
+    const parsed = { ok: true, value: classified.value };
 
     const areas = focusAreasForField(question.sectionKey, question.fieldKey);
     const before = Object.fromEntries(areas.map((id) => [id, this.cardSnapshot(id)]));

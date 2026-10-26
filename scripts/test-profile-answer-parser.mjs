@@ -2,7 +2,7 @@
  * Part 3 verification: parseProfileAnswer() — simple per-field parsing.
  * Usage: node scripts/test-profile-answer-parser.mjs
  */
-import { parseProfileAnswer } from '../mobile-app/js/features/talk/profile-answer-parser.js';
+import { parseProfileAnswer, classifyProfileReply } from '../mobile-app/js/features/talk/profile-answer-parser.js';
 import { getNextProfileQuestion } from '../mobile-app/js/features/profile/profile-schema.js';
 
 const results = [];
@@ -54,6 +54,20 @@ expectClarify('priority default 2', q('body', 'goalsPriority', 'Priority level')
 
 expectOk('conditions none', q('health', 'healthConditions'), 'none', ['none']);
 expectOk('sleep 7-8', q('lifestyle', 'sleepDuration'), 'about 7 to 8 hours', '7-8h');
+
+function expectKind(name, question, text, kind, value) {
+  const result = classifyProfileReply(question, text);
+  const passed = result.kind === kind && (kind !== 'save' || JSON.stringify(result.value) === JSON.stringify(value));
+  record(name, passed, passed ? JSON.stringify(result) : JSON.stringify(result));
+}
+
+const sex = q('body', 'sexAtBirth', 'Sex at birth');
+expectKind('classify male saves', sex, 'male', 'save', 'male');
+expectKind('classify rather not saves', sex, "I'd rather not say", 'save', 'prefer-not-say');
+expectKind('classify headache is a message', sex, 'I have a headache today', 'message');
+expectKind('classify why is a message', sex, 'why do you ask?', 'message');
+expectKind('classify fem clarifies', sex, 'fem', 'clarify');
+expectKind('classify age number saves', q('body', 'age', 'Age'), '43', 'save', 43);
 
 const afterTwo = {
   body: { sexAtBirth: 'male', genderIdentity: 'man' },
