@@ -11,7 +11,7 @@ import {
 import { rememberFastAlertResponse } from '../talk/user-memory.js';
 import { profileState } from '../../state.js';
 import { getState } from '../../core/app-state.js';
-import { displayMaturityStage, calibrationLine, payoffDetail, noteSignalSaved, FOCUS_AREA_SIGNALS } from '../profile/focus-area-signals.js';
+import { displayMaturityStage, calibrationLine, calibrationOpensSettings, payoffDetail, noteSignalSaved, FOCUS_AREA_SIGNALS } from '../profile/focus-area-signals.js';
 import { getMetricsByDate } from '../../core/biometrics-db.js';
 import {
   openUltimateAgentCreatorModal,
@@ -939,6 +939,7 @@ function buildUniversalCardProps(p) {
   const profileNow = profileState.get();
   const maturityStage = displayMaturityStage(storedStage, profileNow, focusAreaId);
   const calibrationText = calibrationLine(profileNow, focusAreaId);
+  const calibrationAction = calibrationText && calibrationOpensSettings(focusAreaId) ? 'settings' : 'talk';
   const payoff = payoffDetail(profileNow, focusAreaId);
   const payoffContextEntry = payoff
     ? getEntries({ focusArea: focusAreaId, field: payoff.field, profile: profileNow })
@@ -1006,6 +1007,7 @@ function buildUniversalCardProps(p) {
       integrityPct: signalConfidencePct, // Deprecated alias.
       maturityStage,
       calibrationText,
+      calibrationAction,
       focusAreaId,
       storedStage,
       payoffEchoText,
@@ -1074,6 +1076,7 @@ function buildUniversalCardProps(p) {
     integrityPct: signalConfidencePct, // Deprecated alias.
     maturityStage,
     calibrationText,
+    calibrationAction,
     focusAreaId,
     storedStage,
     payoffEchoText,
@@ -1105,6 +1108,16 @@ function buildUniversalCardProps(p) {
  *   scienceMeta: { scienceText: string, reviewHref: string, protocolTag: string },
  * }} ctx
  */
+function openSettingsCityField() {
+  if (typeof window.openSettingsModal === 'function') window.openSettingsModal();
+  window.setTimeout(() => {
+    const input = document.getElementById('settingsLocationCity');
+    if (!input) return;
+    input.scrollIntoView({ block: 'center' });
+    input.focus();
+  }, 120);
+}
+
 function wireUniversalAgentCard(el, ctx) {
   const { agent, row, trackId, secondary, status, metricsLive, summaryLine, logicText, scienceMeta } = ctx;
   const discussContext = {
@@ -1130,6 +1143,13 @@ function wireUniversalAgentCard(el, ctx) {
         ...discussContext,
         summaryLine: 'Signal Confidence is low — helping add context for this Focus Area.',
       });
+    });
+  });
+
+  el.querySelectorAll('[data-uac-action="settings-city"]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openSettingsCityField();
     });
   });
 
@@ -2261,6 +2281,7 @@ function syncFocusCardsFromProfile() {
     const stored = Number(el.dataset.storedStage || 0);
     const stage = displayMaturityStage(stored, profile, id);
     const cal = calibrationLine(profile, id);
+    const settingsCta = !!(cal && calibrationOpensSettings(id));
     const payoff = payoffDetail(profile, id);
     const fact = payoff ? getEntries({ focusArea: id, field: payoff.field, profile }) : null;
     const badge = el.querySelector('[data-uac-maturity]');
@@ -2272,7 +2293,7 @@ function syncFocusCardsFromProfile() {
 
     const actions = el.querySelector('.heart-agent-module__actions');
     let calEl = el.querySelector('[data-uac-calibration]');
-    let calBtn = el.querySelector('[data-uac-calibration-talk]');
+    let calBtn = el.querySelector('[data-uac-calibration-talk], [data-uac-calibration-settings]');
     if (cal) {
       if (!calEl) {
         calEl = document.createElement('p');
@@ -2281,14 +2302,30 @@ function syncFocusCardsFromProfile() {
         if (actions) actions.parentNode.insertBefore(calEl, actions);
       }
       calEl.textContent = cal;
+      const action = settingsCta ? 'settings-city' : 'confidence-talk';
+      if (calBtn && calBtn.dataset.uacAction !== action) {
+        calBtn.remove();
+        calBtn = null;
+      }
       if (!calBtn) {
         calBtn = document.createElement('button');
         calBtn.type = 'button';
         calBtn.className = 'heart-agent-module__btn heart-agent-module__btn--primary';
-        calBtn.dataset.uacAction = 'confidence-talk';
-        calBtn.dataset.uacCalibrationTalk = '';
-        calBtn.textContent = 'Open Talk';
+        calBtn.dataset.uacAction = action;
+        if (settingsCta) {
+          calBtn.dataset.uacCalibrationSettings = '';
+          calBtn.textContent = 'Add city in Settings';
+          calBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openSettingsCityField();
+          });
+        } else {
+          calBtn.dataset.uacCalibrationTalk = '';
+          calBtn.textContent = 'Open Talk';
+        }
         calEl.insertAdjacentElement('afterend', calBtn);
+      } else {
+        calBtn.textContent = settingsCta ? 'Add city in Settings' : 'Open Talk';
       }
     } else {
       calEl?.remove();

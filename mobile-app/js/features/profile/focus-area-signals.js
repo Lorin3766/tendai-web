@@ -2,7 +2,7 @@
 // @owner: profile
 // @role: config
 
-import { isProfileFieldAnswered } from './profile-schema.js';
+import { isProfileFieldAnswered, isProfileFieldAskable } from './profile-schema.js';
 import { getFocusAreaById, getSelectedFocusAreaIds } from '../human-os/focus-areas.js';
 
 /**
@@ -77,11 +77,27 @@ export function displayMaturityStage(stored, profile, areaId) {
   return Math.max(0, Math.min(3, Math.round(n)));
 }
 
+/** At least one mapped signal exists in the Talk question catalog. */
+export function areaHasAskableSignal(areaId) {
+  return signalsFor(areaId).some((signal) => {
+    if (!signal || signal.section === 'location') return false;
+    return isProfileFieldAskable(signal.section, signal.field);
+  });
+}
+
+export const SETTINGS_CITY_CALIBRATION = 'Add your city in Settings to calibrate this';
+
 export function calibrationLine(profile, areaId) {
   const { n, m } = signalProgress(profile, areaId);
   if (!m || n >= m) return '';
+  if (!areaHasAskableSignal(areaId)) return SETTINGS_CITY_CALIBRATION;
   if (n >= 1) return `Calibration: ${n} of ${m} signals — one more answer sharpens this.`;
   return `Calibration: ${n} of ${m} signals — answer a quick question in Talk to personalize this.`;
+}
+
+/** The calibration button opens Settings when none of the area's signals can be asked in Talk. */
+export function calibrationOpensSettings(areaId) {
+  return signalsFor(areaId).length > 0 && !areaHasAskableSignal(areaId);
 }
 
 /**

@@ -444,6 +444,7 @@ export function createUniversalAgentCard(props) {
   const showConfidenceNudge = maturityStage >= 1 && Boolean(nudge?.show && String(nudge?.text || '').trim());
   const confidenceNudgeText = showConfidenceNudge ? String(nudge.text).trim() : '';
   const calibrationText = String(props.calibrationText || '').trim();
+  const calibrationSettings = props.calibrationAction === 'settings';
   const showSensorPill = props.signalActive || maturityStage >= 1;
 
   const classes = ['agent-report-card', 'agent-report-card--panel', `agent-report-card--track-${trackId}`, 'heart-agent-module-card', 'universal-agent-card'];
@@ -553,7 +554,11 @@ export function createUniversalAgentCard(props) {
         ${
           calibrationText
             ? `<p class="heart-agent-module__calibration" data-uac-calibration>${universalEsc(calibrationText)}</p>
-               <button type="button" class="heart-agent-module__btn heart-agent-module__btn--primary" data-uac-action="confidence-talk" data-uac-calibration-talk>Open Talk</button>`
+               ${
+                 calibrationSettings
+                   ? `<button type="button" class="heart-agent-module__btn heart-agent-module__btn--primary" data-uac-action="settings-city" data-uac-calibration-settings>Add city in Settings</button>`
+                   : `<button type="button" class="heart-agent-module__btn heart-agent-module__btn--primary" data-uac-action="confidence-talk" data-uac-calibration-talk>Open Talk</button>`
+               }`
             : ''
         }
         ${

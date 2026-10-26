@@ -247,6 +247,12 @@ export function getProfileQuestionCatalog() {
   }));
 }
 
+/** True when Talk's question catalog can ask this field. Location is not in the catalog. */
+export function isProfileFieldAskable(sectionKey, fieldKey) {
+  const section = PROFILE_QUESTION_CATALOG.find((entry) => entry.key === sectionKey);
+  return !!(section && section.fields.some((field) => field.key === fieldKey));
+}
+
 /**
  * Same “filled” rules as profile completeness / modal progress.
  * @param {*} value
