@@ -581,12 +581,24 @@ export async function sendMessageToLLM(text, context) {
         errorMessage = response.statusText || `Server returned ${response.status}`;
       }
 
+      const code = errorBody && errorBody.code ? String(errorBody.code) : '';
+      const busyCodes = new Set(['rate_limited', 'daily_cap', 'gemini_quota', 'upstream_timeout']);
+      if (response.status === 429 || response.status === 503 || busyCodes.has(code)) {
+        logTalkError('http-busy', new Error(code || String(response.status)), {
+          API_URL,
+          backendBase: BACKEND_URL,
+          status: response.status,
+          code,
+        });
+        throw new Error('Obrium is busy, try again later');
+      }
+
       logTalkError('http-error', new Error(errorMessage), {
         API_URL,
         backendBase: BACKEND_URL,
         status: response.status,
         statusText: response.statusText,
-        body: errorBody,
+        code,
       });
 
       throw new Error(errorMessage);

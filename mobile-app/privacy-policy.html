@@ -28,7 +28,7 @@
             <p>We use your information to provide personalized wellbeing advice. We do not sell your personal information.</p>
 
             <h3>Data Storage</h3>
-            <p>Your profile, health answers, logged metrics and chat history are stored locally on your device. To generate Talk replies and Feed advice and to run automatic health checks, parts of this data are sent through Obrium's relay server to Google's Gemini API, as described below. Obrium's relay server does not store your messages or data: it passes each request to Gemini and returns the reply. If a request fails, the relay's error log may include the AI's reply text for troubleshooting. What Google does with the data is a separate matter, described in the next section.</p>
+            <p>Your profile, health answers, logged metrics and chat history are stored locally on your device. To generate Talk replies and Feed advice and to run automatic health checks, parts of this data are sent through Obrium's relay server to Google's Gemini API, as described below. Obrium's relay server does not store your messages or data: it passes each request to Gemini and returns the reply. The relay does not keep message or reply content in its logs; it records only field names, status codes and durations. What Google does with the data is a separate matter, described in the next section.</p>
 
             <h3>AI Processing by Google Gemini</h3>
             <p>Obrium uses Google's Gemini API to write Talk's replies and Feed advice and to run automatic health checks. Each time Talk needs an AI response, Google receives the data below. Only fields you have actually provided are sent.</p>

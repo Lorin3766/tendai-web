@@ -1,36 +1,40 @@
 import express from 'express';
-import { getGoogleGenAI, generateJsonText } from '../services/geminiClient.js';
+import {
+  getGoogleGenAI as defaultGetGoogleGenAI,
+  generateJsonText as defaultGenerateJsonText,
+} from '../services/geminiClient.js';
+import { relayConfig } from '../lib/config.js';
+import { validateFeedAdviceBody, rejectInvalid } from '../lib/validate.js';
+import { BUSY_MESSAGE, RELAY_CODES, sendRelayError, logRelay } from '../lib/errors.js';
 
 const router = express.Router();
 
-// Default fallback texts (sent with `fallback: true`; the app does not display them as advice)
 const DEFAULT_TEXTS = {
   quickAdvice: 'Aim for 7–8h sleep tonight.',
   nutritionInsight: 'Add protein to breakfast for a steadier morning.',
-  tip: 'Obrium will show helpful notes here later.'
+  tip: 'Obrium will show helpful notes here later.',
 };
 
-// gemini-2.5-flash counts internal reasoning against maxOutputTokens, before any JSON is written.
-const FEED_ADVICE_MAX_OUTPUT_TOKENS = 2048;
+let _getGoogleGenAI = defaultGetGoogleGenAI;
+let _generateJsonText = defaultGenerateJsonText;
+
+export function setFeedAdviceDeps({ getGoogleGenAI, generateJsonText } = {}) {
+  if (typeof getGoogleGenAI === 'function') _getGoogleGenAI = getGoogleGenAI;
+  if (typeof generateJsonText === 'function') _generateJsonText = generateJsonText;
+}
 
 function fallback(reason) {
   return { ...DEFAULT_TEXTS, fallback: true, reason };
 }
 
 function keysOf(obj) {
-  return Object.keys(obj).filter((k) => obj[k] !== undefined);
+  return Object.keys(obj || {}).filter((k) => obj[k] !== undefined);
 }
 
-/**
- * Generate AI advice for Feed blocks
- * @param {Object} profileState - User profile data (only fields the user provided)
- * @param {Object} dayState - Today's logged values (only fields the user logged)
- * @returns {Promise<Object>} - Structured advice texts, or defaults with `fallback: true`
- */
 async function generateFeedAdvice(profileState, dayState) {
   try {
-    if (!getGoogleGenAI()) {
-      console.warn('⚠️ [FEED-ADVICE] GOOGLE_API_KEY missing — returning fallback');
+    if (!_getGoogleGenAI()) {
+      logRelay('feed_advice', { status: 'fallback', reason: 'not_configured' });
       return fallback('api key missing');
     }
 
@@ -39,14 +43,14 @@ async function generateFeedAdvice(profileState, dayState) {
         age: profileState.age,
         goals: profileState.goals,
         diet: profileState.diet,
-        habits: profileState.habits
+        habits: profileState.habits,
       },
       day: {
         stepsToday: dayState.stepsToday,
         sleepLastNight: dayState.sleepLastNight,
         hydrationLogged: dayState.hydrationLogged,
-        moodToday: dayState.moodToday
-      }
+        moodToday: dayState.moodToday,
+      },
     };
 
     const systemPrompt = `You are Obrium, a personal wellbeing assistant. Never refer to yourself as TendAI, Serron, or Seregin OS. Generate personalized, concise advice based on user profile and current day state.
@@ -83,88 +87,88 @@ Generate personalized advice for:
 
 Return only the JSON object with these three keys.`;
 
-    console.log('📤 [FEED-ADVICE] Sending request to Gemini');
-    console.log('   profile fields:', keysOf(context.profile).join(', ') || 'none');
-    console.log('   day fields:', keysOf(context.day).join(', ') || 'none');
+    logRelay('feed_advice_request', {
+      profileFields: keysOf(context.profile).length,
+      dayFields: keysOf(context.day).length,
+    });
 
-    const reply = await generateJsonText(systemPrompt, userPrompt, FEED_ADVICE_MAX_OUTPUT_TOKENS);
+    const cfg = relayConfig();
+    const reply = await _generateJsonText(systemPrompt, userPrompt, cfg.feedAdviceMaxOutputTokens);
 
     if (!reply) {
-      console.error('❌ [FEED-ADVICE] Empty reply from Gemini — returning fallback');
+      logRelay('feed_advice', { status: 'fallback', reason: 'empty_reply' });
       return fallback('empty reply');
     }
 
     let parsed;
     try {
       parsed = JSON.parse(reply);
-    } catch (parseError) {
-      console.error('❌ [FEED-ADVICE] Could not parse Gemini reply as JSON — returning fallback:', parseError.message);
-      console.error(`   Raw reply (${reply.length} chars):`, reply);
+    } catch (_) {
+      logRelay('feed_advice', { status: 'fallback', reason: 'unparseable', replyChars: reply.length });
       return fallback('unparseable reply');
     }
 
-    if (!parsed || typeof parsed.quickAdvice !== 'string' || typeof parsed.nutritionInsight !== 'string' ||
-        !parsed.quickAdvice.trim() || !parsed.nutritionInsight.trim()) {
-      console.error('❌ [FEED-ADVICE] Gemini JSON missing quickAdvice/nutritionInsight — returning fallback. Keys:', Object.keys(parsed || {}));
+    if (
+      !parsed ||
+      typeof parsed.quickAdvice !== 'string' ||
+      typeof parsed.nutritionInsight !== 'string' ||
+      !parsed.quickAdvice.trim() ||
+      !parsed.nutritionInsight.trim()
+    ) {
+      logRelay('feed_advice', { status: 'fallback', reason: 'incomplete' });
       return fallback('incomplete reply');
     }
 
     const result = {
       quickAdvice: parsed.quickAdvice.trim(),
       nutritionInsight: parsed.nutritionInsight.trim(),
-      tip: typeof parsed.tip === 'string' && parsed.tip.trim() ? parsed.tip.trim() : ''
+      tip: typeof parsed.tip === 'string' && parsed.tip.trim() ? parsed.tip.trim() : '',
     };
 
-    // Ensure texts are not too long
-    Object.keys(result).forEach(key => {
+    Object.keys(result).forEach((key) => {
       if (result[key].length > 150) {
         result[key] = result[key].substring(0, 147) + '...';
       }
     });
 
-    console.log('✅ [FEED-ADVICE] Parsed Gemini reply');
+    logRelay('feed_advice', { status: 'ok' });
     return result;
   } catch (error) {
-    console.error('❌ [FEED-ADVICE] Error generating feed advice — returning fallback:', error.message);
+    const msg = error && error.message ? String(error.message) : '';
+    if (/quota|rate.?limit|resource.?exhausted|429/i.test(msg)) {
+      const err = new Error('gemini quota');
+      err.code = RELAY_CODES.GEMINI_QUOTA;
+      throw err;
+    }
+    logRelay('feed_advice', { status: 'fallback', reason: 'gemini_error', name: error?.name || 'Error' });
     return fallback('gemini error');
   }
 }
 
-/**
- * Handler for feed advice requests
- */
 export async function handleFeedAdviceRequest(req, res) {
+  const started = Date.now();
   try {
+    const checked = validateFeedAdviceBody(req.body || {});
+    if (!checked.ok) return rejectInvalid(res, checked);
+
     const { profileState, dayState } = req.body;
-
-    console.log('📥 [FEED-ADVICE] Received request');
-
-    // Validate input
     if (!profileState || !dayState) {
-      console.error('❌ [FEED-ADVICE] Missing required data');
-      return res.status(400).json({
-        error: 'Invalid request',
-        message: 'profileState and dayState are required',
-        ...fallback('invalid request')
-      });
+      return sendRelayError(res, 400, RELAY_CODES.BAD_REQUEST, 'profileState and dayState are required');
     }
 
     const advice = await generateFeedAdvice(profileState, dayState);
-    if (advice.fallback) {
-      console.warn('⚠️ [FEED-ADVICE] Responding with fallback:', advice.reason);
-    }
+    logRelay('feed_advice_http', { status: 200, ms: Date.now() - started, fallback: !!advice.fallback });
     res.json(advice);
   } catch (error) {
-    console.error('❌ [FEED-ADVICE] Error processing request:', error);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: error.message || 'Failed to generate advice',
-      ...fallback('server error')
-    });
+    if (error?.code === RELAY_CODES.GEMINI_QUOTA) {
+      logRelay('feed_advice_http', { status: 429, code: RELAY_CODES.GEMINI_QUOTA, ms: Date.now() - started });
+      return sendRelayError(res, 429, RELAY_CODES.GEMINI_QUOTA, BUSY_MESSAGE);
+    }
+    logRelay('feed_advice_http', { status: 500, ms: Date.now() - started, name: error?.name || 'Error' });
+    return sendRelayError(res, 500, 'internal_error', BUSY_MESSAGE);
   }
 }
 
-// POST /api/feed-advice - Get AI-generated feed advice
 router.post('/feed-advice', handleFeedAdviceRequest);
 
 export default router;

@@ -21,6 +21,13 @@ mobile-app/_archive/**/*.js
 # Audit folder (keep structure but ignore content - these are documentation)
 # Note: _audit/ contains important maps and rules, so we keep it tracked
 
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+**/.env
+!**/.env.example
+
 # Node modules
 node_modules/
 
