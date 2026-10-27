@@ -11,18 +11,14 @@ import { getUserProfile } from './talk-context.js';
 import { isAutoHealthChecksEnabled } from '../settings/auto-requests.js';
 import { incrementNotification } from '../../core/notifications.js';
 import { recordDataSent, updateDataSentOutcome, DATA_SENT_REQUEST_TYPES } from './data-sent-log.js';
-import { getBackendUrlOverride, getBackendBearer } from '../../core/runtime-config.js';
+import { getBackendBearer, resolveBackendURL } from '../../core/runtime-config.js';
 
 /**
- * Default relay URL. Port 3001 avoids clashing with repo `npm start`, which serves
- * the PWA on http://localhost:3000 (see root package.json).
- * Override anytime: window.OBRIUM_BACKEND_URL = 'http://127.0.0.1:3001'
- * (legacy SERRON_* / TENDAI_* names still work, with a one-time warning — see core/runtime-config.js)
- *
- * OpenAI keys belong only in tendai-backend/.env (OPENAI_API_KEY). The browser does not
- * send the OpenAI secret. Optional: window.OBRIUM_BACKEND_BEARER for relay auth if your proxy requires it.
+ * Relay URL: window.OBRIUM_BACKEND_URL or <meta name="obrium-backend-url">.
+ * On localhost only, falls back to http://127.0.0.1:3001. Production never defaults to localhost.
+ * Optional: window.OBRIUM_BACKEND_BEARER / meta obrium-backend-bearer.
  */
-const DEFAULT_BACKEND_URL = 'http://localhost:3001';
+const DEV_BACKEND_URL = 'http://127.0.0.1:3001';
 const TALK_FETCH_TIMEOUT_MS = 15000;
 const TALK_FETCH_MAX_RETRIES = 3;
 const TALK_FETCH_RETRY_DELAYS = [1000, 2000, 3000];
@@ -172,20 +168,7 @@ function localFallbackResponse(opts = {}) {
  * @returns {string} Backend base URL (no trailing slash)
  */
 export function getBackendURL() {
-  if (typeof window !== 'undefined') {
-    const override = getBackendUrlOverride();
-    if (override) return String(override).replace(/\/$/, '');
-  }
-  try {
-    if (typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1)$/i.test(location.hostname || '')) {
-      const p = location.port || (location.protocol === 'https:' ? '443' : '80');
-      // PWA on :3000 (serve) or Live Server / other local ports: relay stays on :3001.
-      if (p === '3000' || p === '5500' || p === '8080' || p === '5173') {
-        return 'http://127.0.0.1:3001';
-      }
-    }
-  } catch (_) {}
-  return DEFAULT_BACKEND_URL;
+  return resolveBackendURL() || '';
 }
 
 /** JSON + optional Bearer for secured relays (window.OBRIUM_BACKEND_BEARER). */
@@ -489,14 +472,21 @@ export async function sendMessageToLLM(text, context) {
   }
 
   const BACKEND_URL = getBackendURL();
-  const API_URL = `${BACKEND_URL}/api/talk`;
+  const API_URL = BACKEND_URL ? `${BACKEND_URL}/api/talk` : '';
 
   // Force online priority: each send resets stale "local" gate so wake / network changes get a fresh relay attempt.
+  // Missing production relay URL stays offline — never falls back to localhost.
   if (typeof window !== 'undefined') {
     window.__obriumForceLocalConversation = false;
   }
-  NetworkController.isBackendReachable = true;
-  setOfflineBrainIndicator(false);
+  if (BACKEND_URL) {
+    NetworkController.isBackendReachable = true;
+    setOfflineBrainIndicator(false);
+  } else {
+    NetworkController.isBackendReachable = false;
+    setOfflineBrainIndicator(true);
+    setServerStatus('Offline');
+  }
 
   const snapshot = await getSystemContextSnapshot();
 
@@ -554,7 +544,7 @@ export async function sendMessageToLLM(text, context) {
     const discussContext = body.system_state && body.system_state.discuss_context ? body.system_state.discuss_context : null;
     const mustStayLocal = typeof window !== 'undefined' && window.__obriumForceLocalConversation === true;
     const localhostDevRelay =
-      isLocalhostRelayBackend(DEFAULT_BACKEND_URL) && isLocalhostRelayBackend(BACKEND_URL);
+      isLocalhostRelayBackend(DEV_BACKEND_URL) && isLocalhostRelayBackend(BACKEND_URL);
     if ((!NetworkController.isBackendReachable || mustStayLocal) && !localhostDevRelay) {
       if (typeof window !== 'undefined') window.__obriumForceLocalConversation = true;
       setOfflineBrainIndicator(true);

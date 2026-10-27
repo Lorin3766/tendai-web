@@ -1,0 +1,17 @@
+{
+  "connectHosts": [
+    "ipapi.co",
+    "nominatim.openstreetmap.org",
+    "api.open-meteo.com",
+    "geocoding-api.open-meteo.com",
+    "fonts.googleapis.com",
+    "fonts.gstatic.com",
+    "api.openweathermap.org",
+    "api.github.com"
+  ],
+  "relayPlaceholder": "Add your production relay hostname to Content-Security-Policy connect-src and to this list before launch.",
+  "notes": [
+    "OpenWeatherMap and GitHub are only contacted when a user configures an optional Focus Area agent with their own key.",
+    "Google Fonts are loaded from index.html for UI typography."
+  ]
+}

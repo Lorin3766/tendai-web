@@ -1,16 +1,18 @@
 {
-  "_comment": "Base Directory Rule: All resources must remain relative to the app root to support PWA hosting from any path (e.g. / or /mobile-app/). Use relative paths for start_url, scope, and icon src.",
+  "_comment": "Base Directory Rule: relative paths so the PWA works from any hosting path.",
   "name": "Obrium",
   "short_name": "Obrium",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0b1020",
-  "theme_color": "#0b1020",
-  "description": "Personal health & longevity PWA with smooth, fast UI.",
+  "background_color": "#141210",
+  "theme_color": "#141210",
+  "description": "Personal wellbeing assistant. Your data stays on this device unless you use Talk or Feed advice.",
   "icons": [
-    { "src": "./assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "./assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "./assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "./assets/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
