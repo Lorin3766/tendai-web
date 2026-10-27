@@ -152,9 +152,10 @@ export function generateAdvice() {
     }
   }
   
-  // Stress advice
-  const stress = profileData.mind?.stress || profileData.lifestyle?.stressLevel || 3;
-  if (stress >= 4) {
+  // Stress advice — only when a real profile value exists
+  const stressRaw = profileData.mind?.stressLevel ?? profileData.mind?.stress ?? profileData.lifestyle?.stressLevel;
+  const stress = stressRaw == null || stressRaw === '' ? null : Number(stressRaw);
+  if (stress != null && Number.isFinite(stress) && stress >= 4) {
     advice.push('Take time to reduce stress today. Consider deep breathing or a short walk.');
   }
   

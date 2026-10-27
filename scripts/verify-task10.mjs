@@ -294,6 +294,8 @@ if (!focusCues({ stressLevel: 4, energy: null, sleep: { hours: null } }).include
 const sexQuestion = { sectionKey: 'body', fieldKey: 'sexAtBirth', fieldLabel: 'Sex at birth' };
 const wife = classifyProfileReply(sexQuestion, 'my wife is female and has a headache');
 if (wife.kind !== 'message') fail(`wife sentence saved: ${JSON.stringify(wife)}`);
+const shortWife = classifyProfileReply(sexQuestion, 'my wife is female');
+if (shortWife.kind !== 'message') fail(`short wife sentence saved: ${JSON.stringify(shortWife)}`);
 const firstPerson = classifyProfileReply(sexQuestion, 'I am female');
 if (firstPerson.kind !== 'save' || firstPerson.value !== 'female') fail('first-person sex did not save');
 const shortSex = classifyProfileReply(sexQuestion, 'female');

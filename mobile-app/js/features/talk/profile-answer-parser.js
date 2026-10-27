@@ -652,8 +652,12 @@ export function looksLikeProfileAnswerAttempt(question, text) {
 
 const IDENTITY_FIELDS = new Set(['body.sexAtBirth', 'body.genderIdentity']);
 
+/** Third-person / relation words — never treat the sentence as the user's own identity. */
+const IDENTITY_OTHER_MARKERS = /\b(my|his|her|she|he|they|wife|husband|friend|son|daughter|mother|father|mom|dad|brother|sister|partner)\b/i;
+
 function identityReplyMaySave(text) {
   const raw = String(text || '').trim().replace(/[’‘]/g, "'");
+  if (IDENTITY_OTHER_MARKERS.test(raw)) return false;
   const words = raw.split(/\s+/).filter(Boolean);
   if (words.length <= 6) return true;
   return /^(i am|i'm)\b/i.test(raw);
@@ -662,7 +666,8 @@ function identityReplyMaySave(text) {
 /**
  * save: the reply parsed. clarify: it looks like an attempt but did not parse.
  * message: ordinary Talk input; do not force the pending question.
- * Sex at birth and gender identity save a longer sentence only when it is first-person.
+ * Sex at birth and gender identity never save a sentence about someone else
+ * (relation / third-person markers), and longer sentences only when first-person.
  * @returns {{ kind: 'save', value: * } | { kind: 'clarify', clarify: string } | { kind: 'message' }}
  */
 export function classifyProfileReply(question, text) {

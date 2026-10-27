@@ -57,6 +57,26 @@ export function recordCheckinHistory(day) {
 }
 
 /**
+ * Rename a legacy UTC-dated history row onto the local date.
+ * If both rows exist, keep the local-dated one and drop the UTC duplicate.
+ */
+export function migrateCheckinHistoryDate(fromDate, toDate) {
+  if (!fromDate || !toDate || fromDate === toDate || typeof localStorage === 'undefined') return;
+  const days = readState().days;
+  const fromRow = days.find((row) => row.date === fromDate);
+  if (!fromRow) return;
+  const withoutFrom = days.filter((row) => row.date !== fromDate);
+  if (withoutFrom.some((row) => row.date === toDate)) {
+    writeState(withoutFrom, toDate);
+    return;
+  }
+  writeState(
+    withoutFrom.concat([{ ...fromRow, date: toDate }]),
+    toDate,
+  );
+}
+
+/**
  * First run only: copy today's already-stored day record.
  * Later saves go through recordCheckinHistory.
  */

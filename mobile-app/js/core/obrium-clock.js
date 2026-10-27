@@ -53,6 +53,32 @@ export function localDateKey(date = obriumNow()) {
   return `${y}-${m}-${day}`;
 }
 
+/** UTC calendar date (legacy day-record key). Prefer localDateKey for new writes. */
+export function utcDateKey(date = obriumNow()) {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().split('T')[0];
+}
+
+/**
+ * Map a stored day-record date onto the local calendar.
+ * Legacy records used UTC. If the stored key equals UTC "today" while the local
+ * calendar day differs, keep that record as local today (no duplicate, no drop).
+ * @returns {{ date: string|null, migrated: boolean }} null date means not today — reset.
+ */
+export function migrateStoredDayDate(storedDate, now = obriumNow()) {
+  const localToday = localDateKey(now);
+  if (!storedDate || typeof storedDate !== 'string') {
+    return { date: null, migrated: false };
+  }
+  if (storedDate === localToday) return { date: localToday, migrated: false };
+  const utcToday = utcDateKey(now);
+  if (storedDate === utcToday && utcToday !== localToday) {
+    return { date: localToday, migrated: true };
+  }
+  return { date: null, migrated: false };
+}
+
 /**
  * morning before 12:00, evening from 17:00, otherwise whichever boundary is nearer.
  * @returns {'morning'|'evening'}

@@ -6,7 +6,8 @@
 // (activeView, plan, checkins, demo) use app-state.js as the primary store. See core/state-bridge.js.
 // Master Record (StorageManager) syncs from profile on save.
 
-import { recordCheckinHistory } from './features/metrics/checkin-history.js';
+import { localDateKey, migrateStoredDayDate, obriumNow } from './core/obrium-clock.js';
+import { migrateCheckinHistoryDate, recordCheckinHistory } from './features/metrics/checkin-history.js';
 
 // In-memory cache — loaded once per session, never re-read from localStorage after init
 const __memory = {};
@@ -73,7 +74,7 @@ const initialState = {
     protocols: []
   },
   day: {
-    date: new Date().toISOString().split('T')[0],
+    date: null, // filled with localDateKey on first loadDayStateForToday
     sleep: {
       hours: null,
       target: 7.5,
@@ -353,50 +354,62 @@ export const dayState = {
   update: (path, value) => updateState(STATE_KEYS.DAY, path, value),
   getField: (path, defaultValue) => getStateField(STATE_KEYS.DAY, path, defaultValue),
   clear: () => clearState(STATE_KEYS.DAY),
+  /** Drop the in-memory day cache so the next read comes from localStorage (migration / tests). */
+  invalidateCache() {
+    delete __memory[STATE_KEYS.DAY];
+    delete __loaded[STATE_KEYS.DAY];
+  },
   
-  // Get today's date in YYYY-MM-DD format
+  // Local calendar date (same clock as Today and metrics)
   getTodayDate() {
-    return new Date().toISOString().split('T')[0];
+    return localDateKey(obriumNow());
   },
   
   // Load day state for today (with defaults if not exists)
   loadDayStateForToday() {
     const today = this.getTodayDate();
-    const state = this.get();
-    
-    // If state date doesn't match today, reset to today with defaults
-    if (state.date !== today) {
-      const defaultState = {
-        date: today,
-        sleep: {
-          hours: null,
-          target: 7.5,
-          quality: null,
-          sleepEndMinutes: null
-        },
-        water: {
-          current: null,
-          target: 8
-        },
-        energy: null,
-        moodToday: null,
-        stressLevel: null,
-        activityToday: null,
-        weather: {
-          temperature: null,
-          condition: null,
-          feelsLike: null
-        },
-        pressure: null,
-        advice: null,
-        dailyFocus: null
-      };
-      
-      // Return default state for today (don't merge with old state)
-      return defaultState;
+    const state = this.get() || {};
+    const resolved = migrateStoredDayDate(state.date, obriumNow());
+
+    // Legacy UTC key that is still "today" locally → keep as today's record.
+    if (resolved.date === today && state.date && state.date !== today) {
+      const migrated = { ...state, date: today };
+      this.save(migrated);
+      migrateCheckinHistoryDate(state.date, today);
+      return migrated;
     }
+
+    if (resolved.date === today && state.date === today) {
+      return state;
+    }
+
+    const defaultState = {
+      date: today,
+      sleep: {
+        hours: null,
+        target: 7.5,
+        quality: null,
+        sleepEndMinutes: null
+      },
+      water: {
+        current: null,
+        target: 8
+      },
+      energy: null,
+      moodToday: null,
+      stressLevel: null,
+      activityToday: null,
+      weather: {
+        temperature: null,
+        condition: null,
+        feelsLike: null
+      },
+      pressure: null,
+      advice: null,
+      dailyFocus: null
+    };
     
-    return state;
+    return defaultState;
   },
   
   // Save day state for today
