@@ -1,9 +1,9 @@
 import { relayConfig } from './config.js';
 import { BUSY_MESSAGE, RELAY_CODES, sendRelayError, logRelay } from './errors.js';
 
-function clientIp(req) {
-  const fwd = req.headers['x-forwarded-for'];
-  if (typeof fwd === 'string' && fwd.trim()) return fwd.split(',')[0].trim();
+/** Prefer Express req.ip (honors trust proxy). Never read X-Forwarded-For by hand. */
+export function clientIp(req) {
+  if (req.ip) return String(req.ip);
   return req.socket?.remoteAddress || 'unknown';
 }
 

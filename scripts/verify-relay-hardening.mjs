@@ -204,6 +204,76 @@ if (mapBusy(503, 'upstream_timeout') !== 'Obrium is busy, try again later') fail
 console.log('[11c] app busy mapping');
 
 server2.close();
+
+// Trust proxy: X-Forwarded-For drives per-IP buckets when OBRIUM_TRUST_PROXY=1
+process.env.OBRIUM_TRUST_PROXY = '1';
+process.env.OBRIUM_RATE_LIMIT_PER_IP = '2';
+stubMode = 'ok';
+const app3 = createApp({
+  sendToModel: stubSend,
+  getGoogleGenAI: () => ({}),
+  generateJsonText: async () => null,
+});
+const server3 = http.createServer(app3);
+await new Promise((resolve) => server3.listen(0, '127.0.0.1', resolve));
+const base3 = `http://127.0.0.1:${server3.address().port}`;
+
+async function talkWithFwd(fwd) {
+  const res = await fetch(`${base3}/api/talk`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: 'https://app.example',
+      'X-Forwarded-For': fwd,
+    },
+    body: JSON.stringify({ message: 'xff ping' }),
+  });
+  return { status: res.status, json: await res.json().catch(() => null) };
+}
+
+const a1 = await talkWithFwd('203.0.113.10');
+const a2 = await talkWithFwd('203.0.113.10');
+const a3 = await talkWithFwd('203.0.113.10');
+const b1 = await talkWithFwd('198.51.100.20');
+if (a1.status !== 200 || a2.status !== 200) fail(`xff same-ip early ${a1.status}/${a2.status}`);
+if (a3.status !== 429 || a3.json?.code !== RELAY_CODES.RATE_LIMITED) {
+  fail(`xff same-ip should 429 on third: ${a3.status} ${JSON.stringify(a3.json)}`);
+}
+if (b1.status !== 200) fail(`xff other-ip should still pass: ${b1.status}`);
+console.log('[11c] trust proxy X-Forwarded-For');
+
+// Without trust proxy, spoofed XFF must not open a fresh bucket (all share socket IP)
+server3.close();
+process.env.OBRIUM_TRUST_PROXY = '0';
+process.env.OBRIUM_RATE_LIMIT_PER_IP = '2';
+const app4 = createApp({
+  sendToModel: stubSend,
+  getGoogleGenAI: () => ({}),
+  generateJsonText: async () => null,
+});
+const server4 = http.createServer(app4);
+await new Promise((resolve) => server4.listen(0, '127.0.0.1', resolve));
+const base4 = `http://127.0.0.1:${server4.address().port}`;
+async function talkSpoof(fwd) {
+  const res = await fetch(`${base4}/api/talk`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Origin: 'https://app.example',
+      'X-Forwarded-For': fwd,
+    },
+    body: JSON.stringify({ message: 'spoof' }),
+  });
+  return res.status;
+}
+const s1 = await talkSpoof('203.0.113.1');
+const s2 = await talkSpoof('203.0.113.2');
+const s3 = await talkSpoof('203.0.113.3');
+if (s1 !== 200 || s2 !== 200) fail(`no-trust early ${s1}/${s2}`);
+if (s3 !== 429) fail(`no-trust should ignore spoofed XFF and 429: ${s3}`);
+console.log('[11c] trust proxy off ignores spoofed XFF');
+
+server4.close();
 console.log = originalLog;
 console.error = originalError;
 console.warn = originalWarn;

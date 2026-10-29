@@ -19,9 +19,27 @@ export function allowedOrigins() {
     .filter(Boolean);
 }
 
+/**
+ * Express "trust proxy" setting for req.ip behind Render/Cloudflare.
+ * unset / 0 / false → do not trust X-Forwarded-For (local default).
+ * 1 / true → trust one hop (typical single reverse proxy).
+ * N (integer) → trust N hops.
+ */
+export function trustProxySetting() {
+  const raw = process.env.OBRIUM_TRUST_PROXY;
+  if (raw == null || String(raw).trim() === '') return false;
+  const v = String(raw).trim().toLowerCase();
+  if (v === 'false' || v === '0' || v === 'no' || v === 'off') return false;
+  if (v === 'true' || v === 'yes' || v === 'on') return 1;
+  const n = Number.parseInt(v, 10);
+  if (Number.isFinite(n) && n >= 0) return n === 0 ? false : n;
+  return false;
+}
+
 export function relayConfig() {
   return {
     port: intEnv('PORT', 3001),
+    trustProxy: trustProxySetting(),
     geminiModel: (process.env.GEMINI_MODEL && String(process.env.GEMINI_MODEL).trim()) || 'gemini-2.5-flash',
     maxOutputTokens: intEnv('GEMINI_MAX_OUTPUT_TOKENS', 640),
     feedAdviceMaxOutputTokens: intEnv('GEMINI_FEED_MAX_OUTPUT_TOKENS', 2048),

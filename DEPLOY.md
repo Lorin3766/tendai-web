@@ -47,6 +47,7 @@ Or inject `window.OBRIUM_BACKEND_URL` / `window.OBRIUM_BACKEND_BEARER` from the 
 | `PORT` | set by host | `3001` | Listen port |
 | `NODE_ENV` | yes in prod | — | Set to `production` |
 | `OBRIUM_ALLOWED_ORIGINS` | yes in prod | empty | Comma-separated front-end origins, e.g. `https://obrium.pages.dev` |
+| `OBRIUM_TRUST_PROXY` | yes behind a reverse proxy | `0` / unset | Set to `1` on Render/Railway/Fly so rate limits use the real client IP from `X-Forwarded-For`. Leave unset locally. |
 | `GEMINI_MODEL` | no | `gemini-2.5-flash` | Model id |
 | `GEMINI_MAX_OUTPUT_TOKENS` | no | `640` | Talk max tokens |
 | `GEMINI_FEED_MAX_OUTPUT_TOKENS` | no | `2048` | Feed-advice max tokens |
@@ -66,6 +67,7 @@ Copy from `tendai-backend/.env.example`. Never commit `.env`.
 3. Put the exact front-end origin(s) in `OBRIUM_ALLOWED_ORIGINS` (scheme + host, no path).
 4. Put the relay origin in the front-end meta tag.
 5. Add the relay hostname to `mobile-app/_headers` `Content-Security-Policy` `connect-src` (and to `mobile-app/allowed-hosts.json` if you keep that list in sync).
+6. Set `OBRIUM_TRUST_PROXY=1` on the relay so per-IP rate limits use the real client address from `X-Forwarded-For` (Render / Railway / Fly / Cloudflare sit in front of Node).
 
 ## Rotate the Gemini key
 

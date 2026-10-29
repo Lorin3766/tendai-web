@@ -26,6 +26,11 @@ export function createApp(deps = {}) {
   const app = express();
   const cfg = relayConfig();
 
+  // So req.ip (and the per-IP rate limit) sees the real client behind Render/Cloudflare.
+  if (cfg.trustProxy !== false) {
+    app.set('trust proxy', cfg.trustProxy);
+  }
+
   app.use(corsMiddleware());
   app.use(createRateLimitMiddleware(deps.clock));
   app.use(
