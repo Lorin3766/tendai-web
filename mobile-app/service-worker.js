@@ -1,7 +1,7 @@
 /* Obrium PWA service worker.
    Network-first for HTML and JS so a new deploy is not stuck on stale code.
    Cache-first for static assets. Bump CACHE_NAME on each release. */
-const CACHE_NAME = 'obrium-shell-v11d-1';
+const CACHE_NAME = 'obrium-shell-v11d-2';
 const OFFLINE_URL = './offline.html';
 
 const PRECACHE = [
