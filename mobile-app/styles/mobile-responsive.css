@@ -452,3 +452,110 @@
     font-family: var(--font-ui);
   }
 }
+
+/* ============================================================
+   TALK — mobile width + typography (single 16px side inset)
+   Collapse stacked layout/centerContent/card paddings that
+   squeezed the chat into a narrow center column.
+   ============================================================ */
+@media (max-width: 899px) {
+  /* Drop outer horizontal padding while Talk is active */
+  body.talk-view-active .obrium-layout {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  body.talk-view-active #centerContent {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* Pane stays flex:0 0 50% of the 200% slider; fill that pane edge-to-edge */
+  .talk-view,
+  #talk-view.talk-view {
+    padding-left: 16px;
+    padding-right: 16px;
+    margin-left: 0;
+    margin-right: 0;
+    box-sizing: border-box;
+  }
+
+  .talk-view .conversation-card,
+  .talk-view .conversation-card.card-soft,
+  .talk-view .chat-scroll-wrapper,
+  .talk-view .conversation-area,
+  .talk-view #chatLog {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .talk-view .conversation-card,
+  .talk-view .conversation-card.card-soft {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .talk-view .conversation-area,
+  .talk-view #chatLog.conversation-area {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .talk-view .message,
+  .talk-view .message.bot,
+  .talk-view .message.user,
+  .talk-view .message.bot.message-command-center {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    hyphens: none !important;
+    -webkit-hyphens: none !important;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .talk-view .message-text,
+  .talk-view .message .message-text {
+    hyphens: none !important;
+    -webkit-hyphens: none !important;
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  /* Input dock: full pane width; 16px comes from .talk-view only */
+  .talk-view .ai-input-row {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .talk-view .talk-input-pill {
+    width: 100%;
+    max-width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .talk-view .talk-input-pill .input,
+  .talk-view .talk-input-pill .chat-textarea,
+  .talk-view .talk-input-pill #chatInput {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    box-sizing: border-box;
+  }
+
+  .talk-view .talk-input-pill .talk-input-send,
+  .talk-view .talk-input-pill #sendBtn {
+    flex: 0 0 auto;
+  }
+}

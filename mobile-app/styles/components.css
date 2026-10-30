@@ -927,7 +927,7 @@ body.calendar-open {
     pointer-events: auto;
   }
 
-  /* Pill spans same width as .chat-scroll-wrapper (card inner); top padding only â€” no side inset */
+  /* Pill spans chat column; side inset lives on .talk-view (16px), not here */
   .talk-view .ai-input-row {
     position: static;
     left: auto;
@@ -936,9 +936,9 @@ body.calendar-open {
     bottom: auto;
     transform: none;
     width: 100%;
-    max-width: none;
+    max-width: 100%;
     box-sizing: border-box;
-    padding: 10px 16px 12px !important;
+    padding: 10px 0 12px !important;
     margin: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -1344,6 +1344,10 @@ body.calendar-open {
   border-bottom: 1px solid rgba(255, 248, 235, 0.08) !important;
   align-self: flex-start;
   font-family: var(--font-ui);
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 .talk-view .message:last-child {
   border-bottom: 1px solid rgba(255, 248, 235, 0.08) !important;
@@ -1370,6 +1374,10 @@ body.calendar-open {
   color: var(--fg);
   text-transform: none;
   letter-spacing: normal;
+  hyphens: none !important;
+  -webkit-hyphens: none !important;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 .talk-view .message-system-header {
   color: var(--fg-muted);
@@ -1418,8 +1426,9 @@ body.calendar-open {
   box-sizing: border-box;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
+  word-break: normal;
+  hyphens: none;
+  -webkit-hyphens: none;
   font-size: 15px;
   line-height: 1.4;
 }
@@ -1492,8 +1501,9 @@ body.calendar-open {
   margin-bottom: 2px;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
+  word-break: normal;
+  hyphens: none;
+  -webkit-hyphens: none;
   overflow: visible;
   height: auto;
   min-height: 0;
