@@ -1,0 +1,7 @@
+[build]
+  publish = "mobile-app"
+  command = ""
+
+[build.environment]
+  NPM_FLAGS = "--version"
+  NODE_ENV = "production"
