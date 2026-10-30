@@ -1,9 +1,9 @@
 // Serron — First-launch system onboarding (Personal OS)
 // @owner: settings / onboarding
 // @role: init
+// Lean pipeline: Welcome → AI/Legal consent → Focus Areas → Feed/Talk.
+// Health forms (blood type, allergies, fitness devices) stay in Profile, not here.
 
-import { profileState, resolveAgeYears } from '../../state.js';
-import { requestHealthPermissions, refresh } from '../storage/health-sync.js';
 import {
   STARTER_FOCUS_AREAS,
   FOCUS_AREAS_MIN,
@@ -27,9 +27,10 @@ const GREETING_KEY = 'tendai_onboarding_greeting';
 const OPEN_TALK_KEY = 'tendai_open_talk_after_onboarding';
 const AI_CONSENT_KEY = 'tendai_ai_consent_v1';
 const ONBOARDING_COMPLETED_ON_KEY = 'tendai_onboarding_completed_on';
-const CONSENT_STEP = 'consent';
 
-const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const STEP_WELCOME = 'welcome';
+const STEP_CONSENT = 'consent';
+const STEP_FOCUS = 'focus';
 
 function isOnboardingComplete() {
   try {
@@ -71,7 +72,7 @@ function markAiProcessingAcknowledged() {
   } catch (_) {}
 }
 
-function buildOnboardingGreeting(answers) {
+function buildOnboardingGreeting() {
   const parts = [];
   const steps = typeof window !== 'undefined' && window.HealthSync?.getStepsToday?.();
   const bpm = typeof window !== 'undefined' && window.HealthSync?.getHeartRateBpm?.();
@@ -82,72 +83,14 @@ function buildOnboardingGreeting(answers) {
     parts.push(`a recent heart rate of ${bpm} bpm`);
   }
 
-  let lead = "I'm online and starting to learn your baseline from what you've shared.";
+  let lead = "I'm online and starting to learn your baseline from conversation and whatever data you share.";
   if (parts.length === 1) {
     lead = `I'm online. From your health data I can already see ${parts[0]}.`;
   } else if (parts.length > 1) {
     lead = `I'm online. From your health data I can see ${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}.`;
   }
 
-  const detailBits = [];
-  if (answers.birthYear) detailBits.push(`born ${answers.birthYear}`);
-  if (answers.bloodType && answers.bloodType !== 'unknown') {
-    detailBits.push(`blood type ${answers.bloodType}`);
-  }
-  if (answers.hasAllergies === true) detailBits.push('noted allergies on file');
-  if (answers.hasAllergies === false) detailBits.push('no known allergies noted');
-
-  const profileLine =
-    detailBits.length > 0 ? ` I also have ${detailBits.join(', ')}.` : '';
-
-  return `${lead}${profileLine} Ask me anything — I'll answer from your personal context as it grows.`;
-}
-
-/** Persist birth year + derived age as soon as it is entered, so the sidebar never shows "Add your age" next to an age. */
-function persistBirthYear(birthYear) {
-  const profile = profileState.get();
-  profile.body = profile.body || {};
-  profile.body.birthYear = birthYear;
-  const age = resolveAgeYears({ birthYear });
-  if (age != null) profile.body.age = age;
-  profileState.save(profile);
-  try {
-    if (typeof window !== 'undefined' && typeof window.updateProfileUI === 'function') window.updateProfileUI();
-  } catch (_) {}
-}
-
-function saveProfileFromAnswers(answers) {
-  const profile = profileState.get();
-  profile.body = profile.body || {};
-  profile.health = profile.health || {};
-
-  if (answers.birthYear) {
-    profile.body.birthYear = answers.birthYear;
-    // birthYear is source of truth; age is derived (same helper as sidebar)
-    const age = resolveAgeYears({ birthYear: answers.birthYear });
-    if (age != null) profile.body.age = age;
-  }
-
-  if (answers.bloodType === 'unknown') {
-    profile.body.bloodType = null;
-    profile.health.knowsBloodType = false;
-  } else if (answers.bloodType) {
-    profile.body.bloodType = answers.bloodType;
-    profile.health.knowsBloodType = true;
-  }
-
-  if (answers.hasAllergies === true) {
-    profile.health.hasAllergies = true;
-  } else if (answers.hasAllergies === false) {
-    profile.health.hasAllergies = false;
-  }
-
-  profileState.save(profile);
-  try {
-    if (typeof window !== 'undefined' && typeof window.updateProfileUI === 'function') {
-      window.updateProfileUI();
-    }
-  } catch (_) {}
+  return `${lead} Ask me anything — I'll answer from your personal context as it grows.`;
 }
 
 /**
@@ -210,7 +153,6 @@ function refreshFeedAndProfile() {
 
 async function finishOnboarding(answers) {
   markOnboardingComplete();
-  saveProfileFromAnswers(answers);
 
   const focusIds = Array.isArray(answers.focusAreaIds) ? answers.focusAreaIds : [];
   if (focusIds.length) {
@@ -218,14 +160,9 @@ async function finishOnboarding(answers) {
   }
   deployOnboardingFocusAreas(focusIds.length ? focusIds : getSelectedFocusAreaIds());
 
-  try {
-    await requestHealthPermissions();
-    await refresh();
-  } catch (_) {}
-
   refreshFeedAndProfile();
 
-  const greeting = buildOnboardingGreeting(answers);
+  const greeting = buildOnboardingGreeting();
   try {
     sessionStorage.setItem(GREETING_KEY, greeting);
     sessionStorage.setItem(OPEN_TALK_KEY, '1');
@@ -262,7 +199,8 @@ export function ensureOnboardingFocusAreasInFeed() {
 }
 
 /**
- * Show multi-step onboarding on first launch only.
+ * Show lean 3-phase onboarding on first launch only.
+ * Phase 1 Welcome → Phase 2 AI/Legal consent → Phase 3 Focus Areas → Talk.
  */
 export function initSystemOnboarding() {
   if (initSystemOnboarding.initialized) return;
@@ -273,14 +211,10 @@ export function initSystemOnboarding() {
   document.body.classList.add('onboarding-active');
 
   const answers = {
-    birthYear: null,
-    bloodType: null,
-    hasAllergies: null,
-    healthConnected: false,
     focusAreaIds: /** @type {string[]} */ ([]),
   };
 
-  let step = 1;
+  let step = STEP_WELCOME;
 
   const overlay = document.createElement('div');
   overlay.id = 'systemOnboardingOverlay';
@@ -288,97 +222,24 @@ export function initSystemOnboarding() {
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
 
-  function bloodTypePickerOptions(selectedValue) {
-    const types = BLOOD_TYPES.map((t) => {
-      const selected = selectedValue === t;
-      return `<li role="option" class="system-onboarding-picker-option${selected ? ' is-selected' : ''}" data-value="${t}" aria-selected="${selected}">${t}</li>`;
-    }).join('');
-    const unknownSelected = selectedValue === 'unknown';
-    return `${types}<li role="option" class="system-onboarding-picker-option${unknownSelected ? ' is-selected' : ''}" data-value="unknown" aria-selected="${unknownSelected}">I don't know</li>`;
-  }
-
-  function bloodTypeLabel(value) {
-    if (!value) return 'Select blood type';
-    if (value === 'unknown') return "I don't know";
-    return value;
-  }
-
   function render() {
     let body = '';
     let footer = '';
 
-    if (step === 1) {
+    if (step === STEP_WELCOME) {
       body = `
         <h2 class="card-title system-onboarding-title">Obrium learns you.</h2>
         <p class="welcome-modal-text system-onboarding-subtitle">Not from forms — from your data and conversation.</p>
       `;
       footer = `<button type="button" class="btn btn-initialize profile-modal-save" data-os-next>Get Started</button>`;
-    } else if (step === CONSENT_STEP) {
+    } else if (step === STEP_CONSENT) {
       body = `
         <h2 class="card-title system-onboarding-title">How Obrium uses AI</h2>
         <p class="welcome-modal-text">Talk's replies, Feed advice and automatic health checks are written by Google's Gemini. To do that, Obrium sends the relevant profile and health data you've provided to Google's Gemini API through its relay server. Because Obrium currently uses Gemini's free tier, Google may use this data to improve its AI models, and it may be reviewed by people at Google (<a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener" class="system-onboarding-link" data-os-google-terms-link>Google's Gemini API terms</a>). You can switch off automatic profile questions, health checks and Feed advice in Settings → Privacy &amp; Security.</p>
         <p class="welcome-modal-text"><a href="privacy-policy.html" target="_blank" rel="noopener" class="system-onboarding-link" data-os-privacy-link>Read the Privacy Policy</a></p>
       `;
       footer = `<button type="button" class="btn btn-initialize profile-modal-save" data-os-ack-ai>I understand</button>`;
-    } else if (step === 2) {
-      body = `
-        <h2 class="card-title system-onboarding-title">Connect your health data</h2>
-        <p class="welcome-modal-text">This helps Obrium understand you faster — no extra typing needed.</p>
-      `;
-      footer = `
-        <button type="button" class="btn ghost profile-modal-cancel" data-os-skip-health>Skip for now</button>
-        <button type="button" class="btn btn-initialize profile-modal-save" data-os-allow-health>Allow Access</button>
-      `;
-    } else if (step === 3) {
-      body = `
-        <h2 class="card-title system-onboarding-title">What year were you born?</h2>
-        <label class="system-onboarding-field">
-          <span class="sr-only">Birth year</span>
-          <input type="number" class="profile-input system-onboarding-input" data-os-birth-year min="1920" max="${new Date().getFullYear()}" placeholder="e.g. 1990" inputmode="numeric" />
-        </label>
-      `;
-      footer = `<button type="button" class="btn btn-initialize profile-modal-save" data-os-next disabled>Continue</button>`;
-    } else if (step === 4) {
-      const currentBlood =
-        answers.bloodType && answers.bloodType !== 'unknown' ? answers.bloodType : '';
-      const hasBlood = !!currentBlood;
-      body = `
-        <h2 class="card-title system-onboarding-title">Do you know your blood type?</h2>
-        <div class="system-onboarding-field">
-          <span class="sr-only" id="osBloodTypeLabel">Blood type</span>
-          <div class="system-onboarding-picker" data-os-blood-picker>
-            <button
-              type="button"
-              class="system-onboarding-picker-trigger${!hasBlood ? ' is-placeholder' : ''}"
-              data-os-blood-trigger
-              aria-haspopup="listbox"
-              aria-expanded="false"
-              aria-labelledby="osBloodTypeLabel"
-            >
-              <span data-os-blood-label>${bloodTypeLabel(currentBlood)}</span>
-              <span class="system-onboarding-picker-chevron" aria-hidden="true"></span>
-            </button>
-            <input type="hidden" data-os-blood-type value="${currentBlood}" />
-            <ul class="system-onboarding-picker-list" role="listbox" data-os-blood-list hidden>
-              ${bloodTypePickerOptions(currentBlood)}
-            </ul>
-          </div>
-        </div>
-      `;
-      footer = `
-        <button type="button" class="btn ghost profile-modal-cancel" data-os-skip-blood>Skip for now</button>
-        <button type="button" class="btn btn-initialize profile-modal-save" data-os-next ${hasBlood ? '' : 'disabled'}>Continue</button>
-      `;
-    } else if (step === 5) {
-      body = `
-        <h2 class="card-title system-onboarding-title">Do you have any known allergies?</h2>
-        <div class="system-onboarding-choices" role="group" aria-label="Known allergies">
-          <button type="button" class="system-onboarding-choice system-onboarding-choice--secondary" data-os-allergies="yes">Yes</button>
-          <button type="button" class="system-onboarding-choice system-onboarding-choice--primary" data-os-allergies="no">No</button>
-        </div>
-      `;
-      footer = '';
-    } else if (step === 6) {
+    } else if (step === STEP_FOCUS) {
       const chips = STARTER_FOCUS_AREAS.map((area) => {
         const selected = answers.focusAreaIds.includes(area.id);
         return `
@@ -411,170 +272,16 @@ export function initSystemOnboarding() {
     `;
 
     overlay.querySelector('[data-os-next]')?.addEventListener('click', () => {
-      if (step === 1) {
-        step = hasAcknowledgedAiProcessing() ? 2 : CONSENT_STEP;
-        render();
-        return;
-      }
-      if (step === 3) {
-        const input = overlay.querySelector('[data-os-birth-year]');
-        const year = parseInt(input?.value, 10);
-        if (!Number.isFinite(year) || year < 1920 || year > new Date().getFullYear()) return;
-        answers.birthYear = year;
-        persistBirthYear(year);
-        step = 4;
-        render();
-        return;
-      }
-      if (step === 4) {
-        const sel = overlay.querySelector('[data-os-blood-type]');
-        const val = sel?.value;
-        if (!val) return;
-        answers.bloodType = val;
-        step = 5;
-        render();
-      }
+      if (step !== STEP_WELCOME) return;
+      step = hasAcknowledgedAiProcessing() ? STEP_FOCUS : STEP_CONSENT;
+      render();
     });
 
     overlay.querySelector('[data-os-ack-ai]')?.addEventListener('click', () => {
       markAiProcessingAcknowledged();
       try { window.refreshWeatherCard?.(); } catch (_) {}
-      step = 2;
+      step = STEP_FOCUS;
       render();
-    });
-
-    overlay.querySelector('[data-os-allow-health]')?.addEventListener('click', async () => {
-      try {
-        const granted = await requestHealthPermissions();
-        answers.healthConnected = !!granted;
-        await refresh();
-      } catch (_) {}
-      step = 3;
-      render();
-    });
-
-    overlay.querySelector('[data-os-skip-health]')?.addEventListener('click', () => {
-      answers.healthConnected = false;
-      step = 3;
-      render();
-    });
-
-    overlay.querySelector('[data-os-skip-blood]')?.addEventListener('click', () => {
-      answers.bloodType = 'unknown';
-      step = 5;
-      render();
-    });
-
-    const birthInput = overlay.querySelector('[data-os-birth-year]');
-    const birthBtn = overlay.querySelector('[data-os-next]');
-    if (birthInput && birthBtn && step === 3) {
-      birthInput.focus();
-      birthInput.addEventListener('input', () => {
-        const year = parseInt(birthInput.value, 10);
-        birthBtn.disabled = !(year >= 1920 && year <= new Date().getFullYear());
-      });
-    }
-
-    const bloodPicker = overlay.querySelector('[data-os-blood-picker]');
-    const bloodTrigger = overlay.querySelector('[data-os-blood-trigger]');
-    const bloodList = overlay.querySelector('[data-os-blood-list]');
-    const bloodInput = overlay.querySelector('[data-os-blood-type]');
-    const bloodLabel = overlay.querySelector('[data-os-blood-label]');
-    const bloodBtn = overlay.querySelector('[data-os-next]');
-    if (bloodPicker && bloodTrigger && bloodList && bloodInput && bloodLabel && bloodBtn && step === 4) {
-      let outsideClose = null;
-      let onReposition = null;
-
-      const clearListPosition = () => {
-        bloodList.style.position = '';
-        bloodList.style.left = '';
-        bloodList.style.right = '';
-        bloodList.style.top = '';
-        bloodList.style.bottom = '';
-        bloodList.style.width = '';
-        bloodList.style.maxHeight = '';
-        bloodList.style.zIndex = '';
-      };
-
-      const placeList = () => {
-        const rect = bloodTrigger.getBoundingClientRect();
-        const gap = 6;
-        const maxH = Math.min(220, Math.round(window.innerHeight * 0.36));
-        const spaceBelow = window.innerHeight - rect.bottom - gap - 16;
-        const spaceAbove = rect.top - gap - 16;
-        const openUp = spaceBelow < 140 && spaceAbove > spaceBelow;
-        const available = Math.max(120, openUp ? spaceAbove : spaceBelow);
-        const height = Math.min(maxH, available);
-
-        bloodList.style.position = 'fixed';
-        bloodList.style.left = `${Math.round(rect.left)}px`;
-        bloodList.style.width = `${Math.round(rect.width)}px`;
-        bloodList.style.right = 'auto';
-        bloodList.style.zIndex = '10050';
-        bloodList.style.maxHeight = `${height}px`;
-        if (openUp) {
-          bloodList.style.top = 'auto';
-          bloodList.style.bottom = `${Math.round(window.innerHeight - rect.top + gap)}px`;
-        } else {
-          bloodList.style.bottom = 'auto';
-          bloodList.style.top = `${Math.round(rect.bottom + gap)}px`;
-        }
-      };
-
-      const setOpen = (open) => {
-        bloodList.hidden = !open;
-        bloodTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-        bloodPicker.classList.toggle('is-open', open);
-        if (outsideClose) {
-          document.removeEventListener('pointerdown', outsideClose, true);
-          outsideClose = null;
-        }
-        if (onReposition) {
-          window.removeEventListener('resize', onReposition);
-          window.removeEventListener('scroll', onReposition, true);
-          onReposition = null;
-        }
-        if (!open) {
-          clearListPosition();
-          return;
-        }
-        placeList();
-        onReposition = () => placeList();
-        window.addEventListener('resize', onReposition);
-        window.addEventListener('scroll', onReposition, true);
-        outsideClose = (e) => {
-          if (!bloodPicker.contains(e.target) && !bloodList.contains(e.target)) setOpen(false);
-        };
-        document.addEventListener('pointerdown', outsideClose, true);
-      };
-
-      bloodTrigger.addEventListener('click', () => {
-        setOpen(bloodList.hidden);
-      });
-
-      bloodList.querySelectorAll('[role="option"]').forEach((opt) => {
-        opt.addEventListener('click', () => {
-          const value = opt.getAttribute('data-value') || '';
-          bloodInput.value = value;
-          bloodLabel.textContent = bloodTypeLabel(value);
-          bloodTrigger.classList.toggle('is-placeholder', !value);
-          bloodList.querySelectorAll('[role="option"]').forEach((el) => {
-            const on = el === opt;
-            el.classList.toggle('is-selected', on);
-            el.setAttribute('aria-selected', on ? 'true' : 'false');
-          });
-          bloodBtn.disabled = !value;
-          setOpen(false);
-        });
-      });
-    }
-
-    overlay.querySelectorAll('[data-os-allergies]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        answers.hasAllergies = btn.getAttribute('data-os-allergies') === 'yes';
-        step = 6;
-        render();
-      });
     });
 
     overlay.querySelectorAll('[data-os-focus-area]').forEach((btn) => {
