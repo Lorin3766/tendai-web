@@ -227,7 +227,7 @@ const MEDICAL_BRIEF_HTML = `
     </div>
     <section class="labs-brief-section">
       <h5 class="labs-brief-section-title">Observations</h5>
-      <p class="labs-brief-section-body">No HRV or Resting HR trend data is on record yet. Connect a wearable or add readings to include observations here.</p>
+      <p class="labs-brief-section-body">No HRV or Resting HR trend data is on record yet. Log readings in Talk or check-ins to include observations here.</p>
     </section>
     <section class="labs-brief-section">
       <h5 class="labs-brief-section-title">Context</h5>

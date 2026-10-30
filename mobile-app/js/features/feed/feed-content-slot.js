@@ -377,7 +377,7 @@ export function detectPersonalInsight(opts) {
   if (
     status &&
     status.length > 24 &&
-    !/searching|awaiting|upload|connect (a )?device|no data yet|please/i.test(status)
+    !/searching|upload|connect (a )?device|no data yet|please|manual baseline/i.test(status)
   ) {
     return {
       kind: 'personal_insight',

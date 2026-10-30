@@ -10,6 +10,7 @@ import './core/shared-context-bus.js';
 import { storageManager } from './core/storage.js';
 import { persistAppOpen } from './features/metrics/local-metrics.js';
 import { seedCheckinHistory } from './features/metrics/checkin-history.js';
+import { ensureDataCollectionMode } from './features/settings/data-collection-mode.js';
 import './features/storage/units.js';
 import './features/storage/slider-config.js';
 import './features/storage/message-queue.js';
@@ -80,6 +81,9 @@ async function initModules() {
   // StorageManager: load Master Record, migrate legacy data if needed
   storageManager.load();
   if (typeof window !== 'undefined') window.__storageManager = storageManager;
+  try {
+    ensureDataCollectionMode();
+  } catch (_) {}
   try {
     storageManager.syncFromProfileIfStale(profileState.get());
   } catch (_) {}

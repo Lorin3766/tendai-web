@@ -472,10 +472,10 @@ function buildSystemPrompt(sel) {
     : '';
   const modeLine =
     sel.trackingMode === 'ai_only'
-      ? 'Operate primarily from insights and user dialog; device data may be absent until connected.'
+      ? 'Operate primarily from insights and user dialog; wearable data is optional and must never be requested.'
       : sel.trackingMode === 'manual'
         ? 'Prioritize user-confirmed and manually logged inputs.'
-        : 'Prefer automatic signals from connected health stack and wearables when available.';
+        : 'Prefer automatic signals from a connected health stack when the user has already linked one; never urge linking.';
   return [
     `You are "${sel.displayName}", a ${domainLabel} companion focused on: ${typeLabel}.`,
     goalLine,
@@ -489,7 +489,8 @@ function buildSystemPrompt(sel) {
     '',
     `Mission: ${sel.agentType.desc}`,
     '',
-    'Default safety: prefer verified on-device or user-confirmed data over assumptions.',
+    'The user operates in Talk-first / Manual tracking mode without wearable sensors. Baseline metrics and evaluations must be derived strictly from conversation, text inputs, and daily check-ins. If sensor data is offline, never request, urge, or remind the user to connect external devices. Acknowledge qualitative and subjective self-reports as valid calibration signals.',
+    'Default safety: prefer user-confirmed data and Talk check-ins over assumptions.',
   ]
     .filter(Boolean)
     .join('\n');
@@ -548,7 +549,7 @@ function showCompletionToast(displayName, areaHint) {
   el.setAttribute('role', 'status');
   el.innerHTML = `
     <p class="phai-toast__title">${esc(displayName)} started tracking</p>
-    <p class="phai-toast__sub">No data yet — connect your device or log manually in the app.</p>
+    <p class="phai-toast__sub">No data yet — Talk and daily check-ins will build this baseline.</p>
   `;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('is-visible'));
@@ -609,7 +610,7 @@ function deployAgent(opts) {
   if (!opts.silentInsight) {
     writeAgentInsight(
       opts.displayName,
-      `${opts.displayName} is live. No data yet — connect a device or use manual log when you are ready.`,
+      `${opts.displayName} is live. Building your baseline from Talk, check-ins, and profile — no wearable required.`,
       { source: LEDGER_SOURCE_ULTIMATE_CREATOR }
     );
   }

@@ -103,6 +103,10 @@ export async function requestHealthPermissions() {
       });
     }
     _permissionsRequested = true;
+    try {
+      const { markWearablesConnected } = await import('../settings/data-collection-mode.js');
+      markWearablesConnected();
+    } catch (_) {}
     return true;
   } catch (e) {
     console.warn(LOG_TAG, 'Permission request failed', e);

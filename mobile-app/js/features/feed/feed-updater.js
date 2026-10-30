@@ -714,7 +714,7 @@ async function updateHumanOsDashboard(weatherOrNull) {
     const isSyncingHistory = historySync.isSyncing === true && Number(historySync.gapDays || 0) > 0;
     if (isSyncingHistory) {
       // Inactivity gap is missing data, not evidence of drift (or of being optimal).
-      status = 'Awaiting data';
+      status = 'Syncing history';
       driftingDays = 0;
     }
 

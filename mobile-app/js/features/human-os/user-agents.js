@@ -7,6 +7,47 @@ import { getFocusAreaById, getFocusAreaByName } from './focus-areas.js';
 
 const STORAGE_KEY = 'tendai_user_agents';
 const FABRICATED_PROFILE_SCRUB_KEY = 'tendai_focus_profile_scrub_v1';
+const SENSOR_NAG_SCRUB_KEY = 'tendai_focus_sensor_nag_scrub_v1';
+
+const TALK_FIRST_MANUAL_INSTRUCTION =
+  'The user operates in Talk-first / Manual tracking mode without wearable sensors. Baseline metrics and evaluations must be derived strictly from conversation, text inputs, and daily check-ins. If sensor data is offline, never request, urge, or remind the user to connect external devices. Acknowledge qualitative and subjective self-reports as valid calibration signals.';
+
+/**
+ * Idempotent: strip device-pairing urge copy from stored focus-agent instructions and
+ * append the Talk-first / Manual instruction when missing. Does not delete agents.
+ */
+function scrubSensorNagFromAgentInstructions() {
+  try {
+    if (localStorage.getItem(SENSOR_NAG_SCRUB_KEY) === '1') return;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(list) && list.length) {
+      let changed = false;
+      const next = list.map((row) => {
+        if (!row || typeof row.instruction !== 'string') return row;
+        let instruction = row.instruction
+          .replace(/No data yet\s*[—\-–]\s*connect[^\n.]*/gi, 'Building baseline from Talk and check-ins')
+          .replace(/connect your device or log manually[^\n.]*/gi, 'use Talk and daily check-ins')
+          .replace(/connect a device or use manual log[^\n.]*/gi, 'use Talk and daily check-ins')
+          .replace(/device data may be absent until connected\.?/gi, 'wearable data is optional and must never be requested.')
+          .replace(/Prefer automatic signals from connected health stack and wearables when available\.?/gi, 'Prefer Talk, check-ins, and self-reports; wearables are optional and must never be urged.')
+          .replace(/prefer verified on-device or user-confirmed data over assumptions\.?/gi, 'prefer user-confirmed data and Talk check-ins over assumptions.');
+        if (!/Talk-first \/ Manual tracking mode/i.test(instruction)) {
+          instruction = `${instruction.trim()}\n\n${TALK_FIRST_MANUAL_INSTRUCTION}`;
+        }
+        if (instruction === row.instruction) return row;
+        changed = true;
+        return { ...row, instruction };
+      });
+      if (changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    }
+    localStorage.setItem(SENSOR_NAG_SCRUB_KEY, '1');
+  } catch (_) {
+    try {
+      localStorage.setItem(SENSOR_NAG_SCRUB_KEY, '1');
+    } catch (__) {}
+  }
+}
 
 /**
  * Earlier "+ Add Focus" builds wrote invented fallback facts into every agent instruction
@@ -48,7 +89,10 @@ function scrubFabricatedProfileFacts() {
   } catch (_) {}
 }
 
-if (typeof localStorage !== 'undefined') scrubFabricatedProfileFacts();
+if (typeof localStorage !== 'undefined') {
+  scrubFabricatedProfileFacts();
+  scrubSensorNagFromAgentInstructions();
+}
 
 /** @typedef {'Active'|'Paused'|'Incomplete'} AgentLifecycleStatus */
 

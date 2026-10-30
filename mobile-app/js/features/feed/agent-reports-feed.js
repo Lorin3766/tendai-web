@@ -42,6 +42,17 @@ import {
   buildSignalConfidenceNudge,
 } from './feed-content-slot.js';
 import { getEntries } from './content-library.js';
+import { dataCollectionModePillLabel, isSensorNagText } from '../settings/data-collection-mode.js';
+
+/** Display-only rewrite for legacy ledger copy (storage untouched). */
+function displaySafeStatus(status) {
+  const s = String(status || '').trim();
+  if (!s) return s;
+  if (isSensorNagText(s)) {
+    return 'Building your baseline from Talk and check-ins — no wearable required.';
+  }
+  return s;
+}
 
 /** @typedef {{ zone: string, zoneKey: string, icon: string }} AgentZone */
 
@@ -356,9 +367,9 @@ function buildLogicCopy(status, signal, _metrics, row) {
       return '00:00:00';
     }
   })();
-  const lowSignal = !signal.active || /no data yet|no data|connect your device|connect a device/i.test(String(status || ''));
+  const lowSignal = !signal.active || /no data yet|no data|manual baseline|self-reported/i.test(String(status || ''));
   if (lowSignal) {
-    return `${hhmmss} > SYS_EVENT: NO_DATA_SOURCE_DETECTED\n${hhmmss} > ACTION: AWAITING_SENSOR_LINK`;
+    return `${hhmmss} > SYS_EVENT: MANUAL_BASELINE_MODE\n${hhmmss} > ACTION: CALIBRATE_VIA_TALK_AND_CHECKINS`;
   }
   if (explicit) {
     return `${hhmmss} > SYS_EVENT: ${token(status, 'STATUS_UPDATE')}\n${hhmmss} > ACTION: ${token(explicit, 'MONITORING_STREAM')}`;
@@ -600,12 +611,12 @@ function openTalkDiscussAgent(agentName, row, cardContext = {}) {
     const discussPayload = {
       context_id: contextId,
       agent: name,
-      status: String((row && row.status) || ''),
+      status: displaySafeStatus((row && row.status) || ''),
       priority: isCriticalInsight(row) ? 'critical' : 'normal',
       updatedAt: (row && row.updatedAt) || new Date().toISOString(),
       track_id: String(normalizedContext.trackId || ''),
-      insight_summary: String(normalizedContext.summaryLine || ''),
-      logic: String(normalizedContext.logicText || ''),
+      insight_summary: displaySafeStatus(normalizedContext.summaryLine || ''),
+      logic: displaySafeStatus(normalizedContext.logicText || '') || String(normalizedContext.logicText || ''),
       science: String(normalizedContext.scienceText || ''),
       review_url: String(normalizedContext.reviewHref || ''),
       metrics: Array.isArray(normalizedContext.metrics)
@@ -827,7 +838,7 @@ function heartVerdictState(hrv, baseline, restingHr) {
     return {
       text: UNIVERSAL_AGENT_SEARCHING,
       tone: /** @type {'searching'} */ ('searching'),
-      insight: 'Awaiting stabilized biosignals before issuing a verdict.',
+      insight: 'Building a manual baseline from Talk and check-ins before issuing a verdict.',
     };
   }
   if (hrv != null && baseline != null && hrv < baseline * 0.85) {
@@ -984,7 +995,7 @@ function buildUniversalCardProps(p) {
         asNumU(sd.recovery_score_pct, sd.recovery_pct) != null);
     const contentSlot = resolveSlotContent(sd, pickFirstNonEmpty([status, v.insight]));
     const confidenceNudge = buildSignalConfidenceNudge(signalConfidencePct);
-    // Stage 0 / grounded science: never leave the card in SEARCHING/AWAITING empty state.
+    // Stage 0 / grounded science: never leave the card in an empty searching state.
     let verdictText = v.text;
     let verdictTone = v.tone;
     if (contentSlot.kind === 'grounded_science' && (verdictTone === 'searching' || maturityStage === 0)) {
@@ -1191,7 +1202,7 @@ function wireUniversalAgentCard(el, ctx) {
  */
 function renderAgentPanelCard(grid, row, prevKeys) {
   const agent = String(row.agent).trim();
-  const status = String(row.status).trim();
+  const status = displaySafeStatus(row.status);
   const { zoneKey } = zoneFromAgentName(agent);
   const critical = isCriticalInsight(row);
   const success = !critical && isSuccessInsight(row);
@@ -1574,7 +1585,7 @@ function applyRealtimeBiometricToCards(cfg) {
   if (!cards.length) return;
   cards.forEach((card) => {
     const badge = card.querySelector('.heart-agent-module__status-pill');
-    if (badge) badge.textContent = '[LINK SENSOR: ONLINE]';
+    if (badge) badge.textContent = 'Wearable linked';
     const textEl = card.querySelector('[data-uac-status-pill-text]');
     if (textEl) {
       const short = cfg.isCritical ? 'ALERT' : 'OPTIMAL';
@@ -2364,15 +2375,16 @@ function syncFocusCardsFromProfile() {
     }
 
     const statusRow = el.querySelector('.heart-agent-module__status-row');
-    const pill = statusRow?.querySelector('.heart-agent-module__status-pill');
-    const showPill = el.dataset.signalActive === '1' || stage >= 1;
-    if (statusRow && showPill && !pill) {
-      const next = document.createElement('span');
-      next.className = 'heart-agent-module__status-pill';
-      next.textContent = el.dataset.signalActive === '1' ? 'Sensor linked' : 'Sensor offline';
-      statusRow.prepend(next);
-    } else if (!showPill && pill) {
-      pill.remove();
+    let pill = statusRow?.querySelector('.heart-agent-module__status-pill');
+    const modeLabel = dataCollectionModePillLabel(el.dataset.signalActive === '1');
+    if (statusRow && !pill) {
+      pill = document.createElement('span');
+      pill.className = 'heart-agent-module__status-pill heart-agent-module__status-pill--manual';
+      statusRow.prepend(pill);
+    }
+    if (pill) {
+      pill.classList.add('heart-agent-module__status-pill--manual');
+      pill.textContent = modeLabel;
     }
     const conf = el.querySelector('.heart-agent-module__signal-confidence');
     const pct = Number(el.dataset.signalConfidence || 0);

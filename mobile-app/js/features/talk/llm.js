@@ -12,6 +12,12 @@ import { isAutoHealthChecksEnabled } from '../settings/auto-requests.js';
 import { incrementNotification } from '../../core/notifications.js';
 import { recordDataSent, updateDataSentOutcome, DATA_SENT_REQUEST_TYPES } from './data-sent-log.js';
 import { getBackendBearer, resolveBackendURL } from '../../core/runtime-config.js';
+import {
+  getDataCollectionMode,
+  focusAgentModeInstruction,
+  isSensorNagText,
+  scrubSensorNagFromContext,
+} from '../settings/data-collection-mode.js';
 
 /**
  * Relay URL: window.OBRIUM_BACKEND_URL or <meta name="obrium-backend-url">.
@@ -241,6 +247,8 @@ async function getSystemContextSnapshot() {
   const contextInstruction = [
     `User-provided profile: ${profileBits.length ? profileBits.join(', ') : 'nothing provided yet'}.`,
     `Current State: ${biometricsSummary}`,
+    `Data collection mode: ${getDataCollectionMode()}.`,
+    focusAgentModeInstruction(),
     'Anything not listed above is unknown: do not assume, estimate, or invent it.',
     'Analyze the user\'s input considering this context.',
     'Be concise, logical, and focus on systemic efficiency.',
@@ -280,13 +288,16 @@ function selectRecentLedgerRows(ledger, discussAgent) {
     const row = rows.find((r) => String(r.agent || '').toLowerCase() === wanted);
     if (row) picked.push(row);
   }
-  return picked.map((r) => ({
-    agent: r.agent,
-    status: r.status,
-    priority: r.priority,
-    ...(r.done ? { done: true } : {}),
-    updatedAt: r.updatedAt,
-  }));
+  return picked
+    .filter((r) => !isSensorNagText(r && r.status))
+    .map((r) => ({
+      agent: r.agent,
+      status: scrubSensorNagFromContext(r.status) || String(r.status || '').trim(),
+      priority: r.priority,
+      ...(r.done ? { done: true } : {}),
+      updatedAt: r.updatedAt,
+    }))
+    .filter((r) => r.status);
 }
 
 /**
@@ -509,17 +520,29 @@ export async function sendMessageToLLM(text, context) {
       context && context.systemState && typeof context.systemState === 'object' && !Array.isArray(context.systemState)
         ? context.systemState
         : {};
-    const discussContext =
+    const discussContextRaw =
       typeof window !== 'undefined' &&
       window.__obriumDiscussContext &&
       typeof window.__obriumDiscussContext === 'object'
         ? window.__obriumDiscussContext
         : null;
+    const discussContext = discussContextRaw
+      ? {
+          ...discussContextRaw,
+          status: scrubSensorNagFromContext(discussContextRaw.status),
+          insight_summary: scrubSensorNagFromContext(discussContextRaw.insight_summary),
+          logic: scrubSensorNagFromContext(discussContextRaw.logic),
+        }
+      : null;
+    if (discussContext && !discussContext.status && isSensorNagText(discussContextRaw.status)) {
+      discussContext.status = 'Manual baseline — calibrate via Talk and check-ins.';
+    }
     const recentLedger = includeLedger
       ? selectRecentLedgerRows(getCommonLedger(), discussContext && discussContext.agent)
       : [];
     body.system_state = {
       ...extraState,
+      dataCollectionMode: getDataCollectionMode(),
       user_memory: getUserMemory(),
       ...(recentLedger.length ? { common_ledger_recent: recentLedger } : { simplified_context: true }),
       ...(discussContext ? { discuss_context: discussContext } : {}),

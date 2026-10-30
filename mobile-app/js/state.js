@@ -25,6 +25,9 @@ const STATE_KEYS = {
 const initialState = {
   profile: {
     location: null, // {type: 'geo'|'manual', coords?: {lat, lon}, city?: string, zip?: string}
+    /** Talk-first default. Switches to wearable_hybrid only when the user connects health sources. */
+    dataCollectionMode: 'manual_talk', // 'manual_talk' | 'wearable_hybrid'
+    sensors: { wearablesConnected: false, allowWearablesPrompt: false },
     body: {
       age: null,
       birthYear: null,

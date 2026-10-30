@@ -102,7 +102,7 @@ export function openBlueprintStoreModal(onSaved) {
     body.innerHTML = '';
     nav.innerHTML = '';
     title.textContent =
-      state.step === 1 ? 'BLUEPRINT STORE' : state.step === 2 ? 'SENSOR LINK' : state.step === 3 ? 'TRIGGER TUNING' : 'BACKGROUND PROCESS';
+      state.step === 1 ? 'BLUEPRINT STORE' : state.step === 2 ? 'DATA SOURCE' : state.step === 3 ? 'TRIGGER TUNING' : 'BACKGROUND PROCESS';
     syncStepper();
 
     if (state.step === 1) {

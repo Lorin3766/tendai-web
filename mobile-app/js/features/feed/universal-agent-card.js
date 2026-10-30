@@ -2,6 +2,8 @@
 // @owner: feed
 // @role: ui
 
+import { dataCollectionModePillLabel } from '../settings/data-collection-mode.js';
+
 export const UNIVERSAL_AGENT_SEARCHING = '[ SEARCHING FOR SIGNAL... ]';
 
 /**
@@ -272,7 +274,7 @@ function renderReadOnlyDashboardHtml(trackId, sd, signalConfidencePct) {
     : '';
 
   // PRIMARY METRIC is only shown when a real numeric stream exists — never
-  // with placeholder / mock / "awaiting sync" copy.
+  // with placeholder / mock / empty-sync copy.
   const hasRealMetric = Boolean(readout.hasData && readout.mode === 'metric');
   const caption = sanitizeUserFacingMetricCopy(readout.caption);
   const delta = sanitizeUserFacingMetricCopy(deltaLine);
@@ -343,10 +345,10 @@ function sanitizeUserFacingMetricCopy(text) {
  * @param {string} [verdictText]
  */
 export function deriveStatusPillLabel(tone, verdictText = '') {
-  if (tone === 'searching') return 'Awaiting';
+  if (tone === 'searching') return 'Baseline';
   if (tone === 'alert') return 'Alert';
   const t = String(verdictText || '').toUpperCase();
-  if (t.includes('AWAITING') || t.includes('SEARCHING')) return 'Awaiting';
+  if (t.includes('SEARCHING') || t.includes('BASELINE') || t.includes('MANUAL')) return 'Baseline';
   if (t.includes('INTERVENTION') || t.includes('RECOVERY REQUIRED')) return 'Alert';
   if (t.includes('PERSONAL INSIGHT')) return 'Insight';
   if (t.includes('GROUNDED SCIENCE')) return 'Science';
@@ -445,7 +447,9 @@ export function createUniversalAgentCard(props) {
   const confidenceNudgeText = showConfidenceNudge ? String(nudge.text).trim() : '';
   const calibrationText = String(props.calibrationText || '').trim();
   const calibrationSettings = props.calibrationAction === 'settings';
-  const showSensorPill = props.signalActive || maturityStage >= 1;
+  // Talk-first default: always show a neutral Manual Baseline pill (not a warning).
+  const showSensorPill = true;
+  const modePillLabel = dataCollectionModePillLabel(!!props.signalActive);
 
   const classes = ['agent-report-card', 'agent-report-card--panel', `agent-report-card--track-${trackId}`, 'heart-agent-module-card', 'universal-agent-card'];
   for (const c of props.extraCardClasses || []) {
@@ -475,7 +479,7 @@ export function createUniversalAgentCard(props) {
   const payoffContext = String(props.payoffContext || '').trim();
   const dashboard = renderReadOnlyDashboardHtml(trackId, sd, signalConfidencePct);
   // Hide expand/PRIMARY METRIC when there's no real reading — that panel was
-  // surfacing mock/awaiting copy under the Insight/Science slot.
+  // surfacing mock/empty-sync copy under the Insight/Science slot.
   const showDetails = dashboard.hasRealMetric;
   const dashboardHtml = showDetails ? dashboard.html : '';
 
@@ -518,7 +522,7 @@ export function createUniversalAgentCard(props) {
           </span>
         </div>
         <div class="heart-agent-module__status-row">
-          ${showSensorPill ? `<span class="heart-agent-module__status-pill">${universalEsc(props.signalActive ? 'Sensor linked' : 'Sensor offline')}</span>` : ''}
+          ${showSensorPill ? `<span class="heart-agent-module__status-pill heart-agent-module__status-pill--manual">${universalEsc(modePillLabel)}</span>` : ''}
           <span
             class="heart-agent-module__maturity"
             data-uac-maturity
