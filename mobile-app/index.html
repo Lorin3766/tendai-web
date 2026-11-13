@@ -1053,6 +1053,17 @@
             </div>
           </div>
 
+          <div class="settings-about-links" aria-label="Legal and contact">
+            <a href="privacy-policy.html" class="settings-about-link">Privacy</a>
+            <span class="settings-about-sep" aria-hidden="true">·</span>
+            <a href="terms-of-use.html" class="settings-about-link">Terms</a>
+            <span class="settings-about-sep" aria-hidden="true">·</span>
+            <a href="disclaimer.html" class="settings-about-link">Disclaimer</a>
+          </div>
+          <div class="settings-info-text">
+            Contact details will appear here once the founder publishes a contact address.
+          </div>
+
           <!-- Location Settings -->
           <div class="settings-section" style="margin-top: 24px;">
             <div class="settings-section-title">Location</div>
@@ -1174,16 +1185,14 @@
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="app-footer">
+  <!-- Desktop-only footer; mobile uses Settings → About to avoid tab-bar overlap -->
+  <footer class="app-footer app-footer--desktop-only">
     <div class="footer-content">
       <a href="privacy-policy.html">Privacy</a>
       <span class="footer-separator">·</span>
       <a href="terms-of-use.html">Terms</a>
       <span class="footer-separator">·</span>
       <a href="disclaimer.html">Disclaimer</a>
-      <span class="footer-separator">·</span>
-      <a href="mailto:support@tendai.app">support@tendai.app</a>
     </div>
   </footer>
 

@@ -4368,7 +4368,17 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 
 @media (max-width: 899px) {
   #feed-view.feed-mission-control-mode {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+  #feed-view.feed-mission-control-mode .agent-reports-header--cyber {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 12px !important;
+    padding-top: max(4px, env(safe-area-inset-top, 0px));
+  }
+  #feed-view.feed-mission-control-mode .agent-reports-list,
+  #feed-view.feed-mission-control-mode .agent-reports-grid--panels {
+    padding-top: 4px;
   }
 }
 #feed-view.feed-mission-control-mode #myDayCard {
@@ -7378,8 +7388,37 @@ button.sidebar-core-retry[hidden] {
   opacity: 0.5;
 }
 
-/* Mobile footer */
-@media (max-width: 1024px) {
+/* Mobile: hide fixed page footer so it cannot overlap the bottom tab bar */
+@media (max-width: 899px) {
+  .app-footer,
+  .app-footer--desktop-only {
+    display: none !important;
+  }
+}
+
+.settings-about-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.settings-about-link {
+  color: var(--fg-muted, #9e968c);
+  text-decoration: none;
+  font-size: 13px;
+}
+.settings-about-link:hover {
+  color: var(--gold, #f6c36a);
+}
+.settings-about-sep {
+  color: var(--fg-muted, #9e968c);
+  opacity: 0.5;
+  font-size: 13px;
+}
+
+/* Mobile footer (legacy; kept for desktop) */
+@media (min-width: 900px) and (max-width: 1024px) {
   .app-footer {
     padding: 8px 16px;
   }

@@ -527,8 +527,8 @@ main {
     flex: 1 1 auto;
     min-height: 0; /* КРИТИЧНО: flex-ребенок должен иметь min-height:0 для правильной работы overflow */
     height: 100%;
-    /* Padding снизу для navbar (высота navbar + safe-area + комфортный зазор) */
-    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    /* Tab bar (~70px) + safe-area + gap — keeps last card above the nav */
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
   }
 
@@ -538,7 +538,7 @@ main {
   #talk-view.talk-view {
     width: 100%;
     max-width: 100%;
-    padding: 12px 16px calc(80px + env(safe-area-inset-bottom));
+    padding: 12px 16px calc(88px + env(safe-area-inset-bottom, 0px));
     margin: 0;
     gap: 0;
     display: flex;
