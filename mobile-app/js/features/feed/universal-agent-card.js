@@ -236,7 +236,7 @@ function buildProgressAndDelta(readout) {
     } else if (unitKind === 'steps') {
       deltaLine = `Avg ${Math.round(Number(avgNum)).toLocaleString()} · Δ ${sign}${Math.round(d).toLocaleString()}`;
     } else {
-      deltaLine = `Baseline ${avgNum} · Δ ${sign}${Number.isInteger(d) ? d : d.toFixed(1)}`;
+      deltaLine = `Avg ${avgNum} · Δ ${sign}${Number.isInteger(d) ? d : d.toFixed(1)}`;
     }
   } else if (readout.mode === 'signal-confidence') {
     deltaLine = 'Recency · consistency · cross-source agreement';
@@ -345,15 +345,15 @@ function sanitizeUserFacingMetricCopy(text) {
  * @param {string} [verdictText]
  */
 export function deriveStatusPillLabel(tone, verdictText = '') {
-  if (tone === 'searching') return 'Baseline';
+  if (tone === 'searching') return 'Learning';
   if (tone === 'alert') return 'Alert';
   const t = String(verdictText || '').toUpperCase();
-  if (t.includes('SEARCHING') || t.includes('BASELINE') || t.includes('MANUAL')) return 'Baseline';
+  if (t.includes('SEARCHING') || t.includes('BASELINE') || t.includes('MANUAL')) return 'Learning';
   if (t.includes('INTERVENTION') || t.includes('RECOVERY REQUIRED')) return 'Alert';
   if (t.includes('PERSONAL INSIGHT')) return 'Insight';
   if (t.includes('GROUNDED SCIENCE')) return 'Science';
-  if (t.includes('OPTIMAL')) return 'Optimal';
-  return tone === 'optimal' ? 'Optimal' : 'Signal';
+  if (t.includes('OPTIMAL')) return 'On track';
+  return tone === 'optimal' ? 'On track' : 'Update';
 }
 
 export function universalFmtMetric(v, suffix = '') {
@@ -420,16 +420,16 @@ export function createUniversalAgentCard(props) {
     Math.min(3, Math.round(Number(props.maturityStage ?? 0) || 0))
   );
   const maturityTitles = {
-    0: 'Stage 0 — Baseline: profile + general science (no personal data yet)',
-    1: 'Stage 1 — Passive data started (sensors / Talk)',
-    2: 'Stage 2 — Trends and cross-domain connections',
-    3: 'Stage 3 — Biomarkers / lab-grounded recommendations',
+    0: 'Getting to know this area from Talk and check-ins',
+    1: 'Personal answers started for this area',
+    2: 'Patterns across days',
+    3: 'Richer personal context',
   };
   const maturityLabels = {
-    0: 'Baseline',
-    1: 'Calibrated',
-    2: 'Trends',
-    3: 'Biomarkers',
+    0: 'New',
+    1: 'Started',
+    2: 'Patterns',
+    3: 'Detailed',
   };
 
   const slot = props.contentSlot && typeof props.contentSlot === 'object' ? props.contentSlot : null;
@@ -447,9 +447,9 @@ export function createUniversalAgentCard(props) {
   const confidenceNudgeText = showConfidenceNudge ? String(nudge.text).trim() : '';
   const calibrationText = String(props.calibrationText || '').trim();
   const calibrationSettings = props.calibrationAction === 'settings';
-  // Talk-first default: always show a neutral Manual Baseline pill (not a warning).
   const showSensorPill = true;
   const modePillLabel = dataCollectionModePillLabel(!!props.signalActive);
+  const knowledgeLine = String(props.knowledgeLine || '').trim();
 
   const classes = ['agent-report-card', 'agent-report-card--panel', `agent-report-card--track-${trackId}`, 'heart-agent-module-card', 'universal-agent-card'];
   for (const c of props.extraCardClasses || []) {
@@ -528,8 +528,7 @@ export function createUniversalAgentCard(props) {
             data-uac-maturity
             data-maturity-stage="${maturityStage}"
             title="${universalEsc(maturityTitles[maturityStage])}"
-          >Stage ${maturityStage} · ${universalEsc(maturityLabels[maturityStage])}</span>
-          ${showSignalConfidence ? `<span class="heart-agent-module__signal-confidence heart-agent-module__integrity" title="Data quality: recency, consistency, and cross-source agreement">Signal Confidence: ${universalEsc(`${Math.round(signalConfidencePct)}%`)}</span>` : ''}
+          >${universalEsc(knowledgeLine || maturityLabels[maturityStage] || '')}</span>
           <time class="heart-agent-module__time" ${props.timeIso ? `datetime="${universalEsc(props.timeIso)}"` : ''}>${universalEsc(props.timeStr || '—')}</time>
         </div>
         ${

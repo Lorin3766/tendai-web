@@ -85,14 +85,15 @@ export function areaHasAskableSignal(areaId) {
   });
 }
 
-export const SETTINGS_CITY_CALIBRATION = 'Add your city in Settings to calibrate this';
+export const SETTINGS_CITY_CALIBRATION = 'Add your city in Settings to personalize this';
 
 export function calibrationLine(profile, areaId) {
   const { n, m } = signalProgress(profile, areaId);
   if (!m || n >= m) return '';
   if (!areaHasAskableSignal(areaId)) return SETTINGS_CITY_CALIBRATION;
-  if (n >= 1) return `Calibration: ${n} of ${m} signals — one more answer sharpens this.`;
-  return `Calibration: ${n} of ${m} signals — answer a quick question in Talk to personalize this.`;
+  // Keep internal progress; user-visible copy avoids "Calibration" / "signals".
+  if (n >= 1) return 'One more answer in Talk sharpens this card.';
+  return 'Answer a quick question in Talk to personalize this.';
 }
 
 /** The calibration button opens Settings when none of the area's signals can be asked in Talk. */

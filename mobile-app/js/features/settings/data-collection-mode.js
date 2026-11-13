@@ -107,7 +107,7 @@ export function focusAgentModeInstruction() {
 }
 
 /**
- * Feed badge: neutral Manual Baseline unless wearables are live.
+ * Feed mode pill — plain language; no "Baseline" / "Manual Baseline" labels.
  * @param {boolean} signalActive
  * @returns {string}
  */
@@ -115,7 +115,7 @@ export function dataCollectionModePillLabel(signalActive) {
   if (getDataCollectionMode() === DATA_COLLECTION_WEARABLE && signalActive) {
     return 'Wearable linked';
   }
-  return 'Manual Baseline';
+  return 'Self-reported';
 }
 
 /**

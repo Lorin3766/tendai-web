@@ -214,7 +214,7 @@ export function getBehaviorModeUserLabel(modeIdOrName) {
  * Content selection by stage is Task 4 — these labels are for UI indicators only.
  */
 export const MATURITY_STAGE_LABELS = {
-  0: 'Baseline',
+  0: 'New',
   1: 'Passive data',
   2: 'Trends',
   3: 'Biomarkers',

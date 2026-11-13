@@ -5,6 +5,10 @@
 
 import { dayState } from '../../state.js';
 import { getSliderConfig } from '../storage/slider-config.js';
+import { checkinHistoryEntry } from '../metrics/checkin-history.js';
+import { checkinRecapLine } from '../talk/talk-payoff.js';
+import { getObriumCheckinHistory } from '../metrics/checkin-history.js';
+import { addMessage } from '../storage/message-queue.js';
 
 (function () {
   'use strict';
@@ -133,6 +137,19 @@ import { getSliderConfig } from '../storage/slider-config.js';
     dayState.saveDayStateForToday(todayState);
     try {
       window.dispatchEvent(new CustomEvent('obrium:checkin-saved'));
+    } catch (_) {}
+
+    try {
+      const todayEntry = checkinHistoryEntry(todayState);
+      const hist = getObriumCheckinHistory() || [];
+      const yesterday = hist.length >= 2 ? hist[hist.length - 2] : hist.find((d) => d.date !== todayState.date);
+      const recap = checkinRecapLine(todayEntry, yesterday);
+      if (recap && typeof addMessage === 'function') {
+        addMessage({ type: 'feed', subtype: 'checkin-recap', text: recap });
+      }
+      if (recap && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('obrium:checkin-recap', { detail: { text: recap } }));
+      }
     } catch (_) {}
 
     // Close modal

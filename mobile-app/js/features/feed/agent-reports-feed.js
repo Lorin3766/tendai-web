@@ -43,6 +43,7 @@ import {
 } from './feed-content-slot.js';
 import { getEntries } from './content-library.js';
 import { dataCollectionModePillLabel, isSensorNagText } from '../settings/data-collection-mode.js';
+import { feedCardKnowledgeLine } from '../talk/talk-payoff.js';
 
 /** Display-only rewrite for legacy ledger copy (storage untouched). */
 function displaySafeStatus(status) {
@@ -999,7 +1000,7 @@ function buildUniversalCardProps(p) {
     let verdictText = v.text;
     let verdictTone = v.tone;
     if (contentSlot.kind === 'grounded_science' && (verdictTone === 'searching' || maturityStage === 0)) {
-      verdictText = contentSlot.noFact ? 'BASELINE' : 'GROUNDED SCIENCE';
+      verdictText = contentSlot.noFact ? 'LEARNING' : 'GROUNDED SCIENCE';
       verdictTone = 'optimal';
     } else if (contentSlot.kind === 'personal_insight' && verdictTone === 'searching') {
       verdictText = 'PERSONAL INSIGHT';
@@ -1021,6 +1022,7 @@ function buildUniversalCardProps(p) {
       calibrationAction,
       focusAreaId,
       storedStage,
+      knowledgeLine: focusAreaId ? feedCardKnowledgeLine(profileNow, focusAreaId) : '',
       payoffEchoText,
       payoffContext,
       timeStr,
@@ -1070,7 +1072,7 @@ function buildUniversalCardProps(p) {
     verdictText = critical ? 'CONDITION: INTERVENTION REQUIRED' : 'PERSONAL INSIGHT';
     verdictTone = critical ? 'alert' : 'optimal';
   } else if (contentSlot.kind === 'grounded_science') {
-    verdictText = contentSlot.noFact ? 'BASELINE' : 'GROUNDED SCIENCE';
+    verdictText = contentSlot.noFact ? 'LEARNING' : 'GROUNDED SCIENCE';
     verdictTone = critical ? 'alert' : 'optimal';
   }
 
@@ -1085,6 +1087,7 @@ function buildUniversalCardProps(p) {
     signalActive,
     signalConfidencePct,
     integrityPct: signalConfidencePct, // Deprecated alias.
+    knowledgeLine: focusAreaId ? feedCardKnowledgeLine(profileNow, focusAreaId) : '',
     maturityStage,
     calibrationText,
     calibrationAction,
@@ -1409,7 +1412,7 @@ export function renderAgentReportsSection() {
     section = document.createElement('section');
     section.id = 'agentReportsSection';
     section.className = 'agent-reports-section agent-reports-section--cyber';
-    section.setAttribute('aria-label', 'Adaptive agent feed');
+    section.setAttribute('aria-label', 'Your focus areas');
     const today = feedView.querySelector('#todayBlock');
     const stack = feedView.querySelector('#feedCoreStack');
     const anchor = today || stack;
@@ -1423,7 +1426,7 @@ export function renderAgentReportsSection() {
   section.innerHTML = `
     <div class="agent-reports-panel">
       <div class="agent-reports-header agent-reports-header--cyber">
-        <h3 class="agent-reports-title agent-reports-title--cyber">Adaptive agent feed</h3>
+        <h3 class="agent-reports-title agent-reports-title--cyber">Your focus areas</h3>
         <span class="agent-reports-updated" data-ledger-updated></span>
       </div>
       <div class="agent-reports-list" id="agentReportsList">
@@ -2257,7 +2260,7 @@ async function hydrateAgentCardsFromStorage() {
   }
 }
 
-const MATURITY_BADGE = ['Baseline', 'Calibrated', 'Trends', 'Biomarkers'];
+const MATURITY_BADGE = ['New', 'Started', 'Patterns', 'Detailed'];
 let profileBeforeCardSync = null;
 
 function readMappedValue(profile, signal) {
@@ -2300,7 +2303,7 @@ function syncFocusCardsFromProfile() {
     const badge = el.querySelector('[data-uac-maturity]');
     if (badge) {
       badge.dataset.maturityStage = String(stage);
-      badge.textContent = `Stage ${stage} · ${MATURITY_BADGE[stage] || ''}`;
+      badge.textContent = feedCardKnowledgeLine(profile, id);
     }
     el.dataset.maturityStage = String(stage);
 

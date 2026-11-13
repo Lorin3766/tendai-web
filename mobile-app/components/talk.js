@@ -21,9 +21,8 @@ import {
   getClarifyTapOptions,
   snoozeProfileFieldForSession,
   isProfileFieldSnoozedForSession,
-  clearSessionSnoozedProfileFields,
-  parseProfileAnswer,
 } from '../js/features/talk/profile-answer-parser.js';
+import { assembleTalkPayoff } from '../js/features/talk/talk-payoff.js';
 
 const TALK_OPENING_SESSION_KEY = 'tendai_talk_opening_shown_v1';
 import { obriumNow, localDateKey } from '../js/core/obrium-clock.js';
@@ -651,7 +650,7 @@ export class TalkComponent {
     messageContent.insertBefore(btn, messageContent.querySelector('.message-time'));
   }
 
-  /** Append "Add to Human OS" when a routine (habit + time) is detected in the AI reply */
+  /** Append "Add to Feed" when a routine (habit + time) is detected in the AI reply */
   appendProtocolAddButton(messageContent, { id, label, time }) {
     const timeEl = messageContent.querySelector('.message-time');
     const btn = document.createElement('button');
@@ -670,7 +669,7 @@ export class TalkComponent {
           return true;
         }
       } catch (_) {}
-      btn.textContent = '✨ Add to Human OS';
+      btn.textContent = 'Add to Feed';
       btn.disabled = false;
       return false;
     };
@@ -1333,7 +1332,7 @@ export class TalkComponent {
   }
 
   /**
-   * Save a profile answer and post one reaction bubble: echo → Feed change → next ask (or silence).
+   * Save a profile answer and post one reaction bubble: echo → memory → library → why-next.
    */
   async commitProactiveProfileAnswer(question, value, echoRaw) {
     if (!question) return;
@@ -1346,6 +1345,7 @@ export class TalkComponent {
     try {
       noteSignalSaved(question.sectionKey, question.fieldKey);
     } catch (_) {}
+    const profileAfter = profileState.get();
     const changed = areas.filter((id) => this.cardSnapshot(id) !== before[id]);
     const claim = changed
       .map((id) => getFocusAreaById(id)?.name || id)
@@ -1361,16 +1361,27 @@ export class TalkComponent {
     });
     this._proactiveAnswersThisSession += 1;
 
-    const echoBit = echoRaw ? `You said “${String(echoRaw).trim()}”.` : '';
-    const parts = [echoBit, claim].filter(Boolean);
+    const next = this.getNextUnsnoozedProfileQuestion(profileAfter);
+    const payoff = assembleTalkPayoff({
+      echoRaw,
+      profile: profileAfter,
+      answeredPath: question.path,
+      answeredFieldKey: question.fieldKey,
+      nextQuestion: next,
+      changedAreaIds: changed.length ? changed : areas,
+      claimLine: claim,
+    });
+    const parts = [...payoff.lines];
+    if (payoff.sourceLine) parts.push(payoff.sourceLine);
 
-    const next = this.getNextUnsnoozedProfileQuestion(profileState.get());
     const attachFeed = (el) => {
       if (claim && changed[0]) this.appendSeeInFeed(el, changed[0]);
     };
 
     if (!next) {
-      parts.push("That's everything I needed on your profile for now. Ask me anything whenever you like.");
+      if (!parts.some((p) => /everything I needed/i.test(p))) {
+        parts.push("That's everything I needed on your profile for now. Ask me anything whenever you like.");
+      }
       const el = this.addMessageToChat(parts.join(' '), 'ai', true, null, { profileReaction: true });
       attachFeed(el);
       this._proactivePassiveThisSession = true;
@@ -1389,7 +1400,7 @@ export class TalkComponent {
       return;
     }
 
-    parts.push(getConversationalAsk(next));
+    // why-next already includes the next ask intent; still pin the next field on the bubble.
     const el = this.addMessageToChat(
       parts.join(' '),
       'ai',
