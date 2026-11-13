@@ -30,8 +30,16 @@ const CAUSAL_RE = /\b(cause|caused|because your|the reason is|due to your)\b/i;
 export const WHY_NEXT_TEMPLATES = {
   'lifestyle.sleepDuration→lifestyle.sleepQuality':
     'Next I’d like to hear how that sleep usually feels — restful, mixed, or rough?',
+  'lifestyle.sleepDuration→body.physicalActivity':
+    'Next I’d like to see how your energy looks during the day — how active is a typical week?',
   'lifestyle.sleepQuality→lifestyle.goalsFocus':
     'Next I’d like to see which lifestyle change you care about most right now.',
+  'lifestyle.sleepQuality→body.physicalActivity':
+    'Next I’d like to see how your energy looks during the day — how active is a typical week?',
+  'body.physicalActivity→body.sexAtBirth':
+    'Next I’d like to know a few basics about your body — starting with sex at birth.',
+  'body.physicalActivity→body.regularDiscomfort':
+    'Next I’d like to know about any regular aches or discomfort.',
   'body.sexAtBirth→body.genderIdentity':
     'Next I’d like to know how you describe your gender identity.',
   'body.genderIdentity→body.age':
@@ -52,6 +60,8 @@ export const WHY_NEXT_TEMPLATES = {
     'Next I’d like to see which body goal matters most right now.',
   'body.goalsFocus→body.goalsPriority':
     'Next I’d like to know how important that body goal feels on a 1–4 scale.',
+  'body.goalsPriority→health.healthConditions':
+    'Next I’d like to know about any health conditions you manage.',
   'health.healthConditions→health.prescriptionMedications':
     'Next I’d like to know whether you take any prescription medications.',
   'health.prescriptionMedications→health.supplements':
@@ -68,6 +78,8 @@ export const WHY_NEXT_TEMPLATES = {
     'Next I’d like to know how important that health focus feels on a 1–4 scale.',
   'health.goalsPriority→health.goalsConstraints':
     'Next I’d like to know anything I should keep in mind when I answer.',
+  'health.goalsConstraints→mind.stressLevel':
+    'Next I’d like to hear how stressed you usually feel on a typical day.',
   'mind.stressLevel→mind.mentalEnergy':
     'Next I’d like to hear how your mental energy usually feels.',
   'mind.mentalEnergy→mind.anxietyFrequency':
@@ -80,6 +92,8 @@ export const WHY_NEXT_TEMPLATES = {
     'Next I’d like to see which mental aspect matters most right now.',
   'mind.goalsFocus→mind.goalsPriority':
     'Next I’d like to know how important that mental focus feels on a 1–4 scale.',
+  'mind.goalsPriority→lifestyle.eatingPattern':
+    'Next I’d like to hear how your usual eating pattern looks.',
   'lifestyle.eatingPattern→lifestyle.dietType':
     'Next I’d like to hear which diet type is closest for you.',
   'lifestyle.dietType→lifestyle.enoughProtein':
@@ -94,6 +108,8 @@ export const WHY_NEXT_TEMPLATES = {
     'Next I’d like to know how many hours you usually sleep.',
   'lifestyle.goalsFocus→lifestyle.goalsPriority':
     'Next I’d like to know how important that lifestyle change feels on a 1–4 scale.',
+  'lifestyle.goalsPriority→goals.primaryGoals':
+    'Next I’d like to see which goals matter most to you right now.',
   'goals.primaryGoals→goals.motivationLevel':
     'Next I’d like to hear how motivated you feel on a 1–5 scale.',
   'goals.motivationLevel→goals.wantFromTendAI':
@@ -103,7 +119,12 @@ export const WHY_NEXT_TEMPLATES = {
 /** Default why-next when no specific pair template exists. */
 export function whyNextFallback(nextQuestion) {
   if (!nextQuestion) return '';
-  const label = String(nextQuestion.fieldLabel || 'the next detail').toLowerCase();
+  const raw = String(nextQuestion.fieldLabel || nextQuestion.path || 'the next detail');
+  const label = raw
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[._]/g, ' ')
+    .toLowerCase()
+    .trim();
   return `Next I’d like to ask about your ${label}.`;
 }
 

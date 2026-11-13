@@ -28,10 +28,15 @@ for (const id of ASKABLE) {
   if (!areaHasAskableSignal(id)) fail(`${id} has no askable signal`);
   if (calibrationOpensSettings(id)) fail(`${id} opened Settings`);
   const line = calibrationLine({}, id);
-  if (!/answer a quick question in Talk/.test(line)) fail(`${id} lost the Talk calibration line: ${line}`);
+  // Task 12b: plain language (no "Calibration" / "signals")
+  if (!/answer a quick question in Talk to personalize this/i.test(line)) {
+    fail(`${id} lost the Talk calibration line: ${line}`);
+  }
 }
 const sleepPartial = calibrationLine({ lifestyle: { sleepDuration: '7-8h' } }, 'sleep');
-if (!/one more answer sharpens this/.test(sleepPartial)) fail(`sleep partial line changed: ${sleepPartial}`);
+if (!/one more answer in Talk sharpens this card/i.test(sleepPartial)) {
+  fail(`sleep partial line changed: ${sleepPartial}`);
+}
 
 if (areaHasAskableSignal('skin')) fail('skin was treated as askable');
 if (!calibrationOpensSettings('skin')) fail('skin did not open Settings');
@@ -92,14 +97,14 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
   if (pageErrors.length) fail(`page errors: ${pageErrors.slice(0, 3).join(' | ')}`);
   if (!cards.skin) fail('skin card missing');
   else {
-    if (cards.skin.text !== 'Add your city in Settings to calibrate this') fail(`skin text: ${cards.skin.text}`);
+    if (cards.skin.text !== 'Add your city in Settings to personalize this') fail(`skin text: ${cards.skin.text}`);
     if (cards.skin.button !== 'Add city in Settings') fail(`skin button: ${cards.skin.button}`);
     if (cards.skin.action !== 'settings-city') fail(`skin action: ${cards.skin.action}`);
     if (/Talk/i.test(cards.skin.text + cards.skin.button)) fail('skin still mentions Talk');
   }
   if (!cards.sleep) fail('sleep card missing');
   else {
-    if (!/answer a quick question in Talk/.test(cards.sleep.text)) fail(`sleep text: ${cards.sleep.text}`);
+    if (!/answer a quick question in Talk to personalize this/i.test(cards.sleep.text)) fail(`sleep text: ${cards.sleep.text}`);
     if (cards.sleep.button !== 'Open Talk') fail(`sleep button: ${cards.sleep.button}`);
     if (cards.sleep.action !== 'confidence-talk') fail(`sleep action: ${cards.sleep.action}`);
   }

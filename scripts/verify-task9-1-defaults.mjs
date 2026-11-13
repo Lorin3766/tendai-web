@@ -70,7 +70,13 @@ const fail = (msg) => {
 if (saved.duration !== '7-8h') fail(`duration not saved (${saved.duration})`);
 if (saved.quality != null) fail(`untouched sleep quality was stored (${saved.quality})`);
 if (saved.priority != null) fail(`untouched lifestyle priority was stored (${saved.priority})`);
-if (!/1 of 2/.test(saved.calibration)) fail(`calibration ${saved.calibration}`);
+// Task 12b: no "N of M signals" counters in user-visible calibration copy
+if (!/one more answer in Talk sharpens this card/i.test(saved.calibration || '')) {
+  fail(`calibration ${saved.calibration}`);
+}
+if (/Calibration:|of \d+ signals/i.test(saved.calibration || '')) {
+  fail(`banned calibration vocab: ${saved.calibration}`);
+}
 if (saved.masterQuality != null) fail(`master record Sleep.quality is ${saved.masterQuality}`);
 if (/sleep quality/i.test(payload)) fail('Talk payload contains sleep quality');
 await browser.close();

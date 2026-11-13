@@ -122,6 +122,27 @@ assert.ok(/Saved:/.test(recap));
 assert.ok(/Yesterday 6 h, today 7 h/.test(recap));
 assert.equal(factualHistoryLine('sleepHours'), ''); // <3 days → empty
 
+// ≥3 days → factual counts only
+{
+  const days = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    days.push({ date: key, sleepHours: 6 + (i % 3) });
+  }
+  const prev = globalThis.localStorage;
+  globalThis.localStorage = {
+    getItem: (k) => (k === 'tendai_checkin_history_v1' ? JSON.stringify({ days }) : null),
+    setItem() {},
+    removeItem() {},
+  };
+  const line = factualHistoryLine('sleepHours');
+  assert.ok(/You logged sleep on 7 of the last 7 days; between \d+ and \d+ hours\./.test(line), line);
+  assert.equal(payoffHasJudgmentOrCause(line), false);
+  globalThis.localStorage = prev;
+}
+
 const whyTable = whyNextCoverageTable();
 assert.ok(whyTable.length > 20, 'why-next coverage');
 console.log(`  why-next rows: ${whyTable.length}; specific: ${whyTable.filter((r) => r.hasSpecific).length}`);

@@ -93,7 +93,10 @@ console.log('[9a] priority question', q?.path);
 if (q?.path !== 'lifestyle.sleepDuration') fail(`priority question ${q?.path}`);
 const sleep = signalProgress(fresh, 'sleep');
 if (sleep.n !== 0 || sleep.m !== 2) fail(`sleep progress ${sleep.n}/${sleep.m}`);
-if (!/^Calibration: 0 of 2 signals/.test(calibrationLine(fresh, 'sleep'))) fail('calibration text');
+// Task 12b: user-visible copy dropped "Calibration: N of M signals"
+if (!/^Answer a quick question in Talk to personalize this\.?$/.test(calibrationLine(fresh, 'sleep'))) {
+  fail(`calibration text: ${calibrationLine(fresh, 'sleep')}`);
+}
 if (displayMaturityStage(0, fresh, 'sleep') !== 0) fail('stage floor 0');
 if (displayMaturityStage(2, fresh, 'sleep') !== 2) fail('stored stage 2 must win');
 const withSleep = { lifestyle: { sleepDuration: '7-8h' } };
@@ -177,7 +180,12 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
   console.log('[9a] feed', JSON.stringify(feed), 'errors', pageErrors.slice(0, 3));
   if (feed.around) fail('rendered Feed still says around age');
   if (feed.offline) fail('Stage 0 card shows Sensor offline');
-  if (!/Calibration: 0 of/.test(feed.cal)) fail('calibration line missing on Feed');
+  if (!/Answer a quick question in Talk|Tell me about your|I know \d+ things? about your/i.test(feed.cal)) {
+    fail(`calibration/knowledge line missing on Feed: ${feed.cal}`);
+  }
+  if (/Calibration:|Adaptive agent feed|Human OS|Manual Baseline/i.test(feed.cal)) {
+    fail(`banned Feed vocab still visible: ${feed.cal}`);
+  }
   await page.screenshot({ path: path.join(outDir, 'task9-feed-preview-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
 
   await page.evaluate(() => window.switchView?.('talk'));
