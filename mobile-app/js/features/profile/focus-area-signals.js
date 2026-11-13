@@ -4,6 +4,7 @@
 
 import { isProfileFieldAnswered, isProfileFieldAskable } from './profile-schema.js';
 import { getFocusAreaById, getSelectedFocusAreaIds } from '../human-os/focus-areas.js';
+import { sleepDurationDisplay } from './sleep-duration.js';
 
 /**
  * Least sensitive first. `echo` is how Feed may repeat the answer (9c).
@@ -125,13 +126,6 @@ export function nextFocusAreaSignal(profile) {
   return null;
 }
 
-const SLEEP_HOURS = {
-  '<6h': 'under 6 hours',
-  '6-7h': '6 to 7 hours',
-  '7-8h': '7 to 8 hours',
-  '8h+': '8 or more hours',
-};
-
 function readSignalValue(profile, signal) {
   const section = profile?.[signal.section];
   return section && typeof section === 'object' ? section[signal.field] : undefined;
@@ -140,7 +134,10 @@ function readSignalValue(profile, signal) {
 function formatValueEcho(signal, value) {
   const path = `${signal.section}.${signal.field}`;
   const shown = Array.isArray(value) ? value.filter(Boolean).join(', ') : String(value ?? '').trim();
-  if (path === 'lifestyle.sleepDuration') return `You noted about ${SLEEP_HOURS[shown] || shown} of sleep.`;
+  if (path === 'lifestyle.sleepDuration') {
+    const phrase = sleepDurationDisplay(value) || shown;
+    return `You noted about ${phrase} of sleep.`;
+  }
   if (path === 'lifestyle.sleepQuality') return `You noted sleep quality at ${shown} on a 1 to 5 scale.`;
   if (path === 'body.physicalActivity') return `You noted your activity level: ${shown}.`;
   if (path === 'lifestyle.dietType') return `You noted your diet: ${shown}.`;

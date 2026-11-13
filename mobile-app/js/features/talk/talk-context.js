@@ -6,6 +6,7 @@
 import { storageManager } from '../../core/storage.js';
 import { dayState } from '../../state.js';
 import { getMessagesByType } from '../storage/message-queue.js';
+import { sleepDurationDisplay } from '../profile/sleep-duration.js';
 
 const RECENT_PROMPTS_LIMIT = 2;
 const RECENT_PROMPT_MAX_CHARS = 120;
@@ -189,7 +190,10 @@ export function getSystemContextDetails() {
     add('mind', 'Mood changes', m.moodChanges);
     add('mind', 'Wants to improve focus', m.wantToImproveFocus);
 
-    add('sleep profile', 'Usual sleep duration', sl.duration);
+    {
+      const sleepPhrase = sleepDurationDisplay(sl.duration);
+      if (sleepPhrase) addRaw('sleep profile', 'Usual sleep duration', sleepPhrase);
+    }
     add('sleep profile', 'Sleep quality', sl.quality, ' (1–5)');
 
     add('goal notes', 'Must consider', g.constraints);

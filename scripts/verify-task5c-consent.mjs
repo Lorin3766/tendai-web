@@ -75,16 +75,9 @@ async function launch(page) {
   await page.click('[data-os-ack-ai]');
   await page.waitForTimeout(300);
   console.log('[fresh] after ack:', await onboardingTitle(page), '| stored ack:', await page.evaluate(() => localStorage.getItem('tendai_ai_consent_v1')));
-  await page.click('[data-os-skip-health]');
-  await page.waitForTimeout(200);
+  // Lean 3-step: consent → Focus Areas (no health / birth-year / blood / allergies steps)
   if (await consentVisible(page)) consentSeen++;
-  await page.fill('[data-os-birth-year]', '1990');
-  await page.click('[data-os-next]');
-  await page.waitForTimeout(200);
-  await page.click('[data-os-skip-blood]');
-  await page.waitForTimeout(200);
-  await page.click('[data-os-allergies="no"]');
-  await page.waitForTimeout(200);
+  await page.waitForSelector('[data-os-focus-area]', { timeout: 10000 });
   const focusState = () =>
     page.evaluate(() => ({
       subtitle: document.querySelector('.system-onboarding-subtitle')?.textContent?.trim(),

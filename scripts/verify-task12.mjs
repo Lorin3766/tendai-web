@@ -15,19 +15,22 @@ import {
   isProfileFieldSnoozedForSession,
   clearSessionSnoozedProfileFields,
   getClarifyTapOptions,
+  normalizeSleepDuration,
+  sleepDurationDisplay,
 } from '../mobile-app/js/features/talk/profile-answer-parser.js';
 import {
   assembleTalkPayoff,
   findBannedVocab,
   BANNED_USER_VOCAB,
   whyNextCoverageTable,
+  whyNextLine,
   payoffHasJudgmentOrCause,
   factualHistoryLine,
   checkinRecapLine,
   feedCardKnowledgeLine,
   memoryLinkLine,
 } from '../mobile-app/js/features/talk/talk-payoff.js';
-import { calibrationLine } from '../mobile-app/js/features/profile/focus-area-signals.js';
+import { calibrationLine, payoffEcho } from '../mobile-app/js/features/profile/focus-area-signals.js';
 import { dataCollectionModePillLabel } from '../mobile-app/js/features/settings/data-collection-mode.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -52,8 +55,20 @@ for (const [t, expect] of [
   const r = parseProfileAnswer(sleepQ, t);
   assert.equal(r.ok, true, `parse ${t}`);
   assert.equal(r.value, expect, `value ${t}`);
+  assert.equal(typeof r.value, 'string', `bucket string ${t}`);
   assert.equal(classifyProfileReply(sleepQ, t).kind, 'save');
 }
+// ONE storage format: typed + taps both → '7-8h' (never midpoint number / bare "7-8")
+assert.equal(parseProfileAnswer(sleepQ, '7 or 8').value, '7-8h');
+assert.equal(getClarifyTapOptions(sleepQ).find((t) => t.value === '7-8h')?.value, '7-8h');
+assert.equal(normalizeSleepDuration(7.5), '7-8h');
+assert.equal(normalizeSleepDuration('7-8'), '7-8h');
+assert.equal(normalizeSleepDuration('7-8h'), '7-8h');
+assert.equal(sleepDurationDisplay(7.5), '7 to 8 hours');
+assert.equal(sleepDurationDisplay('7-8'), '7 to 8 hours');
+assert.ok(/7 to 8 hours/.test(payoffEcho({ lifestyle: { sleepDuration: 7.5 } }, 'sleep')));
+assert.ok(/7 to 8 hours/.test(payoffEcho({ lifestyle: { sleepDuration: '7-8' } }, 'sleep')));
+assert.ok(/7 to 8 hours/.test(payoffEcho({ lifestyle: { sleepDuration: '7-8h' } }, 'sleep')));
 assert.equal(classifyProfileReply(sleepQ, "I'd rather not say").kind, 'save');
 assert.equal(classifyProfileReply(sleepQ, 'I have a headache today').kind, 'message');
 assert.equal(classifyProfileReply(sleepQ, 'xyz').kind, 'clarify');
@@ -146,6 +161,17 @@ assert.equal(factualHistoryLine('sleepHours'), ''); // <3 days → empty
 const whyTable = whyNextCoverageTable();
 assert.ok(whyTable.length > 20, 'why-next coverage');
 console.log(`  why-next rows: ${whyTable.length}; specific: ${whyTable.filter((r) => r.hasSpecific).length}`);
+// No template → omit (never camelCase field names like fooBarBaz)
+assert.equal(
+  whyNextLine('goals.wantFromTendAI', { path: 'body.sexAtBirth', fieldLabel: 'sexAtBirth' }),
+  '',
+);
+assert.equal(whyNextLine('no.such', { path: 'body.fooBarBaz', fieldLabel: 'fooBarBaz' }), '');
+const missingTemplates = whyTable.filter((r) => r.next && !r.hasSpecific);
+for (const row of missingTemplates) {
+  assert.equal(row.template, '', `fallback must be empty for ${row.answered}→${row.next}`);
+}
+console.log(`  why-next omitted (no template): ${missingTemplates.length}`);
 
 console.log('12b vocabulary lint (UI string literals)…');
 /** Extract JS string/template literals (best-effort; skips comments). */

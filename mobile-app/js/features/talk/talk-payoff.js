@@ -116,22 +116,18 @@ export const WHY_NEXT_TEMPLATES = {
     'Next I’d like to know what you want from me day to day.',
 };
 
-/** Default why-next when no specific pair template exists. */
-export function whyNextFallback(nextQuestion) {
-  if (!nextQuestion) return '';
-  const raw = String(nextQuestion.fieldLabel || nextQuestion.path || 'the next detail');
-  const label = raw
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/[._]/g, ' ')
-    .toLowerCase()
-    .trim();
-  return `Next I’d like to ask about your ${label}.`;
+/**
+ * No template → omit the why-next line (never invent camelCase field names).
+ * Kept as a no-op helper so older imports do not break.
+ */
+export function whyNextFallback(_nextQuestion) {
+  return '';
 }
 
 export function whyNextLine(answeredPath, nextQuestion) {
-  if (!nextQuestion) return '';
+  if (!nextQuestion?.path || !answeredPath) return '';
   const key = `${answeredPath}→${nextQuestion.path}`;
-  return WHY_NEXT_TEMPLATES[key] || whyNextFallback(nextQuestion);
+  return WHY_NEXT_TEMPLATES[key] || '';
 }
 
 export function countKnownForArea(profile, areaId) {
@@ -308,7 +304,7 @@ export function whyNextCoverageTable() {
     rows.push({
       answered,
       next,
-      template: key && WHY_NEXT_TEMPLATES[key] ? WHY_NEXT_TEMPLATES[key] : (next ? whyNextFallback({ fieldLabel: next.split('.')[1], path: next }) : ''),
+      template: key && WHY_NEXT_TEMPLATES[key] ? WHY_NEXT_TEMPLATES[key] : '',
       hasSpecific: !!(key && WHY_NEXT_TEMPLATES[key]),
     });
   }

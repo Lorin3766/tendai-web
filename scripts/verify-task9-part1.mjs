@@ -140,13 +140,9 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
   });
   await page.goto(baseUrl + '/?contentPreview=1', { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(2000);
+  // Lean 3-step onboarding (Welcome → AI consent → Focus Areas)
   await page.click('[data-os-next]');
   await page.click('[data-os-ack-ai]');
-  await page.click('[data-os-skip-health]');
-  await page.fill('[data-os-birth-year]', '1983');
-  await page.click('[data-os-next]');
-  await page.click('[data-os-skip-blood]');
-  await page.click('[data-os-allergies="no"]');
   await page.locator('[data-os-focus-area]').nth(0).click();
   await page.locator('[data-os-focus-area]').nth(1).click();
   await page.click('[data-os-finish]');
@@ -204,7 +200,10 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
     return { last, btn, step, types: log.map((e) => e.requestType), off: log.map((e) => e.sentOffDevice) };
   });
   console.log('[9c] after answer', JSON.stringify(afterTalk));
-  if (!/Updated your Sleep & Recovery card/.test(afterTalk.last)) fail('confirmation did not name the Sleep card');
+  // Task 12: claim line is "Added to your … card" (not "Updated your …")
+  if (!/Added to your Sleep & Recovery card/.test(afterTalk.last)) {
+    fail(`confirmation did not name the Sleep card: ${afterTalk.last.slice(0, 120)}`);
+  }
   if (!afterTalk.btn) fail('See it in Feed button missing');
   if (afterTalk.step !== 'Add your physical activity') fail(`sidebar after answer: ${afterTalk.step}`);
   const newLogs = afterTalk.types.slice(logBefore);
@@ -224,9 +223,17 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
     };
   });
   console.log('[9c] sleep card', JSON.stringify(sleepCard));
-  if (!/Stage 1 · Calibrated/.test(sleepCard.stage)) fail(`stage did not move to Calibrated: ${sleepCard.stage}`);
+  // Task 12b: knowledge line replaces Stage/Calibration counters
+  if (!/I know 1 thing about your Sleep/.test(sleepCard.stage)) {
+    fail(`stage/knowledge did not update: ${sleepCard.stage}`);
+  }
   if (!/7 to 8 hours of sleep/.test(sleepCard.payoff)) fail(`payoff missing the answer: ${sleepCard.payoff}`);
-  if (!/1 of 2/.test(sleepCard.cal)) fail(`calibration did not update: ${sleepCard.cal}`);
+  if (!/one more answer in Talk sharpens this card/i.test(sleepCard.cal)) {
+    fail(`calibration did not update: ${sleepCard.cal}`);
+  }
+  if (/Calibration:|Stage \d|0 of 2|1 of 2/i.test(`${sleepCard.stage} ${sleepCard.cal}`)) {
+    fail(`banned counters still visible: ${sleepCard.stage} / ${sleepCard.cal}`);
+  }
   await page.screenshot({ path: path.join(outDir, 'task9-feed-after-answer-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
 
   await page.evaluate(() => window.openProfileModal?.('lifestyle'));
@@ -258,9 +265,13 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
     };
   });
   console.log('[9c] after clear', JSON.stringify(cleared));
-  if (!/Stage 0 · Baseline/.test(cleared.stage)) fail(`clear did not return Stage 0: ${cleared.stage}`);
+  if (!/Tell me about your Sleep/.test(cleared.stage)) {
+    fail(`clear did not return empty knowledge line: ${cleared.stage}`);
+  }
   if (cleared.payoff) fail('payoff remained after the answer was cleared');
-  if (!/0 of 2/.test(cleared.cal)) fail(`calibration did not reset: ${cleared.cal}`);
+  if (!/answer a quick question in Talk to personalize this/i.test(cleared.cal)) {
+    fail(`calibration did not reset: ${cleared.cal}`);
+  }
   await page.screenshot({ path: path.join(outDir, 'task9-feed-after-clear-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
   if (pageErrors.length) console.log('[9c] page errors (not failed here):', pageErrors.slice(0, 3));
   await browser.close();

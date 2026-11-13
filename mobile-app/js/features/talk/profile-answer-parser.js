@@ -4,6 +4,17 @@
 import { profileState } from '../../state.js';
 import { isProfileFieldAnswered } from '../profile/profile-schema.js';
 import { feetInToCm, lbToKg } from '../storage/units.js';
+import {
+  hoursToSleepBucket,
+  normalizeSleepDuration,
+} from '../profile/sleep-duration.js';
+
+export {
+  SLEEP_DURATION_BUCKETS,
+  hoursToSleepBucket,
+  normalizeSleepDuration,
+  sleepDurationDisplay,
+} from '../profile/sleep-duration.js';
 
 function opt(value, label, aliases = []) {
   return { value, label, aliases };
@@ -493,15 +504,6 @@ function midpoint(values) {
   return (values[0] + values[1]) / 2;
 }
 
-/** Map hours → stored sleepDuration bucket. */
-function hoursToSleepBucket(hours) {
-  if (hours == null || !Number.isFinite(hours)) return null;
-  if (hours < 6) return '<6h';
-  if (hours < 7) return '6-7h';
-  if (hours < 8) return '7-8h';
-  return '8h+';
-}
-
 /**
  * Tap chips for a clarify turn. Values match stored profile-modal format.
  * @returns {Array<{ label: string, value: * }>}
@@ -962,7 +964,13 @@ export function applyProfileTalkAnswer(sectionKey, fieldKey, value) {
   if (!profile[sectionKey] || typeof profile[sectionKey] !== 'object') {
     profile[sectionKey] = {};
   }
-  profile[sectionKey][fieldKey] = value;
+  let stored = value;
+  // Always write the canonical bucket string for sleep duration (never a midpoint number).
+  if (sectionKey === 'lifestyle' && fieldKey === 'sleepDuration') {
+    const normalized = normalizeSleepDuration(value);
+    if (normalized) stored = normalized;
+  }
+  profile[sectionKey][fieldKey] = stored;
   profileState.save(profile);
   if (typeof window !== 'undefined') {
     if (typeof window.updateProfileUI === 'function') window.updateProfileUI();
