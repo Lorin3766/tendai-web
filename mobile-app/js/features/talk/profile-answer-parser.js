@@ -317,8 +317,9 @@ const FIELD_SPECS = {
     [
       opt('<6h', '<6h', ['<6', 'under 6', 'less than 6', '5 hours', 'five hours']),
       opt('6-7h', '6–7h', ['6-7', '6 to 7', 'six to seven', '6 hours', 'six hours']),
-      opt('7-8h', '7–8h', ['7-8', '7 to 8', 'seven to eight', '7 hours', 'seven hours']),
-      opt('8h+', '8h+', ['8+', '8 plus', 'more than 8', 'over 8', '8 or more', '9 hours']),
+      opt('7-8h', '7–8h', ['7-8', '7 to 8', '7 or 8', 'seven to eight', 'seven or eight', '7 hours', 'seven hours']),
+      opt('8h+', '8h+', ['8+', '8 plus', 'more than 8', 'over 8', '8 or more', '9 hours', 'eight hours', 'eight']),
+      opt('prefer-not-say', 'Prefer not to say', ['prefer not to say', 'rather not', 'rather not say', 'skip', 'private']),
     ],
   ),
   'lifestyle.sleepQuality': scaleField(
@@ -390,6 +391,149 @@ function normalizeText(text) {
     .trim();
 }
 
+const NUMBER_WORDS = {
+  zero: 0, oh: 0,
+  one: 1, two: 2, three: 3, four: 4, five: 5,
+  six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+  eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+  sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
+  thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+};
+
+const PREFER_NOT_RE = /\b(prefer not to say|rather not(?: say)?|i'?d rather not|skip(?: this)?|private)\b/i;
+
+/** Numeric profile fields that use forgiving number / range parsing. */
+export const FORGIVING_NUMERIC_FIELDS = [
+  'body.age',
+  'body.height',
+  'body.weight',
+  'body.goalsPriority',
+  'health.goalsPriority',
+  'mind.stressLevel',
+  'mind.mentalEnergy',
+  'mind.goalsPriority',
+  'lifestyle.sleepDuration',
+  'lifestyle.sleepQuality',
+  'lifestyle.goalsPriority',
+  'goals.motivationLevel',
+];
+
+/**
+ * Session-only snooze so a failed clarify does not re-ask the same field this Talk session.
+ * @type {Set<string>}
+ */
+const sessionSnoozedPaths = new Set();
+
+export function snoozeProfileFieldForSession(path) {
+  if (path) sessionSnoozedPaths.add(String(path));
+}
+
+export function isProfileFieldSnoozedForSession(path) {
+  return path ? sessionSnoozedPaths.has(String(path)) : false;
+}
+
+export function clearSessionSnoozedProfileFields() {
+  sessionSnoozedPaths.clear();
+}
+
+function wordToNumber(token) {
+  const t = String(token || '').toLowerCase().replace(/[^a-z]/g, '');
+  return Object.prototype.hasOwnProperty.call(NUMBER_WORDS, t) ? NUMBER_WORDS[t] : null;
+}
+
+/**
+ * Extract one or two numbers from free text (digits or common words).
+ * Supports "7 or 8", "7-8", "7 to 8", "about 7", "around 7.5", "seven".
+ * @returns {{ values: number[], rawEcho: string } | null}
+ */
+export function extractFlexibleNumbers(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return null;
+  const t = normalizeText(raw)
+    .replace(/\b(about|around|approx(?:imately)?|roughly|nearly|almost|like)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const range = t.match(
+    /(\d+(?:\.\d+)?)\s*(?:-|–|—|to|or|\/)\s*(\d+(?:\.\d+)?)/i,
+  );
+  if (range) {
+    return {
+      values: [parseFloat(range[1]), parseFloat(range[2])],
+      rawEcho: raw,
+    };
+  }
+
+  const wordRange = t.match(
+    /\b([a-z]+)\s*(?:-|–|—|to|or)\s*([a-z]+)\b/i,
+  );
+  if (wordRange) {
+    const a = wordToNumber(wordRange[1]);
+    const b = wordToNumber(wordRange[2]);
+    if (a != null && b != null) {
+      return { values: [a, b], rawEcho: raw };
+    }
+  }
+
+  const digit = t.match(/(\d+(?:\.\d+)?)/);
+  if (digit) {
+    return { values: [parseFloat(digit[1])], rawEcho: raw };
+  }
+
+  for (const token of t.split(/[^a-z]+/i)) {
+    const n = wordToNumber(token);
+    if (n != null) return { values: [n], rawEcho: raw };
+  }
+  return null;
+}
+
+function midpoint(values) {
+  if (!values || !values.length) return null;
+  if (values.length === 1) return values[0];
+  return (values[0] + values[1]) / 2;
+}
+
+/** Map hours → stored sleepDuration bucket. */
+function hoursToSleepBucket(hours) {
+  if (hours == null || !Number.isFinite(hours)) return null;
+  if (hours < 6) return '<6h';
+  if (hours < 7) return '6-7h';
+  if (hours < 8) return '7-8h';
+  return '8h+';
+}
+
+/**
+ * Tap chips for a clarify turn. Values match stored profile-modal format.
+ * @returns {Array<{ label: string, value: * }>}
+ */
+export function getClarifyTapOptions(question) {
+  const spec = getProfileFieldSpec(question?.sectionKey, question?.fieldKey);
+  if (!spec) return [];
+  if (spec.type === 'choice' || spec.type === 'multi') {
+    return (spec.options || [])
+      .filter((o) => o.value !== 'prefer-not-say')
+      .slice(0, 6)
+      .map((o) => ({ label: o.label, value: o.value }));
+  }
+  if (spec.type === 'scale') {
+    const out = [];
+    for (let n = spec.min; n <= spec.max; n++) {
+      if (spec.forbidden && spec.forbidden.includes(n)) continue;
+      out.push({ label: String(n), value: n });
+    }
+    return out;
+  }
+  if (spec.type === 'age') {
+    return [
+      { label: '25', value: 25 },
+      { label: '35', value: 35 },
+      { label: '45', value: 45 },
+      { label: '55', value: 55 },
+    ];
+  }
+  return [];
+}
+
 function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -433,12 +577,38 @@ function clarifyMulti(spec) {
   return `I can save one or more of these: ${optionList(spec)}. Which apply?`;
 }
 
-function parseChoice(spec, text) {
+function parseChoice(spec, text, fieldPath = '', rawText = '') {
   const hits = matchedOptions(text, spec.options);
   if (hits.length === 1) {
-    return { ok: true, value: hits[0].value };
+    return { ok: true, value: hits[0].value, echo: String(rawText || text).trim() };
   }
-  return { ok: false, clarify: clarifyChoice(spec) };
+  // Forgiving hours for sleep duration (and any future hour-bucket choice).
+  if (fieldPath === 'lifestyle.sleepDuration') {
+    const extracted = extractFlexibleNumbers(rawText || text);
+    if (extracted) {
+      const mid = midpoint(extracted.values);
+      const bucket = hoursToSleepBucket(mid);
+      if (bucket) {
+        if (mid < 3 || mid > 16) {
+          return {
+            ok: false,
+            clarify: 'That sleep length looks off. About how many hours do you usually sleep — under 6, 6–7, 7–8, or 8+?',
+            tapOptions: getClarifyTapOptions({ sectionKey: 'lifestyle', fieldKey: 'sleepDuration' }),
+          };
+        }
+        return {
+          ok: true,
+          value: bucket,
+          echo: extracted.rawEcho,
+        };
+      }
+    }
+  }
+  return {
+    ok: false,
+    clarify: clarifyChoice(spec),
+    tapOptions: (spec.options || []).slice(0, 6).map((o) => ({ label: o.label, value: o.value })),
+  };
 }
 
 function parseMulti(spec, text) {
@@ -460,18 +630,24 @@ function parseMulti(spec, text) {
   return { ok: true, value: values };
 }
 
-function parseAge(spec, text) {
-  const nums = String(text).match(/\d{1,3}/g);
-  if (!nums) {
-    return { ok: false, clarify: `How old are you, as a number between ${spec.min} and ${spec.max}?` };
+function parseAge(spec, text, rawText = '') {
+  const extracted = extractFlexibleNumbers(rawText || text);
+  if (!extracted) {
+    return {
+      ok: false,
+      clarify: `How old are you, as a number between ${spec.min} and ${spec.max}?`,
+      tapOptions: getClarifyTapOptions({ sectionKey: 'body', fieldKey: 'age' }),
+    };
   }
-  const inRange = nums
-    .map((n) => parseInt(n, 10))
-    .filter((n) => n >= spec.min && n <= spec.max);
-  if (inRange.length === 1) {
-    return { ok: true, value: inRange[0] };
+  const mid = Math.round(midpoint(extracted.values));
+  if (mid >= spec.min && mid <= spec.max) {
+    return { ok: true, value: mid, echo: extracted.rawEcho };
   }
-  return { ok: false, clarify: `Could you tell me your age as a number between ${spec.min} and ${spec.max}?` };
+  return {
+    ok: false,
+    clarify: `Could you tell me your age as a number between ${spec.min} and ${spec.max}?`,
+    tapOptions: getClarifyTapOptions({ sectionKey: 'body', fieldKey: 'age' }),
+  };
 }
 
 function parseHeight(spec, text) {
@@ -534,7 +710,7 @@ function parseWeight(spec, text) {
   };
 }
 
-function parseScale(spec, fieldKey, text) {
+function parseScale(spec, fieldKey, text, rawText = '') {
   const t = normalizeText(text);
   const sortedWords = Object.keys(spec.words || {}).sort((a, b) => b.length - a.length);
   for (const word of sortedWords) {
@@ -544,23 +720,24 @@ function parseScale(spec, fieldKey, text) {
         return forbiddenScaleClarify(spec, fieldKey);
       }
       if (value >= spec.min && value <= spec.max) {
-        return { ok: true, value };
+        return { ok: true, value, echo: String(rawText || text).trim() };
       }
     }
   }
-  const nums = t.match(/\d+(?:\.\d+)?/g);
-  if (nums && nums.length === 1) {
-    const value = Math.round(parseFloat(nums[0]));
+  const extracted = extractFlexibleNumbers(rawText || text);
+  if (extracted) {
+    const value = Math.round(midpoint(extracted.values));
     if (spec.forbidden.includes(value)) {
       return forbiddenScaleClarify(spec, fieldKey);
     }
     if (value >= spec.min && value <= spec.max) {
-      return { ok: true, value };
+      return { ok: true, value, echo: extracted.rawEcho };
     }
   }
   return {
     ok: false,
     clarify: `Could you give me a number from ${spec.min} to ${spec.max}?`,
+    tapOptions: getClarifyTapOptions({ sectionKey: '', fieldKey }),
   };
 }
 
@@ -605,6 +782,7 @@ function optionTokens(spec) {
 
 function choiceLooksLikeAttempt(spec, text) {
   const normalized = normalizeText(text);
+  if (extractFlexibleNumbers(text)) return true;
   const words = normalized.split(' ').filter((word) => word.length >= 3);
   for (const token of optionTokens(spec)) {
     if (normalized === token || normalized.startsWith(token)) return true;
@@ -618,6 +796,7 @@ function choiceLooksLikeAttempt(spec, text) {
 
 function numberFieldLooksLikeAttempt(spec, text) {
   const raw = String(text || '').trim();
+  if (extractFlexibleNumbers(raw)) return true;
   if (/\d/.test(raw)) return true;
   if (spec.type === 'height' && /\b(cm|ft|feet|foot|inches|inch)\b/i.test(raw)) return true;
   if (spec.type === 'weight' && /\b(kg|kilos?|lb|lbs|pounds?)\b/i.test(raw)) return true;
@@ -676,9 +855,28 @@ export function classifyProfileReply(question, text) {
   if (parsed.ok && IDENTITY_FIELDS.has(path) && !identityReplyMaySave(text)) {
     return { kind: 'message' };
   }
-  if (parsed.ok) return { kind: 'save', value: parsed.value };
-  if (looksLikeProfileAnswerAttempt(question, text)) {
-    return { kind: 'clarify', clarify: parsed.clarify };
+  if (parsed.ok) {
+    return { kind: 'save', value: parsed.value, echo: parsed.echo || String(text || '').trim() };
+  }
+  // Digit / number-word attempts on numeric fields always clarify (even if slightly longer).
+  const numericAttempt =
+    FORGIVING_NUMERIC_FIELDS.includes(path) && !!extractFlexibleNumbers(text);
+  // Very short opaque replies (e.g. "xyz") while a question is pending: one clarify, not a re-ask.
+  const opaqueShort =
+    isVeryShortReply(text) &&
+    !isQuestionReply(text) &&
+    String(text || '').trim().split(/\s+/).length <= 2;
+  if (
+    numericAttempt ||
+    looksLikeProfileAnswerAttempt(question, text) ||
+    PREFER_NOT_RE.test(String(text || '')) ||
+    opaqueShort
+  ) {
+    return {
+      kind: 'clarify',
+      clarify: parsed.clarify,
+      tapOptions: parsed.tapOptions || getClarifyTapOptions(question),
+    };
   }
   return { kind: 'message' };
 }
@@ -703,18 +901,30 @@ export function parseProfileAnswer(question, text) {
   if (!spec || !raw) {
     return { ok: false, clarify: getConversationalAsk(question) };
   }
+  const path = `${question.sectionKey}.${question.fieldKey}`;
   const normalized = normalizeText(raw);
+
+  if (PREFER_NOT_RE.test(raw)) {
+    const pnts = (spec.options || []).find((o) => o.value === 'prefer-not-say');
+    if (pnts) {
+      return { ok: true, value: pnts.value, echo: raw };
+    }
+    // Field has no prefer-not-say option: still accept as a soft skip value when string answers are allowed.
+    if (spec.type === 'choice') {
+      return { ok: true, value: 'prefer-not-say', echo: raw };
+    }
+  }
 
   let result;
   switch (spec.type) {
     case 'choice':
-      result = parseChoice(spec, normalized);
+      result = parseChoice(spec, normalized, path, raw);
       break;
     case 'multi':
       result = parseMulti(spec, normalized);
       break;
     case 'age':
-      result = parseAge(spec, normalized);
+      result = parseAge(spec, normalized, raw);
       break;
     case 'height':
       result = parseHeight(spec, raw);
@@ -723,7 +933,7 @@ export function parseProfileAnswer(question, text) {
       result = parseWeight(spec, raw);
       break;
     case 'scale':
-      result = parseScale(spec, question.fieldKey, normalized);
+      result = parseScale(spec, question.fieldKey, normalized, raw);
       break;
     default:
       result = { ok: false, clarify: getConversationalAsk(question) };
@@ -734,8 +944,10 @@ export function parseProfileAnswer(question, text) {
     return {
       ok: false,
       clarify: fallback.clarify || getConversationalAsk(question),
+      tapOptions: getClarifyTapOptions(question),
     };
   }
+  if (result.ok && !result.echo) result.echo = raw;
   return result;
 }
 

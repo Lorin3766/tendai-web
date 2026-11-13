@@ -12,13 +12,20 @@ import { setProfileQuestionsSnoozed } from '../js/features/feed/next-step.js';
 import { getSelectedFocusAreaIds, getFocusAreaById } from '../js/features/human-os/focus-areas.js';
 import { getEntries } from '../js/features/feed/content-library.js';
 import { findUserAgentByFocusAreaId } from '../js/features/human-os/user-agents.js';
-import { focusAreasForField, visibleCardSnapshot } from '../js/features/profile/focus-area-signals.js';
+import { focusAreasForField, visibleCardSnapshot, noteSignalSaved } from '../js/features/profile/focus-area-signals.js';
 import {
   classifyProfileReply,
   applyProfileTalkAnswer,
   getConversationalAsk,
   getProfileFieldSpec,
+  getClarifyTapOptions,
+  snoozeProfileFieldForSession,
+  isProfileFieldSnoozedForSession,
+  clearSessionSnoozedProfileFields,
+  parseProfileAnswer,
 } from '../js/features/talk/profile-answer-parser.js';
+
+const TALK_OPENING_SESSION_KEY = 'tendai_talk_opening_shown_v1';
 import { obriumNow, localDateKey } from '../js/core/obrium-clock.js';
 import { persistTalkSession } from '../js/features/metrics/local-metrics.js';
 import { loadTodaySteps } from '../js/features/feed/today-steps.js';
@@ -697,7 +704,7 @@ export class TalkComponent {
     messageContent.insertBefore(btn, timeEl);
   }
 
-  /** Quick replies when Agent ledger has data (CEO synthesis context). Never on profile-question prompts. */
+  /** Quick replies when Agent ledger has data. Never on profile-question prompts. No device / Human OS copy. */
   appendAgentQuickReplies(messageContent) {
     const timeEl = messageContent.querySelector('.message-time');
     if (!timeEl || messageContent.querySelector('.talk-quick-replies')) return;
@@ -706,9 +713,8 @@ export class TalkComponent {
     const wrap = document.createElement('div');
     wrap.className = 'talk-quick-replies';
     const replies = [
-      { label: '👍 Confirm', text: 'Confirm — I want to prioritize this in my Human OS today.' },
-      { label: '🔔 Remind in 1h', text: 'Remind me to revisit this in about one hour.' },
-      { label: '❓ Why?', text: 'Why did you synthesize it this way? Briefly tie it to my agent reports.' },
+      { label: 'Remind in 1h', text: 'Remind me to revisit this in about one hour.' },
+      { label: 'Why?', text: 'Why did you put it this way? Briefly tie it to what you already know about me.' },
     ];
     replies.forEach((r) => {
       const b = document.createElement('button');
@@ -723,6 +729,29 @@ export class TalkComponent {
       wrap.appendChild(b);
     });
     messageContent.insertBefore(wrap, timeEl);
+  }
+
+  appendClarifyTapOptions(messageDiv, question, tapOptions) {
+    const content = messageDiv?.querySelector('.message-content');
+    if (!content || !Array.isArray(tapOptions) || !tapOptions.length) return;
+    if (content.querySelector('.talk-clarify-taps')) return;
+    const timeEl = content.querySelector('.message-time');
+    const wrap = document.createElement('div');
+    wrap.className = 'talk-clarify-taps';
+    tapOptions.forEach((opt) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn talk-clarify-tap';
+      btn.textContent = String(opt.label);
+      btn.addEventListener('click', () => {
+        if (!question) return;
+        this.addMessageToChat(String(opt.label), 'user');
+        void this.commitProactiveProfileAnswer(question, opt.value, String(opt.label));
+      });
+      wrap.appendChild(btn);
+    });
+    if (timeEl) content.insertBefore(wrap, timeEl);
+    else content.appendChild(wrap);
   }
 
   initAdvisoryBlock() {
@@ -992,6 +1021,7 @@ export class TalkComponent {
     this._proactivePassiveThisSession = false;
     this._pendingFollowUp = null;
     this._followUpAskedThisSession = false;
+    this._clarifyFailByPath = this._clarifyFailByPath || Object.create(null);
     setProfileQuestionsSnoozed(false);
     this.markAdvisorySeen();
     if (!isAutoProfileQuestionsEnabled()) return;
@@ -1014,7 +1044,7 @@ export class TalkComponent {
       return;
     }
 
-    const question = getNextProfileQuestion(profile);
+    const question = this.getNextUnsnoozedProfileQuestion(profile);
     if (!question) return;
 
     this.clearStaleWelcomeMessagesForProactiveFlow();
@@ -1027,24 +1057,59 @@ export class TalkComponent {
       return;
     }
 
+    // Opening (welcome + first ask) renders exactly once per browser session.
+    let openingAlreadyShown = false;
+    try {
+      openingAlreadyShown = sessionStorage.getItem(TALK_OPENING_SESSION_KEY) === '1';
+    } catch (_) {}
+
     const seq = ++this._profilePromptSeq;
     this.showTypingIndicator();
     let text = '';
     try {
-      text = await this.composeProfileOpeningPrompt(question);
+      text = openingAlreadyShown
+        ? getConversationalAsk(question)
+        : await this.composeProfileOpeningPrompt(question);
     } catch (_) {
-      text = this.fallbackProfileOpeningPrompt(question);
+      text = openingAlreadyShown
+        ? getConversationalAsk(question)
+        : this.fallbackProfileOpeningPrompt(question);
     }
     this.removeTypingIndicator();
     if (seq !== this._profilePromptSeq) return;
 
     const trimmed = String(text || '').trim();
     const sanitized = this.sanitizeTalkGreetingText(trimmed);
-    const usable =
-      this.isUsableProfileOpening(sanitized, question)
+    const usable = openingAlreadyShown
+      ? (sanitized || getConversationalAsk(question))
+      : (this.isUsableProfileOpening(sanitized, question)
         ? sanitized
-        : this.fallbackProfileOpeningPrompt(question);
+        : this.fallbackProfileOpeningPrompt(question));
     this.addMessageToChat(usable, 'ai', true, null, this.profilePromptChatOptions(question));
+    try {
+      sessionStorage.setItem(TALK_OPENING_SESSION_KEY, '1');
+    } catch (_) {}
+  }
+
+  getNextUnsnoozedProfileQuestion(profile) {
+    const seen = new Set();
+    let guard = 0;
+    let q = getNextProfileQuestion(profile);
+    while (q && isProfileFieldSnoozedForSession(q.path) && guard < 40) {
+      if (seen.has(q.path)) break;
+      seen.add(q.path);
+      // Walk past by temporarily treating snoozed fields as answered in a shallow clone.
+      const shadow = JSON.parse(JSON.stringify(profile || {}));
+      for (const path of seen) {
+        const [section, field] = path.split('.');
+        if (!shadow[section] || typeof shadow[section] !== 'object') shadow[section] = {};
+        if (!shadow[section][field]) shadow[section][field] = '__session_snooze__';
+      }
+      q = getNextProfileQuestion(shadow);
+      guard += 1;
+    }
+    if (q && isProfileFieldSnoozedForSession(q.path)) return null;
+    return q;
   }
 
   fallbackProfileOpeningPrompt(question) {
@@ -1058,6 +1123,7 @@ export class TalkComponent {
     this._proactivePassiveThisSession = false;
     this._pendingFollowUp = null;
     this._followUpAskedThisSession = false;
+    // Keep session snoozes and opening-shown flag across tab switches within the session.
     setProfileQuestionsSnoozed(false);
   }
 
@@ -1106,7 +1172,7 @@ export class TalkComponent {
   }
 
   async askNextProfileQuestion(question) {
-    if (!question) return;
+    if (!question || isProfileFieldSnoozedForSession(question.path)) return;
     const text = getConversationalAsk(question);
     this.addMessageToChat(text, 'ai', true, null, this.profilePromptChatOptions(question));
   }
@@ -1223,8 +1289,7 @@ export class TalkComponent {
     if (!question) return false;
 
     const classified = classifyProfileReply(question, messageText);
-    // A real message is ordinary Talk input. Do not clarify and do not ask again in this turn.
-    // The same question is offered again the next time Talk opens, unless pacing or snooze says otherwise.
+    // Ordinary chat: do not re-ask in this turn.
     if (classified.kind === 'message') return false;
 
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -1233,19 +1298,58 @@ export class TalkComponent {
     this.removeTypingIndicator();
 
     if (classified.kind === 'clarify') {
-      this.addMessageToChat(classified.clarify, 'ai', true, null, this.profilePromptChatOptions(question));
+      this._clarifyFailByPath = this._clarifyFailByPath || Object.create(null);
+      const fails = (this._clarifyFailByPath[question.path] || 0) + 1;
+      this._clarifyFailByPath[question.path] = fails;
+      if (fails >= 2) {
+        snoozeProfileFieldForSession(question.path);
+        this._clarifyFailByPath[question.path] = 0;
+        // Second failed attempt → ordinary chat; do not repeat the same question.
+        return false;
+      }
+      const clarifyText = classified.clarify || getConversationalAsk(question);
+      // Never re-post the identical full ask; keep clarify short.
+      const el = this.addMessageToChat(
+        clarifyText,
+        'ai',
+        true,
+        null,
+        this.profilePromptChatOptions(question),
+      );
+      this.appendClarifyTapOptions(
+        el,
+        question,
+        classified.tapOptions || getClarifyTapOptions(question),
+      );
       return true;
     }
 
-    const parsed = { ok: true, value: classified.value };
+    await this.commitProactiveProfileAnswer(
+      question,
+      classified.value,
+      classified.echo || String(messageText || '').trim(),
+    );
+    return true;
+  }
+
+  /**
+   * Save a profile answer and post one reaction bubble: echo → Feed change → next ask (or silence).
+   */
+  async commitProactiveProfileAnswer(question, value, echoRaw) {
+    if (!question) return;
+    this._clarifyFailByPath = this._clarifyFailByPath || Object.create(null);
+    this._clarifyFailByPath[question.path] = 0;
 
     const areas = focusAreasForField(question.sectionKey, question.fieldKey);
     const before = Object.fromEntries(areas.map((id) => [id, this.cardSnapshot(id)]));
-    applyProfileTalkAnswer(question.sectionKey, question.fieldKey, parsed.value);
+    applyProfileTalkAnswer(question.sectionKey, question.fieldKey, value);
+    try {
+      noteSignalSaved(question.sectionKey, question.fieldKey);
+    } catch (_) {}
     const changed = areas.filter((id) => this.cardSnapshot(id) !== before[id]);
     const claim = changed
       .map((id) => getFocusAreaById(id)?.name || id)
-      .map((name) => `Updated your ${name} card.`)
+      .map((name) => `Added to your ${name} card.`)
       .join(' ');
     recordDataSent({
       requestType: DATA_SENT_REQUEST_TYPES.PROFILE_ANSWER_LOCAL,
@@ -1257,30 +1361,43 @@ export class TalkComponent {
     });
     this._proactiveAnswersThisSession += 1;
 
-    const next = getNextProfileQuestion(profileState.get());
-    const say = (text, options) => {
-      const el = this.addMessageToChat(claim ? `${claim} ${text}` : text, 'ai', true, null, options);
-      if (claim) this.appendSeeInFeed(el, changed[0]);
-      return el;
+    const echoBit = echoRaw ? `You said “${String(echoRaw).trim()}”.` : '';
+    const parts = [echoBit, claim].filter(Boolean);
+
+    const next = this.getNextUnsnoozedProfileQuestion(profileState.get());
+    const attachFeed = (el) => {
+      if (claim && changed[0]) this.appendSeeInFeed(el, changed[0]);
     };
+
     if (!next) {
-      say("That's everything I needed on your profile for now. Ask me anything whenever you like.");
+      parts.push("That's everything I needed on your profile for now. Ask me anything whenever you like.");
+      const el = this.addMessageToChat(parts.join(' '), 'ai', true, null, { profileReaction: true });
+      attachFeed(el);
       this._proactivePassiveThisSession = true;
       this._awaitingPaceChoice = false;
       setProfileQuestionsSnoozed(true);
-      return true;
+      return;
     }
 
     if (this._proactiveAnswersThisSession >= PROACTIVE_TALK_SESSION_LIMIT) {
+      parts.push("We've covered a few things. Want to keep going now, or pick this up another time?");
       this._awaitingPaceChoice = true;
-      const el = say("We've covered a few things. Want to keep going now, or pick this up another time?");
+      const el = this.addMessageToChat(parts.join(' '), 'ai', true, null, { profileReaction: true });
+      attachFeed(el);
       if (el) el.setAttribute('data-talk-pace-prompt', '1');
       this.appendPaceChoiceButtons(el?.querySelector('.message-content'));
-      return true;
+      return;
     }
 
-    say(getConversationalAsk(next), this.profilePromptChatOptions(next));
-    return true;
+    parts.push(getConversationalAsk(next));
+    const el = this.addMessageToChat(
+      parts.join(' '),
+      'ai',
+      true,
+      null,
+      this.profilePromptChatOptions(next),
+    );
+    attachFeed(el);
   }
 
   interpretPaceReply(text) {
