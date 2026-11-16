@@ -176,6 +176,40 @@ export function payoffEcho(profile, areaId) {
 }
 
 /**
+ * Compact Feed headline: the user's own value in short form, or "Not answered yet".
+ * Sleep uses the shared display helper; other areas use the stored answer text.
+ */
+export function compactAreaValueHeadline(profile, areaId) {
+  const answered = signalsFor(areaId).filter((signal) => isSignalAnswered(profile, signal));
+  if (!answered.length) return 'Not answered yet';
+  const touched = lastTouched.get(areaId);
+  const signal =
+    answered.find((s) => `${s.section}.${s.field}` === touched) || answered[answered.length - 1];
+  const value = readSignalValue(profile, signal);
+  if (signal.section === 'lifestyle' && signal.field === 'sleepDuration') {
+    return sleepDurationDisplay(value) || 'Not answered yet';
+  }
+  if (Array.isArray(value)) {
+    const joined = value.filter(Boolean).join(', ');
+    return joined || 'Not answered yet';
+  }
+  if (value == null || value === '') return 'Not answered yet';
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  const raw = String(value).trim();
+  if (!raw || raw === 'prefer-not-say') return raw === 'prefer-not-say' ? 'Prefer not to say' : 'Not answered yet';
+  return raw.replace(/-/g, ' ');
+}
+
+/** Muted meta line for collapsed Feed cards. */
+export function compactAreaMetaLine(profile, areaId, modeLabel = 'Self-reported') {
+  const n = signalProgress(profile, areaId).n;
+  const mode = String(modeLabel || 'Self-reported').trim().toLowerCase() || 'self-reported';
+  if (n <= 0) return mode;
+  const based = n === 1 ? 'Based on 1 answer' : `Based on ${n} answers`;
+  return `${based} · ${mode}`;
+}
+
+/**
  * The value-echo sentence for one signal, plus the stored value.
  * Null for generic echoes and for signals the user has not answered.
  */

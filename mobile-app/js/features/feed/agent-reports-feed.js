@@ -11,7 +11,17 @@ import {
 import { rememberFastAlertResponse } from '../talk/user-memory.js';
 import { profileState } from '../../state.js';
 import { getState } from '../../core/app-state.js';
-import { displayMaturityStage, calibrationLine, calibrationOpensSettings, payoffDetail, noteSignalSaved, FOCUS_AREA_SIGNALS } from '../profile/focus-area-signals.js';
+import {
+  displayMaturityStage,
+  calibrationLine,
+  calibrationOpensSettings,
+  payoffDetail,
+  noteSignalSaved,
+  FOCUS_AREA_SIGNALS,
+  compactAreaValueHeadline,
+  compactAreaMetaLine,
+  signalProgress,
+} from '../profile/focus-area-signals.js';
 import { getMetricsByDate } from '../../core/biometrics-db.js';
 import {
   openUltimateAgentCreatorModal,
@@ -29,6 +39,7 @@ import {
   getFocusAreaByName,
   resolveFocusAreaTrackId,
   getBehaviorModeUserLabel,
+  getSelectedFocusAreaIds,
 } from '../human-os/focus-areas.js';
 import { tickModularAgents } from '../human-os/modular-agents-runtime.js';
 import { addMessage } from '../storage/message-queue.js';
@@ -545,14 +556,22 @@ function isSuccessInsight(row) {
 }
 
 function sortFeedRows(rows) {
-  return [...rows].sort((a, b) => {
-    const ca = isCriticalInsight(a) ? 0 : 1;
-    const cb = isCriticalInsight(b) ? 0 : 1;
-    if (ca !== cb) return ca - cb;
-    const za = zoneFromAgentName(a.agent).zoneKey;
-    const zb = zoneFromAgentName(b.agent).zoneKey;
-    return (ZONE_SORT[za] ?? 99) - (ZONE_SORT[zb] ?? 99);
-  });
+  // Task 13a: card order follows the user's stored Focus Area selection order.
+  let order = [];
+  try {
+    order = getSelectedFocusAreaIds() || [];
+  } catch (_) {
+    order = [];
+  }
+  const indexOf = (row) => {
+    const ua = findUserAgentByDisplayName(String(row?.agent || '').trim());
+    const id = String(ua?.trackingLifeAreaId || '').trim();
+    const i = id ? order.indexOf(id) : -1;
+    if (i >= 0) return i;
+    const zone = zoneFromAgentName(row?.agent);
+    return 900 + (ZONE_SORT[zone?.zoneKey] ?? 99);
+  };
+  return [...rows].sort((a, b) => indexOf(a) - indexOf(b));
 }
 
 function insightCardKey(row) {
@@ -1023,6 +1042,11 @@ function buildUniversalCardProps(p) {
       focusAreaId,
       storedStage,
       knowledgeLine: focusAreaId ? feedCardKnowledgeLine(profileNow, focusAreaId) : '',
+      valueHeadline: focusAreaId ? compactAreaValueHeadline(profileNow, focusAreaId) : 'Not answered yet',
+      metaLine: focusAreaId
+        ? compactAreaMetaLine(profileNow, focusAreaId, dataCollectionModePillLabel(signalActive))
+        : '',
+      answerCount: focusAreaId ? signalProgress(profileNow, focusAreaId).n : 0,
       payoffEchoText,
       payoffContext,
       timeStr,
@@ -1088,6 +1112,11 @@ function buildUniversalCardProps(p) {
     signalConfidencePct,
     integrityPct: signalConfidencePct, // Deprecated alias.
     knowledgeLine: focusAreaId ? feedCardKnowledgeLine(profileNow, focusAreaId) : '',
+    valueHeadline: focusAreaId ? compactAreaValueHeadline(profileNow, focusAreaId) : 'Not answered yet',
+    metaLine: focusAreaId
+      ? compactAreaMetaLine(profileNow, focusAreaId, dataCollectionModePillLabel(signalActive))
+      : '',
+    answerCount: focusAreaId ? signalProgress(profileNow, focusAreaId).n : 0,
     maturityStage,
     calibrationText,
     calibrationAction,
@@ -1431,10 +1460,10 @@ export function renderAgentReportsSection() {
       </div>
       <div class="agent-reports-list" id="agentReportsList">
         <div class="agent-reports-grid agent-reports-grid--panels" id="agentReportsGrid"></div>
+        <button type="button" class="agent-feed-add-panel add-agent-button" id="agentFeedAddBtn" aria-label="Add new focus area">
+          <span class="agent-feed-add-panel__label">+ Add Focus</span>
+        </button>
       </div>
-      <button type="button" class="agent-feed-add-panel add-agent-button" id="agentFeedAddBtn" aria-label="Add new focus area">
-        <span class="agent-feed-add-panel__label">+ Add Focus</span>
-      </button>
     </div>
   `;
 
@@ -2300,98 +2329,69 @@ function syncFocusCardsFromProfile() {
     const settingsCta = !!(cal && calibrationOpensSettings(id));
     const payoff = payoffDetail(profile, id);
     const fact = payoff ? getEntries({ focusArea: id, field: payoff.field, profile }) : null;
-    const badge = el.querySelector('[data-uac-maturity]');
-    if (badge) {
-      badge.dataset.maturityStage = String(stage);
-      badge.textContent = feedCardKnowledgeLine(profile, id);
-    }
+    const modeLabel = dataCollectionModePillLabel(el.dataset.signalActive === '1');
     el.dataset.maturityStage = String(stage);
 
-    const actions = el.querySelector('.heart-agent-module__actions');
-    let calEl = el.querySelector('[data-uac-calibration]');
-    let calBtn = el.querySelector('[data-uac-calibration-talk], [data-uac-calibration-settings]');
-    if (cal) {
-      if (!calEl) {
-        calEl = document.createElement('p');
-        calEl.className = 'heart-agent-module__calibration';
-        calEl.dataset.uacCalibration = '';
-        if (actions) actions.parentNode.insertBefore(calEl, actions);
+    const title = el.querySelector('[data-uac-maturity]');
+    if (title && !title.classList.contains('uac-compact__title')) {
+      title.textContent = feedCardKnowledgeLine(profile, id);
+    }
+    const valueEl = el.querySelector('[data-uac-value]');
+    if (valueEl) valueEl.textContent = compactAreaValueHeadline(profile, id);
+    const metaEl = el.querySelector('[data-uac-meta]');
+    if (metaEl) metaEl.textContent = compactAreaMetaLine(profile, id, modeLabel);
+
+    const pay = el.querySelector('[data-uac-payoff]');
+    if (pay) pay.textContent = payoff?.echo || '';
+    const calHidden = el.querySelector('[data-uac-calibration]');
+    if (calHidden) calHidden.textContent = cal || feedCardKnowledgeLine(profile, id);
+
+    const hint = el.querySelector('.uac-compact__hint');
+    if (hint) {
+      if (cal) hint.textContent = cal;
+      else hint.remove();
+    } else if (cal) {
+      const panel = el.querySelector('[data-uac-expand-panel]');
+      const actions = el.querySelector('.uac-compact__actions');
+      if (panel && actions) {
+        const p = document.createElement('p');
+        p.className = 'uac-compact__hint';
+        p.textContent = cal;
+        panel.insertBefore(p, actions);
       }
-      calEl.textContent = cal;
+    }
+
+    let lib = el.querySelector('[data-uac-payoff-context], .uac-compact__library');
+    if (fact?.text) {
+      if (!lib) {
+        const panel = el.querySelector('[data-uac-expand-panel]');
+        if (panel) {
+          lib = document.createElement('p');
+          lib.className = 'uac-compact__library';
+          lib.dataset.uacPayoffContext = '';
+          lib.dataset.uacContentSlot = '';
+          panel.insertBefore(lib, panel.firstChild);
+        }
+      }
+      if (lib) lib.textContent = fact.text;
+    } else if (lib && lib.classList.contains('uac-compact__library')) {
+      // Keep grounded-science body if present; only clear payoff-context nodes.
+      if (lib.hasAttribute('data-uac-payoff-context')) lib.remove();
+    }
+
+    const talkBtn = el.querySelector('.uac-compact__talk');
+    if (talkBtn) {
       const action = settingsCta ? 'settings-city' : 'confidence-talk';
-      if (calBtn && calBtn.dataset.uacAction !== action) {
-        calBtn.remove();
-        calBtn = null;
-      }
-      if (!calBtn) {
-        calBtn = document.createElement('button');
-        calBtn.type = 'button';
-        calBtn.className = 'heart-agent-module__btn heart-agent-module__btn--primary';
-        calBtn.dataset.uacAction = action;
-        if (settingsCta) {
-          calBtn.dataset.uacCalibrationSettings = '';
-          calBtn.textContent = 'Add city in Settings';
-          calBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            openSettingsCityField();
-          });
-        } else {
-          calBtn.dataset.uacCalibrationTalk = '';
-          calBtn.textContent = 'Open Talk';
-        }
-        calEl.insertAdjacentElement('afterend', calBtn);
+      talkBtn.dataset.uacAction = action;
+      talkBtn.textContent = settingsCta ? 'Settings' : 'Talk';
+      if (settingsCta) {
+        talkBtn.setAttribute('data-uac-calibration-settings', '');
+        talkBtn.removeAttribute('data-uac-calibration-talk');
       } else {
-        calBtn.textContent = settingsCta ? 'Add city in Settings' : 'Open Talk';
+        talkBtn.setAttribute('data-uac-calibration-talk', '');
+        talkBtn.removeAttribute('data-uac-calibration-settings');
       }
-    } else {
-      calEl?.remove();
-      calBtn?.remove();
     }
-
-    let pay = el.querySelector('[data-uac-payoff]');
-    let ctx = el.querySelector('[data-uac-payoff-context]');
-    if (payoff?.echo) {
-      if (!pay) {
-        pay = document.createElement('p');
-        pay.className = 'heart-agent-module__payoff';
-        pay.dataset.uacPayoff = '';
-        const slot = el.querySelector('[data-uac-content-slot]');
-        const anchor = el.querySelector('[data-uac-calibration]') || actions;
-        if (slot) slot.insertAdjacentElement('afterend', pay);
-        else if (anchor) anchor.parentNode.insertBefore(pay, anchor);
-      }
-      pay.textContent = payoff.echo;
-      if (fact?.text) {
-        if (!ctx) {
-          ctx = document.createElement('p');
-          ctx.className = 'heart-agent-module__payoff-context';
-          ctx.dataset.uacPayoffContext = '';
-          pay.insertAdjacentElement('afterend', ctx);
-        }
-        ctx.textContent = fact.text;
-      } else {
-        ctx?.remove();
-      }
-    } else {
-      pay?.remove();
-      ctx?.remove();
-    }
-
-    const statusRow = el.querySelector('.heart-agent-module__status-row');
-    let pill = statusRow?.querySelector('.heart-agent-module__status-pill');
-    const modeLabel = dataCollectionModePillLabel(el.dataset.signalActive === '1');
-    if (statusRow && !pill) {
-      pill = document.createElement('span');
-      pill.className = 'heart-agent-module__status-pill heart-agent-module__status-pill--manual';
-      statusRow.prepend(pill);
-    }
-    if (pill) {
-      pill.classList.add('heart-agent-module__status-pill--manual');
-      pill.textContent = modeLabel;
-    }
-    const conf = el.querySelector('.heart-agent-module__signal-confidence');
-    const pct = Number(el.dataset.signalConfidence || 0);
-    if (!(stage >= 1 && pct > 0)) conf?.remove();
   });
 }
 
