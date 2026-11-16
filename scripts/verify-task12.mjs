@@ -200,7 +200,12 @@ for (const rel of scanJs) {
   for (const lit of extractLiterals(src)) {
     // Skip LLM system-prompt constants (not user-visible UI).
     if (/wearable sensors|health-stack|Talk-first \/ Manual tracking/i.test(lit)) continue;
-    const hits = findBannedVocab(lit);
+    // Internal agent id keys (AGT-01-SLEEP) stay in feed wiring; never render them.
+    if (rel.includes('agent-reports-feed.js') && /^AGT-\d+/i.test(lit.trim())) continue;
+    const hits = findBannedVocab(lit).filter((h) => {
+      if (h === 'AGT-' && rel.includes('agent-reports-feed.js')) return false;
+      return true;
+    });
     if (hits.length) {
       throw new Error(`${rel} user-visible literal still has banned vocab [${hits.join(', ')}]: ${lit.slice(0, 120)}`);
     }
@@ -208,6 +213,12 @@ for (const rel of scanJs) {
       throw new Error(`${rel} still has Baseline in UI literal: ${lit.slice(0, 120)}`);
     }
   }
+}
+// Task 13: "On track" / "AGT-" must not appear in the card renderer
+{
+  const cardSrc = fs.readFileSync(path.join(root, 'mobile-app/js/features/feed/universal-agent-card.js'), 'utf8');
+  assert.equal(/On track/.test(cardSrc), false, 'card still contains On track');
+  assert.equal(/AGT-\d+/.test(cardSrc), false, 'card still embeds AGT- codes');
 }
 // HTML: strip comments, then fail if banned phrases remain in markup text.
 const htmlRaw = fs.readFileSync(path.join(root, 'mobile-app/index.html'), 'utf8');

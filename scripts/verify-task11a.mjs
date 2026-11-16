@@ -289,7 +289,7 @@ const eveningOffer = await page.evaluate(() => ({
   buttons: [...document.querySelectorAll('#todayBlockActions button')].map((b) => b.textContent),
 }));
 console.log('[11a] evening offer', JSON.stringify(eveningOffer));
-if (eveningOffer.hidden || !/How was your day/i.test(eveningOffer.text)) {
+if (eveningOffer.hidden || !/Evening check-in · not done/i.test(eveningOffer.text)) {
   fail(`evening check-in missing: ${eveningOffer.text}`);
 }
 await page.click('#todayBlockActions .btn');

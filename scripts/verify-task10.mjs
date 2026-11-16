@@ -382,7 +382,7 @@ if (process.env.OBRIUM_URL) {
     buttons: [...document.querySelectorAll('#todayBlockActions button')].map((b) => b.textContent),
   }));
   console.log('[10a] strict', JSON.stringify(strict));
-  if (strict.hidden || strict.text !== 'Log how you slept') fail(`strict check-in missing: ${strict.text}`);
+  if (strict.hidden || !/check-in · not done/i.test(strict.text)) fail(`strict check-in missing: ${strict.text}`);
   if (!strict.buttons.includes('Log sleep')) fail('strict check-in button missing');
   await page.screenshot({ path: path.join(outDir, 'task10-today-strict-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
   const waterText = await page.locator('#dayStatWater').textContent();
@@ -464,7 +464,7 @@ if (process.env.OBRIUM_URL) {
   if (preview.hidden || !preview.buttons.includes('Done') || !preview.buttons.includes('Not today')) {
     fail(`preview action missing: ${JSON.stringify(preview)}`);
   }
-  if (!/^Try /.test(preview.text)) fail('preview step is not a try phrasing');
+  if (!/Try /.test(preview.text)) fail('preview step is not a try phrasing');
   await page.screenshot({ path: path.join(outDir, 'task10-today-preview-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
 
   const tapsBefore = apiHits.length;

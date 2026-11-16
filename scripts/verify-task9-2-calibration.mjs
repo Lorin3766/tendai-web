@@ -98,14 +98,14 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
   if (!cards.skin) fail('skin card missing');
   else {
     if (cards.skin.text !== 'Add your city in Settings to personalize this') fail(`skin text: ${cards.skin.text}`);
-    if (cards.skin.button !== 'Add city in Settings') fail(`skin button: ${cards.skin.button}`);
+    if (cards.skin.button !== 'Settings') fail(`skin button: ${cards.skin.button}`);
     if (cards.skin.action !== 'settings-city') fail(`skin action: ${cards.skin.action}`);
-    if (/Talk/i.test(cards.skin.text + cards.skin.button)) fail('skin still mentions Talk');
+    if (/Talk/i.test(cards.skin.text)) fail('skin calibration still mentions Talk');
   }
   if (!cards.sleep) fail('sleep card missing');
   else {
     if (!/answer a quick question in Talk to personalize this/i.test(cards.sleep.text)) fail(`sleep text: ${cards.sleep.text}`);
-    if (cards.sleep.button !== 'Open Talk') fail(`sleep button: ${cards.sleep.button}`);
+    if (cards.sleep.button !== 'Talk') fail(`sleep button: ${cards.sleep.button}`);
     if (cards.sleep.action !== 'confidence-talk') fail(`sleep action: ${cards.sleep.action}`);
   }
 
