@@ -295,13 +295,15 @@
                 </div>
               </div>
 
-              <article class="card-soft today-block" id="todayBlock" hidden>
-                <div class="today-block__head">
-                  <h3 class="card-title">Today</h3>
-                  <p class="today-block__slot" id="todayBlockSlot"></p>
+              <article class="card-soft today-block today-block--compact" id="todayBlock" hidden>
+                <div class="today-block__row">
+                  <div class="today-block__copy">
+                    <h3 class="card-title today-block__heading sr-only">Today</h3>
+                    <p class="today-block__slot" id="todayBlockSlot" hidden></p>
+                    <p class="today-block__text" id="todayBlockText"></p>
+                  </div>
+                  <div class="today-block__actions" id="todayBlockActions"></div>
                 </div>
-                <p class="today-block__text" id="todayBlockText"></p>
-                <div class="today-block__actions" id="todayBlockActions"></div>
                 <p class="today-block__ack" id="todayBlockAck" hidden></p>
               </article>
 
@@ -1050,6 +1052,12 @@
             <div class="settings-field-label">
               <span>Version</span>
               <span class="settings-version">v1.0.0 (PWA)</span>
+            </div>
+          </div>
+          <div class="settings-field">
+            <div class="settings-field-label">
+              <span>Build</span>
+              <span class="settings-version" id="settingsBuildCache">obrium-shell-v11e-6</span>
             </div>
           </div>
 
