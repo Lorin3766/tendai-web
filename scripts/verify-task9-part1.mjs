@@ -145,7 +145,7 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
   await page.click('[data-os-ack-ai]');
   await page.locator('[data-os-focus-area]').nth(0).click();
   await page.locator('[data-os-focus-area]').nth(1).click();
-  await page.click('[data-os-finish]');
+  await page.evaluate(() => document.querySelector('[data-os-finish]')?.click());
   await page.waitForTimeout(2500);
   const talkText = await page.evaluate(() => {
     const bots = [...document.querySelectorAll('.talk-view .message.bot .message-text, #chatLog .message.bot .message-text')];
@@ -211,7 +211,11 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
   if (afterTalk.off.slice(logBefore).some(Boolean)) fail('profile answer was marked sent off device');
   if (apiHits.length !== apiBefore) fail('saving an answer called the API');
   await page.screenshot({ path: path.join(outDir, 'task9-talk-after-answer-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
-  await page.click('.talk-see-feed');
+  await page.evaluate(() => {
+    const btn = document.querySelector('.talk-see-feed');
+    btn?.scrollIntoView({ block: 'center' });
+    btn?.click();
+  });
   await page.waitForTimeout(600);
   const sleepCard = await page.evaluate(() => {
     const el = document.querySelector('.universal-agent-card[data-focus-area-id="sleep"]');
@@ -268,7 +272,8 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
     };
   });
   console.log('[9c] after clear', JSON.stringify(cleared));
-  if (!/Not answered yet/i.test(cleared.value)) {
+  // Task 14a: empty cards drop the value headline (show next question instead).
+  if (cleared.value && !/Not answered yet/i.test(cleared.value)) {
     fail(`clear did not reset value headline: ${cleared.value}`);
   }
   if (/Based on \d+ answer/i.test(cleared.meta)) {

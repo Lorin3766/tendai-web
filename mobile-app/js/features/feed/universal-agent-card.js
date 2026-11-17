@@ -2,7 +2,7 @@
 // @owner: feed
 // @role: ui
 
-import { dataCollectionModePillLabel } from '../settings/data-collection-mode.js';
+import { focusAreaGlyphHtml, getFocusAreaVisual } from '../human-os/focus-area-visuals.js';
 
 export const UNIVERSAL_AGENT_SEARCHING = '[ SEARCHING FOR SIGNAL... ]';
 
@@ -430,12 +430,19 @@ export function createUniversalAgentCard(props) {
   const noFact = slot?.noFact === true || !slotBody;
   const calibrationText = String(props.calibrationText || '').trim();
   const calibrationSettings = props.calibrationAction === 'settings';
-  const modePillLabel = dataCollectionModePillLabel(!!props.signalActive);
   const knowledgeLine = String(props.knowledgeLine || '').trim();
-  const valueHeadline = String(props.valueHeadline || '').trim() || 'Not answered yet';
-  const metaLine = String(props.metaLine || '').trim() || modePillLabel.toLowerCase();
+  const valueHeadline = String(props.valueHeadline || '').trim();
+  const metaLine = String(props.metaLine || '').trim();
   const payoffEchoText = String(props.payoffEchoText || '').trim();
   const payoffContext = String(props.payoffContext || '').trim();
+  const nextQ = props.nextQuestion && typeof props.nextQuestion === 'object' ? props.nextQuestion : null;
+  const focusAreaId = String(props.focusAreaId || '');
+  const visual = focusAreaId ? getFocusAreaVisual(focusAreaId) : null;
+  const glyphHtml = focusAreaId
+    ? focusAreaGlyphHtml(focusAreaId, 'uac-compact__glyph')
+    : iconInner
+      ? `<span class="uac-compact__icon" aria-hidden="true">${iconInner}</span>`
+      : '';
 
   const classes = [
     'agent-report-card',
@@ -444,27 +451,59 @@ export function createUniversalAgentCard(props) {
     'heart-agent-module-card',
     'universal-agent-card',
     'uac-compact',
+    'uac-alive',
   ];
   for (const c of props.extraCardClasses || []) {
     if (c) classes.push(String(c));
   }
   if (props.agentPaused) classes.push('agent-report-card--paused');
-  if (verdictTone === 'alert') classes.push('heart-agent-module-card--alert');
-  if (verdictTone === 'optimal') classes.push('heart-agent-module-card--optimal');
+  if (valueHeadline) classes.push('uac-alive--filled');
+  else classes.push('uac-alive--empty');
 
   const el = document.createElement('article');
   el.className = classes.join(' ');
   el.dataset.agentName = agentName;
   el.dataset.trackId = trackId;
   el.dataset.maturityStage = String(maturityStage);
-  el.dataset.focusAreaId = String(props.focusAreaId || '');
+  el.dataset.focusAreaId = focusAreaId;
   el.dataset.storedStage = String(props.storedStage ?? 0);
   el.dataset.signalActive = props.signalActive ? '1' : '0';
   el.dataset.contentKind = slotKind;
   el.dataset.signalConfidence = String(Number(props.signalConfidencePct ?? props.integrityPct) || 0);
+  if (visual) el.style.setProperty('--area-color', visual.hex);
 
   const talkAction = calibrationSettings ? 'settings-city' : 'confidence-talk';
   const talkLabel = calibrationSettings ? 'Settings' : 'Talk';
+
+  const chipsHtml = (nextQ?.chips || [])
+    .map(
+      (chip, i) =>
+        `<button type="button" class="uac-chip" data-uac-chip data-chip-index="${i}" style="min-height:44px">${universalEsc(chip.label)}</button>`,
+    )
+    .join('');
+  const questionBlock = nextQ
+    ? `<div class="uac-compact__ask" data-uac-ask-block>
+        <p class="uac-compact__ask-text" data-uac-ask>${universalEsc(nextQ.ask)}</p>
+        ${
+          nextQ.settingsCity
+            ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="settings-city" data-uac-calibration-settings style="min-height:44px">Open Settings</button>`
+            : nextQ.talkOnly
+              ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="confidence-talk" data-uac-calibration-talk style="min-height:44px">Answer in Talk</button>`
+              : `<div class="uac-compact__chips" data-uac-chips>${chipsHtml}</div>`
+        }
+        ${
+          nextQ.settingsCity
+            ? ''
+            : `<button type="button" class="uac-compact__rather" data-uac-rather>Rather not say</button>`
+        }
+      </div>`
+    : '';
+
+  const valueBlock = valueHeadline
+    ? `<span class="uac-compact__value" data-uac-value>${universalEsc(valueHeadline)}</span>
+       <span class="uac-compact__meta" data-uac-meta>${universalEsc(metaLine)}</span>`
+    : `<span class="uac-compact__value uac-compact__value--empty" data-uac-value hidden></span>
+       <span class="uac-compact__meta" data-uac-meta hidden></span>`;
 
   el.innerHTML = `
     <div class="agent-report-card-inner heart-agent-module uac-compact__inner">
@@ -473,15 +512,14 @@ export function createUniversalAgentCard(props) {
           type="button"
           class="uac-compact__toggle"
           aria-expanded="false"
-          aria-controls="uac-expand-${universalEsc(props.focusAreaId || trackId)}"
+          aria-controls="uac-expand-${universalEsc(focusAreaId || trackId)}"
           data-uac-expand-toggle
         >
           <span class="uac-compact__identity">
-            ${iconInner ? `<span class="uac-compact__icon" aria-hidden="true">${iconInner}</span>` : ''}
+            ${glyphHtml}
             <span class="uac-compact__title" data-uac-maturity>${universalEsc(agentTitle)}</span>
           </span>
-          <span class="uac-compact__value" data-uac-value>${universalEsc(valueHeadline)}</span>
-          <span class="uac-compact__meta" data-uac-meta>${universalEsc(metaLine)}</span>
+          ${valueBlock}
           <span class="sr-only" data-uac-payoff>${universalEsc(payoffEchoText)}</span>
           <span class="sr-only" data-uac-calibration>${universalEsc(calibrationText || knowledgeLine)}</span>
         </button>
@@ -492,9 +530,11 @@ export function createUniversalAgentCard(props) {
           ${calibrationSettings ? 'data-uac-calibration-settings' : 'data-uac-calibration-talk'}
         >${universalEsc(talkLabel)}</button>
       </div>
+      ${questionBlock}
+      <div class="uac-compact__payoff-inline" data-uac-payoff-inline hidden></div>
       <div
         class="uac-compact__expand heart-agent-module__details"
-        id="uac-expand-${universalEsc(props.focusAreaId || trackId)}"
+        id="uac-expand-${universalEsc(focusAreaId || trackId)}"
         hidden
         data-uac-expand-panel
       >
@@ -504,11 +544,6 @@ export function createUniversalAgentCard(props) {
             : !noFact && slotBody
               ? `<p class="uac-compact__library" data-uac-content-slot>${universalEsc(slotBody)}</p>`
               : ''
-        }
-        ${
-          calibrationText
-            ? `<p class="uac-compact__hint">${universalEsc(calibrationText)}</p>`
-            : ''
         }
         <div class="uac-compact__actions heart-agent-module__actions">
           <button type="button" class="heart-agent-module__btn heart-agent-module__btn--switch" data-uac-action="discuss">Discuss</button>
@@ -530,6 +565,10 @@ export function createUniversalAgentCard(props) {
       </div>
     </div>
   `;
+
+  if (nextQ) {
+    el._uacNextQuestion = nextQ;
+  }
 
   const details = el.querySelector('[data-uac-expand-panel]');
   const toggle = el.querySelector('[data-uac-expand-toggle]');

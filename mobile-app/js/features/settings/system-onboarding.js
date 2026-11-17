@@ -12,6 +12,7 @@ import {
   getSelectedFocusAreaIds,
   getFocusAreaById,
 } from '../human-os/focus-areas.js';
+import { focusAreaGlyphHtml, getFocusAreaVisual } from '../human-os/focus-area-visuals.js';
 import {
   addUserAgent,
   findUserAgentByFocusAreaId,
@@ -242,9 +243,15 @@ export function initSystemOnboarding() {
     } else if (step === STEP_FOCUS) {
       const chips = STARTER_FOCUS_AREAS.map((area) => {
         const selected = answers.focusAreaIds.includes(area.id);
+        const visual = getFocusAreaVisual(area.id);
         return `
-          <button type="button" class="btn system-onboarding-focus-chip${selected ? ' is-selected' : ''}" data-os-focus-area="${area.id}" aria-pressed="${selected}">
-            ${area.name}
+          <button type="button" class="btn system-onboarding-focus-chip${selected ? ' is-selected' : ''}" data-os-focus-area="${area.id}" aria-pressed="${selected}" style="--area-color:${visual.hex}">
+            ${focusAreaGlyphHtml(area.id, 'system-onboarding-focus-glyph')}
+            <span class="system-onboarding-focus-copy">
+              <span class="system-onboarding-focus-name">${area.name}</span>
+              <span class="system-onboarding-focus-desc">${area.desc}</span>
+            </span>
+            ${selected ? '<span class="system-onboarding-focus-check" aria-hidden="true">✓</span>' : ''}
           </button>
         `;
       }).join('');

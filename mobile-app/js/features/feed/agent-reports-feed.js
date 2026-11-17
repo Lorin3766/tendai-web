@@ -55,6 +55,8 @@ import {
 import { getEntries } from './content-library.js';
 import { dataCollectionModePillLabel, isSensorNagText } from '../settings/data-collection-mode.js';
 import { feedCardKnowledgeLine } from '../talk/talk-payoff.js';
+import { nextCardQuestion, saveCardTapAnswer } from './card-tap-answer.js';
+import { universalEsc } from './universal-agent-card.js';
 
 /** Display-only rewrite for legacy ledger copy (storage untouched). */
 function displaySafeStatus(status) {
@@ -1042,10 +1044,9 @@ function buildUniversalCardProps(p) {
       focusAreaId,
       storedStage,
       knowledgeLine: focusAreaId ? feedCardKnowledgeLine(profileNow, focusAreaId) : '',
-      valueHeadline: focusAreaId ? compactAreaValueHeadline(profileNow, focusAreaId) : 'Not answered yet',
-      metaLine: focusAreaId
-        ? compactAreaMetaLine(profileNow, focusAreaId, dataCollectionModePillLabel(signalActive))
-        : '',
+      valueHeadline: focusAreaId ? compactAreaValueHeadline(profileNow, focusAreaId) : '',
+      metaLine: focusAreaId ? compactAreaMetaLine(profileNow, focusAreaId) : '',
+      nextQuestion: focusAreaId ? nextCardQuestion(profileNow, focusAreaId) : null,
       answerCount: focusAreaId ? signalProgress(profileNow, focusAreaId).n : 0,
       payoffEchoText,
       payoffContext,
@@ -1112,10 +1113,9 @@ function buildUniversalCardProps(p) {
     signalConfidencePct,
     integrityPct: signalConfidencePct, // Deprecated alias.
     knowledgeLine: focusAreaId ? feedCardKnowledgeLine(profileNow, focusAreaId) : '',
-    valueHeadline: focusAreaId ? compactAreaValueHeadline(profileNow, focusAreaId) : 'Not answered yet',
-    metaLine: focusAreaId
-      ? compactAreaMetaLine(profileNow, focusAreaId, dataCollectionModePillLabel(signalActive))
-      : '',
+    valueHeadline: focusAreaId ? compactAreaValueHeadline(profileNow, focusAreaId) : '',
+    metaLine: focusAreaId ? compactAreaMetaLine(profileNow, focusAreaId) : '',
+    nextQuestion: focusAreaId ? nextCardQuestion(profileNow, focusAreaId) : null,
     answerCount: focusAreaId ? signalProgress(profileNow, focusAreaId).n : 0,
     maturityStage,
     calibrationText,
@@ -1434,7 +1434,6 @@ export function renderAgentReportsSection() {
   raw.forEach((r) => nextKeys.add(insightCardKey(r)));
 
   const sorted = sortFeedRows(raw);
-  const isDemoMode = getState().demo?.isDemoMode === true;
 
   let section = feedView.querySelector('#agentReportsSection');
   if (!section) {
@@ -1456,7 +1455,6 @@ export function renderAgentReportsSection() {
     <div class="agent-reports-panel">
       <div class="agent-reports-header agent-reports-header--cyber">
         <h3 class="agent-reports-title agent-reports-title--cyber">Your focus areas</h3>
-        <span class="agent-reports-updated" data-ledger-updated></span>
       </div>
       <div class="agent-reports-list" id="agentReportsList">
         <div class="agent-reports-grid agent-reports-grid--panels" id="agentReportsGrid"></div>
@@ -1471,20 +1469,6 @@ export function renderAgentReportsSection() {
   if (grid) {
     sorted.forEach((row) => renderAgentPanelCard(grid, row, prevKeys));
   }
-
-  const updatedEl = section.querySelector('[data-ledger-updated]');
-  if (updatedEl && ledger.last_update) {
-    try {
-      const d = new Date(ledger.last_update);
-      updatedEl.textContent = `Updated ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    } catch (_) {
-      updatedEl.textContent = '';
-    }
-  }
-  if (isDemoMode && updatedEl) {
-    updatedEl.textContent = (updatedEl.textContent ? `${updatedEl.textContent} · ` : '') + 'DEMO';
-  }
-
   _prevAgentCardKeys = nextKeys;
   replayLatestBiometricPayloadToAgentCards();
   updateSystemIntegrityDots();
@@ -2317,6 +2301,27 @@ function noteChangedFocusSignals(profile) {
   }
 }
 
+function renderAskBlockHtml(nextQ) {
+  if (!nextQ) return '';
+  const chipsHtml = (nextQ.chips || [])
+    .map(
+      (chip, i) =>
+        `<button type="button" class="uac-chip" data-uac-chip data-chip-index="${i}" style="min-height:44px">${universalEsc(chip.label)}</button>`,
+    )
+    .join('');
+  return `<div class="uac-compact__ask" data-uac-ask-block>
+    <p class="uac-compact__ask-text" data-uac-ask>${universalEsc(nextQ.ask)}</p>
+    ${
+      nextQ.settingsCity
+        ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="settings-city" data-uac-calibration-settings style="min-height:44px">Open Settings</button>`
+        : nextQ.talkOnly
+          ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="confidence-talk" data-uac-calibration-talk style="min-height:44px">Answer in Talk</button>`
+          : `<div class="uac-compact__chips" data-uac-chips>${chipsHtml}</div>`
+    }
+    ${nextQ.settingsCity ? '' : `<button type="button" class="uac-compact__rather" data-uac-rather>Rather not say</button>`}
+  </div>`;
+}
+
 function syncFocusCardsFromProfile() {
   const profile = profileState.get();
   noteChangedFocusSignals(profile);
@@ -2329,36 +2334,45 @@ function syncFocusCardsFromProfile() {
     const settingsCta = !!(cal && calibrationOpensSettings(id));
     const payoff = payoffDetail(profile, id);
     const fact = payoff ? getEntries({ focusArea: id, field: payoff.field, profile }) : null;
-    const modeLabel = dataCollectionModePillLabel(el.dataset.signalActive === '1');
+    const value = compactAreaValueHeadline(profile, id);
+    const meta = compactAreaMetaLine(profile, id);
+    const nextQ = nextCardQuestion(profile, id);
     el.dataset.maturityStage = String(stage);
+    el.classList.toggle('uac-alive--filled', !!value);
+    el.classList.toggle('uac-alive--empty', !value);
+    el._uacNextQuestion = nextQ || null;
 
-    const title = el.querySelector('[data-uac-maturity]');
-    if (title && !title.classList.contains('uac-compact__title')) {
-      title.textContent = feedCardKnowledgeLine(profile, id);
-    }
     const valueEl = el.querySelector('[data-uac-value]');
-    if (valueEl) valueEl.textContent = compactAreaValueHeadline(profile, id);
+    if (valueEl) {
+      valueEl.textContent = value;
+      valueEl.hidden = !value;
+      valueEl.classList.toggle('uac-compact__value--empty', !value);
+    }
     const metaEl = el.querySelector('[data-uac-meta]');
-    if (metaEl) metaEl.textContent = compactAreaMetaLine(profile, id, modeLabel);
+    if (metaEl) {
+      metaEl.textContent = meta;
+      metaEl.hidden = !meta;
+    }
 
     const pay = el.querySelector('[data-uac-payoff]');
     if (pay) pay.textContent = payoff?.echo || '';
     const calHidden = el.querySelector('[data-uac-calibration]');
     if (calHidden) calHidden.textContent = cal || feedCardKnowledgeLine(profile, id);
 
-    const hint = el.querySelector('.uac-compact__hint');
-    if (hint) {
-      if (cal) hint.textContent = cal;
-      else hint.remove();
-    } else if (cal) {
-      const panel = el.querySelector('[data-uac-expand-panel]');
-      const actions = el.querySelector('.uac-compact__actions');
-      if (panel && actions) {
-        const p = document.createElement('p');
-        p.className = 'uac-compact__hint';
-        p.textContent = cal;
-        panel.insertBefore(p, actions);
+    const inner = el.querySelector('.uac-compact__inner');
+    let ask = el.querySelector('[data-uac-ask-block]');
+    if (nextQ) {
+      const html = renderAskBlockHtml(nextQ);
+      if (ask) ask.outerHTML = html;
+      else if (inner) {
+        const payoffInline = el.querySelector('[data-uac-payoff-inline]');
+        const wrap = document.createElement('div');
+        wrap.innerHTML = html;
+        const node = wrap.firstElementChild;
+        if (node) inner.insertBefore(node, payoffInline || el.querySelector('[data-uac-expand-panel]'));
       }
+    } else if (ask) {
+      ask.remove();
     }
 
     let lib = el.querySelector('[data-uac-payoff-context], .uac-compact__library');
@@ -2375,7 +2389,6 @@ function syncFocusCardsFromProfile() {
       }
       if (lib) lib.textContent = fact.text;
     } else if (lib && lib.classList.contains('uac-compact__library')) {
-      // Keep grounded-science body if present; only clear payoff-context nodes.
       if (lib.hasAttribute('data-uac-payoff-context')) lib.remove();
     }
 
@@ -2395,6 +2408,72 @@ function syncFocusCardsFromProfile() {
   });
 }
 
+function showCardPayoffInline(el, payoff) {
+  const box = el.querySelector('[data-uac-payoff-inline]');
+  if (!box) return;
+  const parts = [...(payoff?.lines || [])];
+  if (payoff?.sourceLine) parts.push(payoff.sourceLine);
+  if (!parts.length) {
+    box.hidden = true;
+    box.textContent = '';
+    return;
+  }
+  box.hidden = false;
+  box.textContent = parts.join(' ');
+}
+
+function handleCardTapAnswer(cardEl, value, echoRaw) {
+  const areaId = cardEl?.dataset?.focusAreaId;
+  const nextQ = cardEl?._uacNextQuestion;
+  if (!areaId || !nextQ || nextQ.settingsCity) return;
+  const logBefore = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('tendai_data_sent_log_v1') || '[]').length;
+    } catch (_) {
+      return 0;
+    }
+  })();
+  const { payoff } = saveCardTapAnswer(areaId, nextQ.section, nextQ.field, value, echoRaw);
+  const logAfter = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('tendai_data_sent_log_v1') || '[]').length;
+    } catch (_) {
+      return 0;
+    }
+  })();
+  // Chip path must not append data-sent-log entries.
+  if (logAfter !== logBefore) {
+    console.warn('[feed] chip save unexpectedly wrote data-sent-log');
+  }
+  showCardPayoffInline(cardEl, payoff);
+  syncFocusCardsFromProfile();
+  if (typeof window.updateNextStepDisplay === 'function') window.updateNextStepDisplay();
+}
+
+function installCardChipDelegation() {
+  if (typeof document === 'undefined' || document.documentElement.dataset.uacChipDelegation === '1') return;
+  document.documentElement.dataset.uacChipDelegation = '1';
+  document.addEventListener('click', (event) => {
+    const chip = event.target?.closest?.('[data-uac-chip]');
+    const rather = event.target?.closest?.('[data-uac-rather]');
+    if (!chip && !rather) return;
+    const card = event.target.closest('.universal-agent-card');
+    if (!card) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const nextQ = card._uacNextQuestion;
+    if (!nextQ) return;
+    if (rather) {
+      handleCardTapAnswer(card, 'prefer-not-say', 'Rather not say');
+      return;
+    }
+    const idx = Number(chip.getAttribute('data-chip-index'));
+    const opt = nextQ.chips?.[idx];
+    if (!opt) return;
+    handleCardTapAnswer(card, opt.value, opt.label);
+  });
+}
+
 function highlightFocusAreaCard(areaId) {
   if (typeof window.switchView === 'function') window.switchView('feed');
   const el = document.querySelector(`.universal-agent-card[data-focus-area-id="${CSS.escape(areaId)}"]`);
@@ -2407,6 +2486,7 @@ function highlightFocusAreaCard(areaId) {
 
 if (typeof window !== 'undefined') {
   installDelegatedAddAgentListener();
+  installCardChipDelegation();
   installBiometricsRealtimeSubscriber();
   installObriumUpdateAgentListener();
   window.highlightFocusAreaCard = highlightFocusAreaCard;

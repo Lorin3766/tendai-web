@@ -106,6 +106,21 @@ export function calibrationOpensSettings(areaId) {
  * First unanswered askable signal while any selected Focus Area still has zero signals.
  * @returns {{ section: string, field: string, echo: string, focusArea: string } | null}
  */
+/**
+ * First unanswered signal for one Focus Area (least sensitive first).
+ * Location signals are skipped (Settings city), same as Talk askability.
+ * @returns {{ section: string, field: string, echo: string, focusArea: string } | null}
+ */
+export function nextUnansweredSignalForArea(profile, areaId) {
+  if (!areaId) return null;
+  for (const signal of signalsFor(areaId)) {
+    if (signal.section === 'location') continue;
+    if (!isProfileFieldAskable(signal.section, signal.field)) continue;
+    if (!isSignalAnswered(profile, signal)) return { ...signal, focusArea: areaId };
+  }
+  return null;
+}
+
 export function nextFocusAreaSignal(profile) {
   let ids = [];
   try {
@@ -176,37 +191,35 @@ export function payoffEcho(profile, areaId) {
 }
 
 /**
- * Compact Feed headline: the user's own value in short form, or "Not answered yet".
- * Sleep uses the shared display helper; other areas use the stored answer text.
+ * Compact Feed headline: the user's own value in short form.
+ * Empty areas return '' — cards show the next question instead of "Not answered yet".
  */
 export function compactAreaValueHeadline(profile, areaId) {
   const answered = signalsFor(areaId).filter((signal) => isSignalAnswered(profile, signal));
-  if (!answered.length) return 'Not answered yet';
+  if (!answered.length) return '';
   const touched = lastTouched.get(areaId);
   const signal =
     answered.find((s) => `${s.section}.${s.field}` === touched) || answered[answered.length - 1];
   const value = readSignalValue(profile, signal);
   if (signal.section === 'lifestyle' && signal.field === 'sleepDuration') {
-    return sleepDurationDisplay(value) || 'Not answered yet';
+    return sleepDurationDisplay(value) || '';
   }
   if (Array.isArray(value)) {
-    const joined = value.filter(Boolean).join(', ');
-    return joined || 'Not answered yet';
+    return value.filter(Boolean).join(', ') || '';
   }
-  if (value == null || value === '') return 'Not answered yet';
+  if (value == null || value === '') return '';
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
   const raw = String(value).trim();
-  if (!raw || raw === 'prefer-not-say') return raw === 'prefer-not-say' ? 'Prefer not to say' : 'Not answered yet';
+  if (!raw) return '';
+  if (raw === 'prefer-not-say') return 'Prefer not to say';
   return raw.replace(/-/g, ' ');
 }
 
-/** Muted meta line for collapsed Feed cards. */
-export function compactAreaMetaLine(profile, areaId, modeLabel = 'Self-reported') {
+/** One meta line when the area has answers. No "self-reported". */
+export function compactAreaMetaLine(profile, areaId) {
   const n = signalProgress(profile, areaId).n;
-  const mode = String(modeLabel || 'Self-reported').trim().toLowerCase() || 'self-reported';
-  if (n <= 0) return mode;
-  const based = n === 1 ? 'Based on 1 answer' : `Based on ${n} answers`;
-  return `${based} · ${mode}`;
+  if (n <= 0) return '';
+  return n === 1 ? 'Based on 1 answer' : `Based on ${n} answers`;
 }
 
 /**

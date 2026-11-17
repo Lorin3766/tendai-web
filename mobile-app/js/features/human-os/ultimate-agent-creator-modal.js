@@ -18,6 +18,7 @@ import {
   getSelectedFocusAreaIds,
   getBehaviorModeUserLabel,
 } from './focus-areas.js';
+import { focusAreaGlyphHtml, getFocusAreaVisual } from './focus-area-visuals.js';
 
 /**
  * Inline sector icons (path-only SVG, ASCII-safe `d` attributes — no truncation).
@@ -859,14 +860,16 @@ export function openUltimateAgentCreatorModalAfterPurge(onDone) {
     const tiles = available
       .map((area) => {
         const selected = state.selectedSectorIds.has(area.id);
+        const visual = getFocusAreaVisual(area.id);
         return `
           <button
             type="button"
             class="deploy-tile${selected ? ' is-selected' : ''}"
             data-focus-area-id="${esc(area.id)}"
+            style="--area-color:${visual.hex}"
           >
             <span class="deploy-tile-check" aria-hidden="true">${selected ? '✓' : ''}</span>
-            <span class="deploy-tile-icon" aria-hidden="true">${ICONS[area.iconKey] || ICONS.heart}</span>
+            ${focusAreaGlyphHtml(area.id, 'deploy-tile-glyph')}
             <span class="deploy-tile-body">
               <span class="deploy-tile-title">${esc(area.name)}</span>
               <span class="deploy-tile-desc">${esc(area.desc)}</span>

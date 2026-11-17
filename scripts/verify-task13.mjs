@@ -119,7 +119,8 @@ const metrics = await page.evaluate(() => {
 console.log('13 metrics', JSON.stringify(metrics));
 assert.equal(metrics.hasOnTrack, false, 'On track visible');
 assert.equal(metrics.hasAgt, false, 'AGT code visible');
-assert.ok(metrics.heights.every((h) => h <= 96), `card heights ${metrics.heights}`);
+// Task 14a: empty/simple cards ~140–170; filled+next-question chips may reach ~220.
+assert.ok(metrics.heights.every((h) => h >= 130 && h <= 230), `card heights ${metrics.heights}`);
 assert.ok(metrics.fullyVisible >= 3, `need ≥3 cards visible, got ${metrics.fullyVisible}`);
 assert.ok(metrics.todayH > 0 && metrics.todayH <= 72, `today height ${metrics.todayH}`);
 assert.ok(/7 to 8 hours|7-8/i.test(metrics.value), `value ${metrics.value}`);
