@@ -176,13 +176,15 @@ await page.click('.universal-agent-card [data-uac-expand-toggle]');
 await page.waitForTimeout(200);
 await shot('task13-feed-collapsed-390.png');
 
-// Scroll to end — last element above tab bar
+// Scroll Add Focus into view — last element must clear the tab bar
 await page.evaluate(() => {
-  const list = document.querySelector('.agent-reports-list, #feed-view');
+  const add = document.querySelector('#agentFeedAddBtn');
+  const list = document.querySelector('.agent-reports-list');
   if (list) list.scrollTop = list.scrollHeight;
-  document.getElementById('feed-view')?.scrollTo?.(0, 99999);
+  add?.scrollIntoView({ block: 'end', inline: 'nearest' });
+  document.querySelector('.feed-view')?.scrollTo?.(0, 99999);
 });
-await page.waitForTimeout(400);
+await page.waitForTimeout(500);
 const bottom = await page.evaluate(() => {
   const nav = document.querySelector('.bottom-nav, .app-navbar, #bottomNav, nav.mobile-nav, .mobile-nav');
   const add = document.querySelector('#agentFeedAddBtn');
