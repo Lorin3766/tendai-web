@@ -216,23 +216,25 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
   const sleepCard = await page.evaluate(() => {
     const el = document.querySelector('.universal-agent-card[data-focus-area-id="sleep"]');
     return {
-      stage: el?.querySelector('[data-uac-maturity]')?.textContent || '',
+      title: el?.querySelector('[data-uac-maturity]')?.textContent || '',
+      value: el?.querySelector('[data-uac-value]')?.textContent || '',
+      meta: el?.querySelector('[data-uac-meta]')?.textContent || '',
       payoff: el?.querySelector('[data-uac-payoff]')?.textContent || '',
       cal: el?.querySelector('[data-uac-calibration]')?.textContent || '',
       highlight: el?.classList.contains('uac-highlight') || false,
     };
   });
   console.log('[9c] sleep card', JSON.stringify(sleepCard));
-  // Task 12b: knowledge line replaces Stage/Calibration counters
-  if (!/I know 1 thing about your Sleep/.test(sleepCard.stage)) {
-    fail(`stage/knowledge did not update: ${sleepCard.stage}`);
-  }
+  // Task 13a: area title + value headline + meta; knowledge no longer in maturity slot
+  if (!/Sleep/.test(sleepCard.title)) fail(`area title missing: ${sleepCard.title}`);
+  if (!/7 to 8 hours/i.test(sleepCard.value)) fail(`value headline missing: ${sleepCard.value}`);
+  if (!/Based on 1 answer/i.test(sleepCard.meta)) fail(`meta/knowledge did not update: ${sleepCard.meta}`);
   if (!/7 to 8 hours of sleep/.test(sleepCard.payoff)) fail(`payoff missing the answer: ${sleepCard.payoff}`);
   if (!/one more answer in Talk sharpens this card/i.test(sleepCard.cal)) {
     fail(`calibration did not update: ${sleepCard.cal}`);
   }
-  if (/Calibration:|Stage \d|0 of 2|1 of 2/i.test(`${sleepCard.stage} ${sleepCard.cal}`)) {
-    fail(`banned counters still visible: ${sleepCard.stage} / ${sleepCard.cal}`);
+  if (/Calibration:|Stage \d|0 of 2|1 of 2|On track|AGT-/i.test(`${sleepCard.title} ${sleepCard.meta} ${sleepCard.cal}`)) {
+    fail(`banned counters still visible: ${sleepCard.title} / ${sleepCard.meta} / ${sleepCard.cal}`);
   }
   await page.screenshot({ path: path.join(outDir, 'task9-feed-after-answer-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
 
@@ -259,14 +261,18 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
   const cleared = await page.evaluate(() => {
     const el = document.querySelector('.universal-agent-card[data-focus-area-id="sleep"]');
     return {
-      stage: el?.querySelector('[data-uac-maturity]')?.textContent || '',
+      value: el?.querySelector('[data-uac-value]')?.textContent || '',
+      meta: el?.querySelector('[data-uac-meta]')?.textContent || '',
       payoff: el?.querySelector('[data-uac-payoff]')?.textContent || '',
       cal: el?.querySelector('[data-uac-calibration]')?.textContent || '',
     };
   });
   console.log('[9c] after clear', JSON.stringify(cleared));
-  if (!/Tell me about your Sleep/.test(cleared.stage)) {
-    fail(`clear did not return empty knowledge line: ${cleared.stage}`);
+  if (!/Not answered yet/i.test(cleared.value)) {
+    fail(`clear did not reset value headline: ${cleared.value}`);
+  }
+  if (/Based on \d+ answer/i.test(cleared.meta)) {
+    fail(`clear left answer count in meta: ${cleared.meta}`);
   }
   if (cleared.payoff) fail('payoff remained after the answer was cleared');
   if (!/answer a quick question in Talk to personalize this/i.test(cleared.cal)) {

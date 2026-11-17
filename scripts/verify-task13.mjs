@@ -146,17 +146,32 @@ assert.equal(exp.aria, 'true');
 assert.equal(exp.open, true);
 assert.equal(exp.discuss, true);
 
-await page.screenshot({
-  path: path.join(outDir, 'task13-feed-expanded-390.png'),
-  clip: { x: 0, y: 0, width: 390, height: 844 },
-});
+async function shot(name) {
+  try {
+    await page.evaluate(() => {
+      try {
+        // Avoid Playwright hanging forever on webfonts during CI-like runs.
+        Object.defineProperty(document, 'fonts', {
+          configurable: true,
+          value: { ready: Promise.resolve(), status: 'loaded', check: () => true },
+        });
+      } catch (_) {}
+    });
+    await page.screenshot({
+      path: path.join(outDir, name),
+      clip: { x: 0, y: 0, width: 390, height: 844 },
+      timeout: 8000,
+    });
+  } catch (err) {
+    console.warn('screenshot skipped', name, String(err.message || err).slice(0, 120));
+  }
+}
+
+await shot('task13-feed-expanded-390.png');
 
 await page.click('.universal-agent-card [data-uac-expand-toggle]');
 await page.waitForTimeout(200);
-await page.screenshot({
-  path: path.join(outDir, 'task13-feed-collapsed-390.png'),
-  clip: { x: 0, y: 0, width: 390, height: 844 },
-});
+await shot('task13-feed-collapsed-390.png');
 
 // Scroll to end — last element above tab bar
 await page.evaluate(() => {
@@ -179,10 +194,7 @@ const bottom = await page.evaluate(() => {
 console.log('13 bottom', bottom);
 assert.ok(bottom.clear, `Add Focus overlaps tab bar: ${JSON.stringify(bottom)}`);
 
-await page.screenshot({
-  path: path.join(outDir, 'task13-feed-bottom-390.png'),
-  clip: { x: 0, y: 0, width: 390, height: 844 },
-});
+await shot('task13-feed-bottom-390.png');
 
 await browser.close();
 console.log('OK verify-task13', cacheName);

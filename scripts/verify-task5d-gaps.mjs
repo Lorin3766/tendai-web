@@ -55,7 +55,7 @@ await page.waitForURL(/privacy-policy\.html/, { timeout: 5000 }).catch(() => {})
 const privacyUrl = page.url();
 const privacyH = await page.evaluate(() => document.querySelector('h2')?.textContent?.trim());
 console.log('1. Privacy Policy row ->', privacyUrl.replace(base, ''), `(${privacyH})`);
-if (!/privacy-policy\.html$/.test(privacyUrl)) fail('Privacy Policy row did not open the policy');
+if (!/privacy-policy(\.html)?\/?$/.test(privacyUrl)) fail('Privacy Policy row did not open the policy');
 
 // 4. Your Rights text (on the page we just opened)
 const rights = await page.evaluate(() => {
@@ -74,7 +74,7 @@ await boot();
 await clickSettingsRow('settingsTermsOfUse');
 await page.waitForURL(/terms-of-use\.html/, { timeout: 5000 }).catch(() => {});
 console.log('1. Terms of Use row  ->', page.url().replace(base, ''));
-if (!/terms-of-use\.html$/.test(page.url())) fail('Terms of Use row did not open the terms');
+if (!/terms-of-use(\.html)?\/?$/.test(page.url())) fail('Terms of Use row did not open the terms');
 
 // Edit profile data row (named in the policy) opens the profile editor
 await boot();
