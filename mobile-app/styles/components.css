@@ -4347,18 +4347,18 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   font-weight: 500;
 }
 .uac-compact__chips {
-  display: flex;
-  flex-wrap: nowrap;
+  /* Wrap onto a second line — no horizontal scroll (14a follow-up) */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 6px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 2px;
+  overflow: visible;
 }
 .uac-chip {
   margin: 0;
-  padding: 6px 12px;
+  padding: 6px 10px;
   min-height: 44px;
-  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
   border-radius: 10px;
   border: 1px solid rgba(255, 248, 235, 0.28);
   background: transparent !important;

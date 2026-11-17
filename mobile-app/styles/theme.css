@@ -206,7 +206,7 @@ html[data-theme="graphite"] {
   --critical: #e07070;
   --critical-border: rgba(220, 100, 100, 0.7);
   --agent-add-bar-border: rgba(197, 163, 101, 0.42);
-  --agent-card-bg: linear-gradient(155deg, rgba(28, 30, 32, 0.9), rgba(16, 17, 20, 0.95));
+  --agent-card-bg: #1c1a17; /* Task 14a: flat — no gradient fills */
   --radius-agent-panel: 12px;
 
   background: #12100e !important;
