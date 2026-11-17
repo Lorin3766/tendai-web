@@ -73,21 +73,16 @@ export function nextCardQuestion(profile, areaId) {
     getConversationalAsk(question) ||
     spec?.ask ||
     'Answer this in Talk';
-  let chips = getClarifyTapOptions(question).slice(0, 4);
-  // Multi fields: store a single-option array so Talk and modals agree on shape.
-  if (spec?.type === 'multi') {
-    chips = chips.map((c) => ({
-      label: c.label,
-      value: Array.isArray(c.value) ? c.value : [c.value],
-    }));
-  }
-  const talkOnly = chips.length === 0;
+  // 14c-3: one-tap chips only for single-choice and scale. Multi needs Talk.
+  const chipEligible = spec?.type === 'choice' || spec?.type === 'scale';
+  let chips = chipEligible ? getClarifyTapOptions(question).slice(0, 4) : [];
+  const talkOnly = !chipEligible || chips.length === 0;
   return {
     section: signal.section,
     field: signal.field,
     path: question.path,
     ask: String(ask).replace(/\s+/g, ' ').trim(),
-    chips,
+    chips: talkOnly ? [] : chips,
     talkOnly,
     settingsCity: false,
   };
