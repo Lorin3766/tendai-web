@@ -258,16 +258,14 @@ main {
   scrollbar-gutter: auto !important; /* Don't reserve space for scrollbar */
 }
 
-/* FEED / TALK sliding transition: hardware-accelerated translate3d, 60fps */
+/* FEED / TALK: one full-width pane (14c-5) — no 200% slider, no side-by-side clip */
 .center-feed-talk-slider {
   display: flex;
   flex-direction: row;
-  width: 200%;
+  width: 100%;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-  transition: transform 0.5s var(--ease-human-os);
-  will-change: transform;
 }
 
 .center-feed-talk-slider.hidden {
@@ -276,10 +274,10 @@ main {
 
 .center-feed-talk-slider > .feed-view,
 .center-feed-talk-slider > .talk-view {
-  flex: 0 0 50%;
-  width: 50%;
-  min-width: 50%;
-  max-width: 50%;
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
   min-height: 0;
   align-self: stretch;
   overflow-x: hidden;
@@ -293,36 +291,26 @@ main {
 
 .center-feed-talk-slider > .talk-view {
   overflow: hidden;
+  display: none;
 }
 
-#centerBody.view-feed .center-feed-talk-slider {
-  transform: translate3d(0, 0, 0);
-}
-
-#centerBody.view-talk .center-feed-talk-slider {
-  transform: translate3d(-50%, 0, 0);
-}
-
-/* 14c-5: Talk must never sit beside Feed or clip — active pane is full width of center */
-#centerBody.view-talk {
-  overflow: hidden;
-}
-#centerBody.view-talk .center-feed-talk-slider {
-  width: 100%;
-  transform: none;
-}
 #centerBody.view-talk .center-feed-talk-slider > .feed-view {
   display: none !important;
 }
 #centerBody.view-talk .center-feed-talk-slider > .talk-view {
-  flex: 1 1 100%;
-  width: 100%;
-  min-width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
+  display: flex !important;
+  flex-direction: column;
 }
 #centerBody.view-feed .center-feed-talk-slider > .talk-view {
-  /* Keep talk mounted for state, but not visible beside Feed */
+  display: none !important;
+}
+#centerBody.view-feed .center-feed-talk-slider > .feed-view {
+  display: flex !important;
+  flex-direction: column;
+}
+#centerBody.view-feed,
+#centerBody.view-talk {
+  overflow-x: hidden;
 }
 
 /* Bottom Navigation */
