@@ -274,6 +274,7 @@ const apiHits = [];
       bg === 'transparent' ||
       /rgba?\(\s*0,\s*0,\s*0,\s*0\s*\)/i.test(bg);
     const filledGold = [...document.querySelectorAll('button, a, .btn')].filter((el) => {
+      if (el.closest('#obriumReloadBar')) return false; // upgrade bar is not Feed chrome
       const r = el.getBoundingClientRect();
       if (r.width < 8 || r.height < 8) return false;
       if (r.bottom < 0 || r.top > 844) return false;
@@ -289,16 +290,40 @@ const apiHits = [];
       lastClears = addBottom <= navTop - 2;
       list.scrollTop = before;
     }
+    const chip = card?.querySelector('[data-uac-chip]');
+    const chipCs = chip ? getComputedStyle(chip) : null;
+    const rather = card?.querySelector('[data-uac-rather]');
+    const ratherCs = rather ? getComputedStyle(rather) : null;
+    const glyph = card?.querySelector('[data-focus-area-glyph="sleep"]');
+    const glyphCs = glyph ? getComputedStyle(glyph) : null;
+    const askCs = card?.querySelector('[data-uac-ask]')
+      ? getComputedStyle(card.querySelector('[data-uac-ask]'))
+      : null;
+    const areaToken = glyph ? getComputedStyle(glyph).getPropertyValue('--area-color').trim() : '';
     return {
       ask: card?.querySelector('[data-uac-ask]')?.textContent || '',
       chips: [...(card?.querySelectorAll('[data-uac-chip]') || [])].map((b) => b.textContent.trim()),
-      rather: !!card?.querySelector('[data-uac-rather]'),
+      rather: !!rather,
       hasNotAnswered: /Not answered yet/i.test(document.body.innerText || ''),
       hasSelfReported: /self-reported/i.test(document.body.innerText || ''),
       hasUpdated: /Updated \d/i.test(document.body.innerText || ''),
       heights,
       fully,
-      glyph: !!card?.querySelector('[data-focus-area-glyph="sleep"]'),
+      glyph: !!glyph,
+      // Computed styles — must fail on founder stale-CSS screenshot (white chips / no glyph fill)
+      chipBg: chipCs?.backgroundColor || '',
+      chipColor: chipCs?.color || '',
+      chipFontPx: chipCs ? parseFloat(chipCs.fontSize) : 0,
+      chipMinH: chip ? chip.getBoundingClientRect().height : 0,
+      chipWhiteDefault:
+        chipCs?.backgroundColor === 'rgb(240, 240, 240)' && chipCs?.color === 'rgb(0, 0, 0)',
+      ratherBg: ratherCs?.backgroundColor || '',
+      ratherDecoration: ratherCs?.textDecorationLine || ratherCs?.textDecoration || '',
+      glyphBg: glyphCs?.backgroundColor || '',
+      glyphRadius: glyphCs?.borderRadius || '',
+      areaToken,
+      askColor: askCs?.color || '',
+      askFontPx: askCs ? parseFloat(askCs.fontSize) : 0,
       addBg: addCs?.backgroundColor || '',
       addBorder: addCs?.borderTopWidth || '',
       addOutlined: isTransparentBg(addCs?.backgroundColor) && parseFloat(addCs?.borderTopWidth || '0') >= 1,
@@ -318,6 +343,19 @@ const apiHits = [];
   assert.equal(empty.hasSelfReported, false);
   assert.equal(empty.hasUpdated, false);
   assert.ok(empty.glyph);
+  assert.equal(empty.chipWhiteDefault, false, 'chip looks like browser default white (stale CSS)');
+  assert.ok(
+    empty.chipBg === 'rgba(0, 0, 0, 0)' || /rgba?\(\s*0,\s*0,\s*0,\s*0\s*\)|transparent/i.test(empty.chipBg),
+    `chip bg should be transparent outline, got ${empty.chipBg}`,
+  );
+  assert.ok(empty.chipFontPx >= 14, `chip font ${empty.chipFontPx}`);
+  assert.ok(empty.chipMinH >= 44, `chip height ${empty.chipMinH}`);
+  assert.ok(/underline/i.test(empty.ratherDecoration), 'Rather not say should be text link, not a box');
+  assert.ok(empty.glyphBg && empty.glyphBg !== 'rgba(0, 0, 0, 0)', `glyph circle missing fill: ${empty.glyphBg}`);
+  assert.ok(/50%|999px|16px/.test(empty.glyphRadius), `glyph not circular: ${empty.glyphRadius}`);
+  assert.ok(/#?8[Bb]9[Cc][Ff][Ff]|139,\s*156,\s*255/i.test(empty.areaToken) || empty.areaToken === '#8B9CFF', `sleep area token ${empty.areaToken}`);
+  assert.ok(empty.askFontPx >= 15, `ask size ${empty.askFontPx}`);
+  assert.ok(/247,\s*243,\s*238|#f7f3ee/i.test(empty.askColor) || /f7f3ee/i.test(empty.askColor), `ask color ${empty.askColor}`);
   // Wrap adds a second chip row — allow taller empty cards than the single-row 140–170 budget
   assert.ok(empty.heights.every((h) => h >= 130 && h <= 260), `heights ${empty.heights}`);
   assert.ok(empty.fully >= 2, `need ≥2 cards visible above tab, got ${empty.fully}`);
