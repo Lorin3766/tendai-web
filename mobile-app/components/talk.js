@@ -564,8 +564,19 @@ export class TalkComponent {
           });
         }
         try {
+          // 14c-5: Remind/Why chips only on real suggestions — never on errors/timeouts/offline.
+          const isErrorish =
+            messageDiv.getAttribute('data-talk-error') === '1' ||
+            /can't reach its server|took too long|trouble connecting|try again later/i.test(
+              String(displayText || ''),
+            );
           const ledger = getCommonLedger();
-          if (ledger && Array.isArray(ledger.agent_insights) && ledger.agent_insights.length > 0) {
+          if (
+            !isErrorish &&
+            ledger &&
+            Array.isArray(ledger.agent_insights) &&
+            ledger.agent_insights.length > 0
+          ) {
             this.appendAgentQuickReplies(messageContent);
           }
         } catch (_) {}
@@ -1853,33 +1864,25 @@ export class TalkComponent {
         });
       }
 
-      // Формируем понятное сообщение об ошибке
-      let friendlyMessage = 'I\'m having trouble connecting right now. Please check your internet connection and try again.';
-      if (isFetchTypeError) {
-        friendlyMessage = 'Offline Assistant mode is active. I will continue from your local Obrium data.';
-      }
-      
-      // Обрабатываем разные типы ошибок
-      if (!isFetchTypeError && (errorMsg.includes('trouble connecting') || 
-          errorMsg.includes('internet connection') ||
-          errorMsg.includes('Failed to fetch') ||
-          errorMsg.includes('NetworkError'))) {
-        friendlyMessage = 'I\'m having trouble connecting right now. Please check your internet connection and try again.';
-      } else if (!isFetchTypeError && (errorMsg.includes('took too long') || 
-                 errorMsg.includes('timeout'))) {
+      // 14c-5: honest offline/timeout copy — never a simulated companion reply
+      let friendlyMessage = "Obrium can't reach its server right now. Try again later.";
+      if (!isFetchTypeError && (errorMsg.includes('took too long') || errorMsg.includes('timeout'))) {
         friendlyMessage = 'The request took too long. Please try again in a moment.';
-      } else if (!isFetchTypeError && (errorMsg.includes('CORS') || 
-                 errorMsg.includes('cross-origin'))) {
+      } else if (!isFetchTypeError && (errorMsg.includes('CORS') || errorMsg.includes('cross-origin'))) {
         friendlyMessage = 'Connection issue detected. Please refresh the page and try again.';
-      } else if (!isFetchTypeError && errorMsg && errorMsg.length > 0 && 
-                 !errorMsg.includes('TypeError') && 
-                 !errorMsg.includes('SyntaxError')) {
-        // Используем сообщение от backend, если оно понятное
+      } else if (
+        !isFetchTypeError &&
+        errorMsg &&
+        errorMsg.length > 0 &&
+        !errorMsg.includes('TypeError') &&
+        !errorMsg.includes('SyntaxError') &&
+        !/LOCAL MODE|local conversation simulator|Offline Assistant/i.test(errorMsg)
+      ) {
         friendlyMessage = errorMsg;
       }
-      
-      // Add error message as AI reply
-      this.addMessageToChat(this.sanitizeTalkGreetingText(friendlyMessage), 'ai');
+
+      const errMsg = this.addMessageToChat(this.sanitizeTalkGreetingText(friendlyMessage), 'ai');
+      if (errMsg && errMsg.setAttribute) errMsg.setAttribute('data-talk-error', '1');
       
       // Прокручиваем к сообщению об ошибке
       setTimeout(() => this.scrollToBottom(), 100);

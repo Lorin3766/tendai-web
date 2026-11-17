@@ -303,6 +303,28 @@ main {
   transform: translate3d(-50%, 0, 0);
 }
 
+/* 14c-5: Talk must never sit beside Feed or clip — active pane is full width of center */
+#centerBody.view-talk {
+  overflow: hidden;
+}
+#centerBody.view-talk .center-feed-talk-slider {
+  width: 100%;
+  transform: none;
+}
+#centerBody.view-talk .center-feed-talk-slider > .feed-view {
+  display: none !important;
+}
+#centerBody.view-talk .center-feed-talk-slider > .talk-view {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+#centerBody.view-feed .center-feed-talk-slider > .talk-view {
+  /* Keep talk mounted for state, but not visible beside Feed */
+}
+
 /* Bottom Navigation */
 .bottom-nav {
   display: none;

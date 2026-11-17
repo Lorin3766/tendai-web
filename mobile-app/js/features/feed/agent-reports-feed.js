@@ -652,9 +652,6 @@ function openTalkDiscussAgent(agentName, row, cardContext = {}) {
     if (typeof window.__obriumPrimeDiscussContext === 'function') {
       window.__obriumPrimeDiscussContext(discussPayload);
     }
-    if (window.obriumServerStatus === 'Offline') {
-      window.__obriumForceLocalConversation = true;
-    }
   }
   if (isCriticalInsight(row)) {
     rememberFastAlertResponse();
@@ -665,17 +662,11 @@ function openTalkDiscussAgent(agentName, row, cardContext = {}) {
   const go = () => {
     const tc = window.__obriumTalkComponent;
     if (!tc || !tc.chatInput) return;
-    if (window.obriumServerStatus === 'Offline' && typeof tc.addSystemMessage === 'function') {
-      tc.addSystemMessage(
-        '[ LOCAL MODE ]',
-        `Running local conversation simulator for ${name}. I will reason from your on-device ledger.`,
-        false,
-        false
-      );
-    }
+    // 14c-5: put the exact outgoing text in the input — user sends it (no auto-send, no simulator).
     tc.chatInput.value = prompt;
     tc.autoResizeTextarea && tc.autoResizeTextarea();
-    if (typeof tc.sendMessage === 'function') tc.sendMessage();
+    tc.syncSendButtonState && tc.syncSendButtonState();
+    tc.chatInput.focus?.();
   };
   setTimeout(go, 280);
 }

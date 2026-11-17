@@ -130,6 +130,19 @@ function dispatchLocalMockUpdateAgentFromInput(userInput) {
   return dispatched;
 }
 
+const HONEST_OFFLINE_REPLY = "Obrium can't reach its server right now. Try again later.";
+
+/** Dev-only simulator: localhost + explicit window.__OBRIUM_DEV_LOCAL_SIM === true. */
+function allowDevLocalSim() {
+  if (typeof window === 'undefined') return false;
+  if (window.__OBRIUM_DEV_LOCAL_SIM !== true) return false;
+  try {
+    return /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+  } catch (_) {
+    return false;
+  }
+}
+
 function localFallbackResponse(opts = {}) {
   const userInput = opts.userInput != null ? String(opts.userInput) : '';
   const mockMetrics = userInput ? dispatchLocalMockUpdateAgentFromInput(userInput) : [];
@@ -167,7 +180,13 @@ function localFallbackResponse(opts = {}) {
   const mockNote = mockMetrics.length
     ? ` Parsed ${mockMetrics.map((m) => `${m.value} (${m.type})`).join(', ')} from your message and pushed to agent cards (local bridge).`
     : '';
-  return `[LOCAL MODE] ${discussLead}${knownPart}${missingPart}${action}${mockNote}`;
+  // Labeled test reply — never ship this path without the explicit localhost flag.
+  return `[TEST REPLY] ${discussLead}${knownPart}${missingPart}${action}${mockNote}`;
+}
+
+function offlineOrDevReply(opts = {}) {
+  if (allowDevLocalSim()) return localFallbackResponse(opts);
+  return HONEST_OFFLINE_REPLY;
 }
 
 /**
@@ -569,10 +588,10 @@ export async function sendMessageToLLM(text, context) {
     const localhostDevRelay =
       isLocalhostRelayBackend(DEV_BACKEND_URL) && isLocalhostRelayBackend(BACKEND_URL);
     if ((!NetworkController.isBackendReachable || mustStayLocal) && !localhostDevRelay) {
-      if (typeof window !== 'undefined') window.__obriumForceLocalConversation = true;
+      if (typeof window !== 'undefined') window.__obriumForceLocalConversation = false;
       setOfflineBrainIndicator(true);
       notSent();
-      return localFallbackResponse({ discussContext, userInput: text });
+      return offlineOrDevReply({ discussContext, userInput: text });
     }
     if (typeof window !== 'undefined') window.__obriumForceLocalConversation = false;
 
@@ -679,10 +698,10 @@ export async function sendMessageToLLM(text, context) {
     ) {
       setServerStatus('Offline');
       const discussContext = body.system_state && body.system_state.discuss_context ? body.system_state.discuss_context : null;
-      if (typeof window !== 'undefined') window.__obriumForceLocalConversation = true;
+      if (typeof window !== 'undefined') window.__obriumForceLocalConversation = false;
       setOfflineBrainIndicator(true);
       notSent();
-      return localFallbackResponse({ discussContext, userInput: text });
+      return offlineOrDevReply({ discussContext, userInput: text });
     }
 
     if (!reachedRelay) updateDataSentOutcome(logEntry.id, 'not sent — request failed');
@@ -697,10 +716,10 @@ export async function sendMessageToLLM(text, context) {
       });
       setServerStatus('Offline');
       const discussContext = body.system_state && body.system_state.discuss_context ? body.system_state.discuss_context : null;
-      if (typeof window !== 'undefined') window.__obriumForceLocalConversation = true;
+      if (typeof window !== 'undefined') window.__obriumForceLocalConversation = false;
       setOfflineBrainIndicator(true);
       notSent();
-      return localFallbackResponse({ discussContext, userInput: text });
+      return offlineOrDevReply({ discussContext, userInput: text });
     }
 
     if (msg.includes('CORS') || msg.includes('cross-origin')) {
