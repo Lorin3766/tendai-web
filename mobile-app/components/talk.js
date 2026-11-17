@@ -25,6 +25,8 @@ import {
 import { assembleTalkPayoff } from '../js/features/talk/talk-payoff.js';
 
 const TALK_OPENING_SESSION_KEY = 'tendai_talk_opening_shown_v1';
+/** First-ever Obrium intro sentence (persists across sessions). */
+const TALK_INTRO_EVER_KEY = 'tendai_talk_intro_ever_v1';
 import { obriumNow, localDateKey } from '../js/core/obrium-clock.js';
 import { persistTalkSession } from '../js/features/metrics/local-metrics.js';
 import { loadTodaySteps } from '../js/features/feed/today-steps.js';
@@ -764,6 +766,45 @@ export class TalkComponent {
     else content.appendChild(wrap);
   }
 
+  /** Same chip rule as Feed 14c-3 (choice/scale only) + Rather not say. */
+  attachProfileQuestionControls(messageDiv, question) {
+    if (!messageDiv || !question) return;
+    const spec = getProfileFieldSpec(question.sectionKey, question.fieldKey);
+    const chipEligible = spec?.type === 'choice' || spec?.type === 'scale';
+    if (chipEligible) {
+      const taps = getClarifyTapOptions(question).slice(0, 4);
+      this.appendClarifyTapOptions(messageDiv, question, taps);
+    }
+    const content = messageDiv.querySelector('.message-content');
+    if (!content || content.querySelector('[data-talk-rather]')) return;
+    const timeEl = content.querySelector('.message-time');
+    const rather = document.createElement('button');
+    rather.type = 'button';
+    rather.className = 'talk-rather-not-say';
+    rather.setAttribute('data-talk-rather', '1');
+    rather.textContent = 'Rather not say';
+    rather.addEventListener('click', () => {
+      this.addMessageToChat('Rather not say', 'user');
+      void this.commitProactiveProfileAnswer(question, 'prefer-not-say', 'Rather not say');
+    });
+    if (timeEl) content.insertBefore(rather, timeEl);
+    else content.appendChild(rather);
+  }
+
+  hasShownTalkIntroEver() {
+    try {
+      return localStorage.getItem(TALK_INTRO_EVER_KEY) === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  markTalkIntroEver() {
+    try {
+      localStorage.setItem(TALK_INTRO_EVER_KEY, '1');
+    } catch (_) {}
+  }
+
   initAdvisoryBlock() {
     const block = document.getElementById('system-advisory-block');
     const textEl = document.getElementById('systemAdvisoryText');
@@ -1067,10 +1108,11 @@ export class TalkComponent {
       return;
     }
 
-    // Opening (welcome + first ask) renders exactly once per browser session.
-    let openingAlreadyShown = false;
+    // Intro sentence: once ever. Later proactive asks are question-only.
+    const introEver = this.hasShownTalkIntroEver();
+    let openingAlreadyShown = introEver;
     try {
-      openingAlreadyShown = sessionStorage.getItem(TALK_OPENING_SESSION_KEY) === '1';
+      openingAlreadyShown = introEver || sessionStorage.getItem(TALK_OPENING_SESSION_KEY) === '1';
     } catch (_) {}
 
     const seq = ++this._profilePromptSeq;
@@ -1090,15 +1132,26 @@ export class TalkComponent {
 
     const trimmed = String(text || '').trim();
     const sanitized = this.sanitizeTalkGreetingText(trimmed);
-    const usable = openingAlreadyShown
+    let usable = openingAlreadyShown
       ? (sanitized || getConversationalAsk(question))
       : (this.isUsableProfileOpening(sanitized, question)
         ? sanitized
         : this.fallbackProfileOpeningPrompt(question));
-    this.addMessageToChat(usable, 'ai', true, null, this.profilePromptChatOptions(question));
+    // Strip a repeated intro if a model/path still prepended it after the first time.
+    if (openingAlreadyShown) {
+      usable = usable
+        .replace(
+          /^I'm Obrium, your personal companion\.\s*I get to know you through conversation so your Feed and advice actually fit\.\s*/i,
+          '',
+        )
+        .trim() || getConversationalAsk(question);
+    }
+    const el = this.addMessageToChat(usable, 'ai', true, null, this.profilePromptChatOptions(question));
+    this.attachProfileQuestionControls(el, question);
     try {
       sessionStorage.setItem(TALK_OPENING_SESSION_KEY, '1');
     } catch (_) {}
+    this.markTalkIntroEver();
   }
 
   getNextUnsnoozedProfileQuestion(profile) {
@@ -1420,6 +1473,7 @@ export class TalkComponent {
       this.profilePromptChatOptions(next),
     );
     attachFeed(el);
+    this.attachProfileQuestionControls(el, next);
   }
 
   interpretPaceReply(text) {
@@ -1528,39 +1582,16 @@ export class TalkComponent {
 
   async composeProfileOpeningPrompt(question) {
     const spec = getProfileFieldSpec(question?.sectionKey, question?.fieldKey);
-    if (spec?.ask) {
-      const welcome = "I'm Obrium, your personal companion. I get to know you through conversation so your Feed and advice actually fit.";
-      const parts = [welcome];
-      const first = !this.conversationArea?.querySelector('[data-profile-prompt-path]');
-      if (first) {
-        const top = getSelectedFocusAreaIds()[0];
-        const fact = top ? getEntries({ focusArea: top, profile: profileState.get() }) : null;
-        if (fact?.text) parts.push(fact.text);
-      }
-      parts.push(spec.ask);
-      return parts.join(' ');
-    }
-    const systemContext = [
-      'PROACTIVE TALK OPENING — this turn only.',
-      'Write at most two short sentences a busy person can skim in a few seconds.',
-      'Sentence 1 MUST start like: "I\'m Obrium, your personal companion..." then one short clause about learning them so Feed/advice fit.',
-      'Never say TendAI, Serron, Seregin OS, or any other product name. The only name is Obrium.',
-      'Sentence 2: ONE natural conversational question that collects this exact fact — not a form label.',
-      `Required fact: ${question.fieldLabel} (${question.sectionLabel}). Internal key ${question.path}.`,
-      'The question must be clearly about that fact (e.g. Age → "How old are you?").',
-      'No lists, markdown, JSON, or extra questions. Not medical advice.',
-    ].join(' ');
-
-    const raw = await sendMessageToLLM(
-      'The user just opened Talk. Greet them briefly as Obrium (never TendAI, Serron, or Seregin OS) and ask only the next profile question.',
-      {
-        systemContext,
-        requestType: DATA_SENT_REQUEST_TYPES.PROFILE_GREETING,
-        includeLedger: false,
-        dataCategories: [`profile question being asked: ${question.sectionLabel} · ${question.fieldLabel}`],
-      },
-    );
-    return this.sanitizeTalkGreetingText(raw);
+    const ask = getConversationalAsk(question) || spec?.ask || '';
+    // First-ever message only: welcome + ask. Never call the greeting LLM for later asks.
+    const welcome =
+      "I'm Obrium, your personal companion. I get to know you through conversation so your Feed and advice actually fit.";
+    const parts = [welcome];
+    const top = getSelectedFocusAreaIds()[0];
+    const fact = top ? getEntries({ focusArea: top, profile: profileState.get() }) : null;
+    if (fact?.text) parts.push(fact.text);
+    parts.push(ask);
+    return parts.join(' ');
   }
 
   // Save chat history to localStorage

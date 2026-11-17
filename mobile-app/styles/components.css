@@ -2715,6 +2715,19 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 .talk-clarify-taps .talk-clarify-tap:active {
   background: rgba(246, 195, 106, 0.16);
 }
+.talk-rather-not-say {
+  display: inline-block;
+  margin: 6px 0 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fg-soft, #e6dfd6);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
 
 .talk-quick-replies {
   display: flex;
