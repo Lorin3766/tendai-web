@@ -326,10 +326,19 @@ const apiHits = [];
       askFontPx: askCs ? parseFloat(askCs.fontSize) : 0,
       addBg: addCs?.backgroundColor || '',
       addBorder: addCs?.borderTopWidth || '',
-      addOutlined: isTransparentBg(addCs?.backgroundColor) && parseFloat(addCs?.borderTopWidth || '0') >= 1,
+      addBgGold: goldish(addCs?.backgroundColor || ''),
+      addCentered: (() => {
+        if (!add) return false;
+        const r = add.getBoundingClientRect();
+        const mid = (r.left + r.right) / 2;
+        return Math.abs(mid - 195) <= 24;
+      })(),
       primaryBg: primaryCs?.backgroundColor || '',
       primaryIsGold: goldish(primaryCs?.backgroundColor || ''),
-      filledGoldCount: filledGold.length,
+      // 14c-4: at most one filled gold in normal scroll (Do it). Add Focus is gold only at list end.
+      filledGoldAtTop: filledGold.filter(
+        (el) => !el.classList.contains('agent-feed-add-panel') && !el.closest('.agent-feed-add-panel'),
+      ).length,
       filledGoldLabels: filledGold.map((el) => (el.textContent || '').trim().slice(0, 40)),
       lastClears,
       navTop,
@@ -359,11 +368,12 @@ const apiHits = [];
   // Wrap adds a second chip row — allow taller empty cards than the single-row 140–170 budget
   assert.ok(empty.heights.every((h) => h >= 130 && h <= 260), `heights ${empty.heights}`);
   assert.ok(empty.fully >= 2, `need ≥2 cards visible above tab, got ${empty.fully}`);
-  assert.ok(empty.addOutlined, `Add Focus should be outlined, got bg=${empty.addBg} border=${empty.addBorder}`);
+  assert.ok(empty.addBgGold, `Add Focus should be filled gold, got bg=${empty.addBg}`);
+  assert.ok(empty.addCentered, 'Add Focus should be centered at list end');
   assert.ok(empty.primaryIsGold, `Today primary not gold: ${empty.primaryBg}`);
   assert.ok(
-    empty.filledGoldCount === 1,
-    `expected one filled gold button, got ${empty.filledGoldCount}: ${JSON.stringify(empty.filledGoldLabels)}`,
+    empty.filledGoldAtTop === 1,
+    `expected one filled gold in normal scroll (Do it), got ${empty.filledGoldAtTop}: ${JSON.stringify(empty.filledGoldLabels)}`,
   );
   assert.ok(empty.lastClears, 'last card / Add Focus does not clear tab bar when scrolled to end');
 

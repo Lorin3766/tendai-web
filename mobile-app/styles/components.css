@@ -4444,6 +4444,7 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 /* Adaptive agent feed CTA — outlined secondary pill (Task 13c; not filled gold) */
 .agent-feed-add-panel.add-agent-button,
 .agent-feed-add-panel {
+  /* 14c-4: compact filled gold pill, centered at end of list (same gold as Do it) */
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -4455,29 +4456,27 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   min-width: 0;
   max-width: none;
   flex-shrink: 0;
-  align-self: flex-start;
+  align-self: center;
   margin-top: 12px;
-  margin-left: 0;
-  margin-right: 0;
+  margin-left: auto;
+  margin-right: auto;
   margin-bottom: 0;
-  min-height: 32px;
-  padding: 6px 14px;
+  min-height: 36px;
+  padding: 8px 18px;
   box-sizing: border-box;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: transparent;
+  border: 0;
+  background: var(--gold, #f6c36a) !important;
   cursor: pointer;
   font-family: var(--font-ui);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 650;
   text-transform: none;
   letter-spacing: 0.01em;
-  color: var(--fg-muted, #9e968c);
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
-  box-shadow: none;
+  color: #2c1a00 !important;
+  transition: filter 0.15s ease;
+  box-shadow: none !important;
+  filter: none !important;
 }
 .agent-feed-add-panel__label {
   font-size: inherit;
@@ -4489,19 +4488,17 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   line-height: 1.2;
 }
 .agent-feed-add-panel:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.35);
-  color: var(--fg-soft, #d6cfc4);
-  box-shadow: none;
-  filter: none;
+  background: var(--gold, #f6c36a) !important;
+  color: #2c1a00 !important;
+  box-shadow: none !important;
+  filter: brightness(1.05);
 }
 .agent-feed-add-panel:active {
   transform: none;
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.4);
-  color: var(--fg-soft, #d6cfc4);
-  box-shadow: none;
-  filter: none;
+  background: var(--gold, #f6c36a) !important;
+  color: #2c1a00 !important;
+  box-shadow: none !important;
+  filter: brightness(0.96);
 }
 .agent-feed-add-panel:focus-visible {
   outline: 2px solid rgba(246, 195, 106, 0.55);
