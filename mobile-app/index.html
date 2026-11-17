@@ -1334,12 +1334,17 @@
           .register(swPath, { scope: './' })
           .then(function (reg) {
             console.log('[SW] Registered', reg.scope);
-            if (reg.waiting) showReloadBar();
+            // Only when a new worker is waiting (upgrade). Never on first install / claim.
+            if (reg.waiting && navigator.serviceWorker.controller) showReloadBar();
             reg.addEventListener('updatefound', function () {
               var installing = reg.installing;
               if (!installing) return;
               installing.addEventListener('statechange', function () {
-                if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                if (
+                  installing.state === 'installed' &&
+                  navigator.serviceWorker.controller &&
+                  reg.waiting
+                ) {
                   showReloadBar();
                 }
               });
@@ -1348,12 +1353,6 @@
           .catch(function (err) {
             console.warn('[SW] Registration failed:', err);
           });
-        var refreshing = false;
-        navigator.serviceWorker.addEventListener('controllerchange', function () {
-          if (refreshing) return;
-          refreshing = true;
-          showReloadBar();
-        });
       }
 
       if (document.readyState === 'loading') {

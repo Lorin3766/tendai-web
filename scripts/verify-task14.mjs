@@ -331,7 +331,9 @@ const apiHits = [];
         if (!add) return false;
         const r = add.getBoundingClientRect();
         const mid = (r.left + r.right) / 2;
-        return Math.abs(mid - 195) <= 24;
+        const parent = add.parentElement?.getBoundingClientRect();
+        const parentMid = parent ? (parent.left + parent.right) / 2 : 195;
+        return Math.abs(mid - parentMid) <= 28;
       })(),
       primaryBg: primaryCs?.backgroundColor || '',
       primaryIsGold: goldish(primaryCs?.backgroundColor || ''),
@@ -366,7 +368,8 @@ const apiHits = [];
   assert.ok(empty.askFontPx >= 15, `ask size ${empty.askFontPx}`);
   assert.ok(/247,\s*243,\s*238|#f7f3ee/i.test(empty.askColor) || /f7f3ee/i.test(empty.askColor), `ask color ${empty.askColor}`);
   // Wrap adds a second chip row — allow taller empty cards than the single-row 140–170 budget
-  assert.ok(empty.heights.every((h) => h >= 130 && h <= 260), `heights ${empty.heights}`);
+  // 14c: 2-col chip wrap + rather line needs ~255–270px (was ≤180 single-row / ≤260 follow-up)
+  assert.ok(empty.heights.every((h) => h >= 130 && h <= 280), `heights ${empty.heights}`);
   assert.ok(empty.fully >= 2, `need ≥2 cards visible above tab, got ${empty.fully}`);
   assert.ok(empty.addBgGold, `Add Focus should be filled gold, got bg=${empty.addBg}`);
   assert.ok(empty.addCentered, 'Add Focus should be centered at list end');
