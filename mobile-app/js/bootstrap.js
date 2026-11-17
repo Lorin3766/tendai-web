@@ -1,8 +1,10 @@
-// Serron — Bootstrap Entry Point
+// Obrium — Bootstrap Entry Point
 // @owner: (entry point - no feature)
 // @role: init
 // Centralized module initialization. Boot gate: HealthSync first, then inits, then obrium:boot-ready.
-// BUILD: 2026-04-02-uac-ghost-debug-cachebust
+
+import { BUILD_ID } from './build-id.js';
+void BUILD_ID;
 
 // Utilities (must load first - no init needed, just imports)
 import { dayState, profileState } from './state.js';
