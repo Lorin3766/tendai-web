@@ -7,9 +7,11 @@
 import {
   calibrationOpensSettings,
   focusAreasForField,
+  isSignalKnown,
   nextUnansweredSignalForArea,
   noteSignalSaved,
   signalProgress,
+  signalsFor,
 } from '../profile/focus-area-signals.js';
 import {
   applyProfileTalkAnswer,
@@ -17,7 +19,7 @@ import {
   getConversationalAsk,
   getProfileFieldSpec,
 } from '../talk/profile-answer-parser.js';
-import { assembleTalkPayoff } from '../talk/talk-payoff.js';
+import { assembleTalkPayoff, whyNextLine } from '../talk/talk-payoff.js';
 import { getFocusAreaById } from '../human-os/focus-areas.js';
 import { profileState } from '../../state.js';
 
@@ -68,11 +70,21 @@ export function nextCardQuestion(profile, areaId) {
     'mind.mentalEnergy': 'How’s your mental energy (1–5)?',
     'mind.moodChanges': 'How stable is your mood?',
   };
-  const ask =
+  // 14d-4: when a prior known answer exists, prefer the why-next wording as the ask label.
+  let ask =
     SHORT_ASK[question.path] ||
     getConversationalAsk(question) ||
     spec?.ask ||
     'Answer this in Talk';
+  const signals = signalsFor(areaId);
+  const idx = signals.findIndex((s) => s.section === signal.section && s.field === signal.field);
+  if (idx > 0) {
+    const prev = signals[idx - 1];
+    if (isSignalKnown(profile, prev)) {
+      const why = whyNextLine(`${prev.section}.${prev.field}`, question);
+      if (why) ask = why;
+    }
+  }
   // 14c-3 / 14d-2: one-tap chips for single-choice and scale — render ALL options (no slice).
   // Multi needs Talk.
   const chipEligible = spec?.type === 'choice' || spec?.type === 'scale';

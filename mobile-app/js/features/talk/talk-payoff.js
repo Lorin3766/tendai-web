@@ -31,7 +31,7 @@ const CAUSAL_RE = /\b(cause|caused|because your|the reason is|due to your)\b/i;
  */
 export const WHY_NEXT_TEMPLATES = {
   'lifestyle.sleepDuration→lifestyle.sleepQuality':
-    'Next I’d like to hear how that sleep usually feels — restful, mixed, or rough?',
+    'How does that sleep usually feel?',
   'lifestyle.sleepDuration→body.physicalActivity':
     'Next I’d like to see how your energy looks during the day — how active is a typical week?',
   'lifestyle.sleepQuality→lifestyle.goalsFocus':
@@ -136,16 +136,23 @@ export function countKnownForArea(profile, areaId) {
   return signalProgress(profile, areaId).n;
 }
 
+function shortAreaName(areaId) {
+  const full = getFocusAreaById(areaId)?.name || areaId;
+  // "Sleep & Recovery" → "Sleep" for compact payoff copy
+  return String(full).split(/\s*&\s*/)[0].trim() || full;
+}
+
 export function memoryLinkLine(profile, areaIds) {
   const bits = [];
   for (const id of areaIds || []) {
     const n = countKnownForArea(profile, id);
-    const name = getFocusAreaById(id)?.name || id;
+    const name = shortAreaName(id);
     if (n <= 0) continue;
+    // 14d-4: short “I now know” (not “With this I know”).
     bits.push(
       n === 1
-        ? `With this I know 1 thing about your ${name}.`
-        : `With this I know ${n} things about your ${name}.`,
+        ? `I now know 1 thing about your ${name}.`
+        : `I now know ${n} things about your ${name}.`,
     );
   }
   if (!bits.length) return '';
@@ -247,49 +254,33 @@ export function assembleTalkPayoff({
     return {
       lines: ['Okay, skipped.'],
       sourceLine: '',
+      nextAskHint: '',
       changedAreaIds: [],
       declined: true,
     };
   }
 
-  const lines = [];
-  const echo = echoRaw ? `You said “${String(echoRaw).trim()}”.` : '';
-  if (echo) lines.push(echo);
-
-  const memory = memoryLinkLine(profile, changedAreaIds.length ? changedAreaIds : focusAreasForField(
-    String(answeredPath || '').split('.')[0],
-    String(answeredPath || '').split('.')[1],
-  ));
-  if (memory) lines.push(memory);
-  if (claimLine) lines.push(claimLine);
-
-  let lib = '';
-  for (const id of changedAreaIds) {
-    lib = libraryLineForField(profile, id, answeredFieldKey);
-    if (lib) break;
-  }
-  if (!lib && changedAreaIds[0]) {
-    lib = libraryLineForField(profile, changedAreaIds[0], null);
-  }
-  if (lib) lines.push(lib);
-
+  // 14d-4: one short Saved + know line. Why-next becomes the next ask label (nextAskHint).
+  // "Based on N answers" stays on the card meta line — not in this paragraph.
+  // Drop claimLine ("Added to your card") and library/history from the inline reaction.
+  void claimLine;
+  void answeredFieldKey;
+  const saved = echoRaw ? `Saved: ${String(echoRaw).trim()}.` : '';
+  const areaIds =
+    changedAreaIds.length
+      ? changedAreaIds
+      : focusAreasForField(
+          String(answeredPath || '').split('.')[0],
+          String(answeredPath || '').split('.')[1],
+        );
+  const memory = memoryLinkLine(profile, areaIds);
+  const line1 = [saved, memory].filter(Boolean).join(' ');
   const why = whyNextLine(answeredPath, nextQuestion);
-  if (why) lines.push(why);
-
-  const hist = factualHistoryLine(
-    answeredPath === 'lifestyle.sleepDuration' || answeredPath === 'lifestyle.sleepQuality'
-      ? 'sleepHours'
-      : answeredPath === 'mind.stressLevel'
-        ? 'stress'
-        : 'sleepHours',
-  );
-  if (hist) lines.push(hist);
-
-  const nKnown = (changedAreaIds || []).reduce((sum, id) => sum + countKnownForArea(profile, id), 0);
   return {
-    lines: lines.filter(Boolean),
-    sourceLine: sourceLineForAnswers(nKnown),
-    changedAreaIds,
+    lines: line1 ? [line1] : [],
+    sourceLine: '',
+    nextAskHint: why || '',
+    changedAreaIds: areaIds,
     declined: false,
   };
 }

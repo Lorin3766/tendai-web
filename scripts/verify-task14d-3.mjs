@@ -40,8 +40,8 @@ const real = assembleTalkPayoff({
   claimLine: 'Added to your Sleep & Recovery card.',
 });
 assert.equal(real.declined, false);
-assert.ok(real.lines.some((l) => /You said/i.test(l)), real.lines.join(' | '));
-assert.ok(real.lines.some((l) => /I know 1 thing/i.test(l)), real.lines.join(' | '));
+assert.ok(real.lines.some((l) => /Saved:/i.test(l)), real.lines.join(' | '));
+assert.ok(real.lines.some((l) => /I now know 1 thing/i.test(l)), real.lines.join(' | '));
 
 // Progress / stage ignore declines
 const declinedProfile = { lifestyle: { sleepDuration: 'prefer-not-say' } };

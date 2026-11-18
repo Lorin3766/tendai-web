@@ -530,8 +530,8 @@ export function createUniversalAgentCard(props) {
           ${calibrationSettings ? 'data-uac-calibration-settings' : 'data-uac-calibration-talk'}
         >${universalEsc(talkLabel)}</button>
       </div>
-      ${questionBlock}
       <div class="uac-compact__payoff-inline" data-uac-payoff-inline hidden></div>
+      ${questionBlock}
       <div
         class="uac-compact__expand heart-agent-module__details"
         id="uac-expand-${universalEsc(focusAreaId || trackId)}"

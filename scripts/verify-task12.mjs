@@ -106,10 +106,13 @@ const payoff = assembleTalkPayoff({
   changedAreaIds: ['sleep'],
   claimLine: 'Added to your Sleep & Recovery card.',
 });
-assert.ok(payoff.lines.some((l) => /You said/.test(l)), 'echo');
-assert.ok(payoff.lines.some((l) => /Added to your/.test(l)), 'claim');
-assert.ok(payoff.lines.some((l) => /With this I know/.test(l)), 'memory');
-assert.ok(payoff.lines.some((l) => /Next/.test(l)), 'why-next');
+// 14d-4: one Saved + know line; why-next is nextAskHint (ask label), not a payoff paragraph.
+assert.ok(payoff.lines.length === 1, `expected one short line, got ${payoff.lines.length}`);
+assert.ok(/Saved:/.test(payoff.lines[0]), 'saved echo');
+assert.ok(/I now know 1 thing/.test(payoff.lines[0]), 'memory');
+assert.ok(!/Added to your/.test(payoff.lines[0]), 'no Added claim in payoff');
+assert.ok(payoff.nextAskHint && /sleep|feel|Next/i.test(payoff.nextAskHint), 'why-next as nextAskHint');
+assert.equal(payoff.sourceLine, '', 'Based on N stays on card meta, not payoff');
 for (const line of payoff.lines) {
   assert.equal(payoffHasJudgmentOrCause(line), false, `no judgment: ${line}`);
   assert.deepEqual(findBannedVocab(line), [], `no banned vocab: ${line}`);
@@ -127,7 +130,7 @@ assert.deepEqual(findBannedVocab(pill), []);
 assert.equal(/Baseline|Manual Baseline/i.test(pill), false, pill);
 
 const mem = memoryLinkLine(fakeProfile, ['sleep']);
-assert.ok(/With this I know 1 thing/.test(mem));
+assert.ok(/I now know 1 thing/.test(mem));
 
 const recap = checkinRecapLine(
   { sleepHours: 7 },

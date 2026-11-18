@@ -4222,8 +4222,8 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 }
 .universal-agent-card.uac-compact .heart-agent-module,
 .universal-agent-card.uac-compact .uac-compact__inner {
-  padding: 8px 12px !important;
-  gap: 4px !important;
+  padding: 6px 10px !important;
+  gap: 3px !important;
   min-height: 0 !important;
   background: transparent !important;
 }
@@ -4336,25 +4336,25 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   line-height: 1.2;
 }
 .uac-compact__value {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 650;
-  line-height: 1.2;
+  line-height: 1.15;
   color: var(--fg, #f7f3ee);
   letter-spacing: -0.01em;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .uac-compact__meta {
-  font-size: 14px;
-  line-height: 1.3;
+  font-size: 12px;
+  line-height: 1.25;
   color: var(--fg-soft, #e6dfd6);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .uac-compact__ask {
   margin-top: 2px;
 }
 .uac-compact__ask-text {
   margin: 0 0 4px;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.25;
   color: var(--fg, #f7f3ee);
   font-weight: 500;
@@ -4368,8 +4368,8 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 }
 .uac-chip {
   margin: 0;
-  padding: 4px 8px;
-  min-height: 36px;
+  padding: 3px 7px;
+  min-height: 32px;
   flex: 0 1 auto;
   width: auto;
   max-width: 100%;
@@ -4401,10 +4401,14 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   cursor: pointer;
 }
 .uac-compact__payoff-inline {
-  margin-top: 6px;
-  font-size: 14px;
-  line-height: 1.35;
+  /* 14d-4: one short reaction line above the next-ask row */
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.3;
   color: var(--fg-soft, #e6dfd6);
+}
+.uac-compact__payoff-inline:not([hidden]) + .uac-compact__ask {
+  margin-top: 6px;
 }
 /* Hide the color word tag on narrow cards to keep height in range */
 .uac-compact__tag {

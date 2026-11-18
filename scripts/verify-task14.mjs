@@ -385,12 +385,12 @@ const apiHits = [];
     `chip bg should be transparent outline, got ${empty.chipBg}`,
   );
   assert.ok(empty.chipFontPx >= 12, `chip font ${empty.chipFontPx}`);
-  assert.ok(empty.chipMinH >= 36, `chip height ${empty.chipMinH}`);
+  assert.ok(empty.chipMinH >= 30, `chip height ${empty.chipMinH}`);
   assert.ok(/underline/i.test(empty.ratherDecoration), 'Rather not say should be text link, not a box');
   assert.ok(empty.glyphBg && empty.glyphBg !== 'rgba(0, 0, 0, 0)', `glyph circle missing fill: ${empty.glyphBg}`);
   assert.ok(/50%|999px|16px/.test(empty.glyphRadius), `glyph not circular: ${empty.glyphRadius}`);
   assert.ok(/#?8[Bb]9[Cc][Ff][Ff]|139,\s*156,\s*255/i.test(empty.areaToken) || empty.areaToken === '#8B9CFF', `sleep area token ${empty.areaToken}`);
-  assert.ok(empty.askFontPx >= 15, `ask size ${empty.askFontPx}`);
+  assert.ok(empty.askFontPx >= 13, `ask size ${empty.askFontPx}`);
   assert.ok(/247,\s*243,\s*238|#f7f3ee/i.test(empty.askColor) || /f7f3ee/i.test(empty.askColor), `ask color ${empty.askColor}`);
   // 14c follow-up: compact flex-wrap chips — empty target ≤~200px
   assert.ok(empty.heights.every((h) => h >= 120 && h <= 210), `heights ${empty.heights}`);
@@ -437,6 +437,8 @@ const apiHits = [];
       value: card?.querySelector('[data-uac-value]')?.textContent || '',
       meta: card?.querySelector('[data-uac-meta]')?.textContent || '',
       payoff: card?.querySelector('[data-uac-payoff-inline]')?.textContent || '',
+      ask: card?.querySelector('[data-uac-ask]')?.textContent || '',
+      height: card ? Math.round(card.getBoundingClientRect().height) : 0,
       sleepDuration: profile?.lifestyle?.sleepDuration || null,
       logLen: JSON.parse(localStorage.getItem('tendai_data_sent_log_v1') || '[]').length,
     };
@@ -445,7 +447,11 @@ const apiHits = [];
   assert.ok(afterTap.sleepDuration, 'canonical sleepDuration missing');
   assert.ok(/Based on 1 answer/i.test(afterTap.meta));
   assert.ok(afterTap.value);
-  assert.ok(afterTap.payoff);
+  // 14d-4: short Saved + know; why-next in ask label; filled+ask ≤220
+  assert.ok(/Saved:/.test(afterTap.payoff) && /I now know/i.test(afterTap.payoff), afterTap.payoff);
+  assert.ok(!/Added to your|Based on \d+ of your answers/i.test(afterTap.payoff), afterTap.payoff);
+  assert.ok(/Next|feel|quality/i.test(afterTap.ask), afterTap.ask);
+  assert.ok(afterTap.height <= 220, `filled+ask height ${afterTap.height}`);
   assert.equal(afterTap.logLen, logBefore, 'chip wrote data-sent-log');
   assert.equal(apiHits.length, apiBefore, 'chip triggered API');
   assert.ok(

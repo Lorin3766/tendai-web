@@ -2358,11 +2358,20 @@ function syncFocusCardsFromProfile() {
       const html = renderAskBlockHtml(nextQ);
       if (ask) ask.outerHTML = html;
       else if (inner) {
+        // 14d-4: ask row sits under the short payoff line
         const payoffInline = el.querySelector('[data-uac-payoff-inline]');
         const wrap = document.createElement('div');
         wrap.innerHTML = html;
         const node = wrap.firstElementChild;
-        if (node) inner.insertBefore(node, payoffInline || el.querySelector('[data-uac-expand-panel]'));
+        if (node) {
+          if (payoffInline && payoffInline.nextSibling) {
+            inner.insertBefore(node, payoffInline.nextSibling);
+          } else if (payoffInline) {
+            payoffInline.after(node);
+          } else {
+            inner.insertBefore(node, el.querySelector('[data-uac-expand-panel]'));
+          }
+        }
       }
     } else if (ask) {
       ask.remove();
@@ -2404,8 +2413,8 @@ function syncFocusCardsFromProfile() {
 function showCardPayoffInline(el, payoff) {
   const box = el.querySelector('[data-uac-payoff-inline]');
   if (!box) return;
+  // 14d-4: one short reaction line only (sourceLine / Based on N lives in meta).
   const parts = [...(payoff?.lines || [])];
-  if (payoff?.sourceLine) parts.push(payoff.sourceLine);
   if (!parts.length) {
     box.hidden = true;
     box.textContent = '';
