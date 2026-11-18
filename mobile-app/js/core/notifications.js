@@ -35,12 +35,12 @@ function isTabActive(tabName) {
   if (!tab) return false;
   const tabEl = document.getElementById(`tab-${tab}`);
   const mobileEl = document.querySelector(`[data-screen="${tab}"]`);
-  const feedView = document.getElementById('feed-view');
-  const talkView = document.getElementById('talk-view');
   if (tabEl?.classList.contains('is-active')) return true;
   if (mobileEl?.classList.contains('active')) return true;
-  if (tab === 'feed' && feedView && !feedView.classList.contains('hidden')) return true;
-  if (tab === 'talk' && talkView && !talkView.classList.contains('hidden')) return true;
+  // Feed/Talk share a slider: both panes drop `.hidden` together; visibility is
+  // `#centerBody.view-feed` / `.view-talk`. Do not treat `.hidden` on either pane as active.
+  const centerBody = document.getElementById('centerBody');
+  if (centerBody?.classList.contains(`view-${tab}`)) return true;
   return false;
 }
 

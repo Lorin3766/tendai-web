@@ -109,7 +109,8 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
     if (cards.sleep.action !== 'confidence-talk') fail(`sleep action: ${cards.sleep.action}`);
   }
 
-  await page.locator('.universal-agent-card[data-focus-area-id="skin"] [data-uac-action="settings-city"]').click();
+  // Prefer the header Settings pill (chip may also carry settings-city).
+  await page.locator('.universal-agent-card[data-focus-area-id="skin"] .uac-compact__talk[data-uac-action="settings-city"]').click();
   await page.waitForTimeout(400);
   const settings = await page.evaluate(() => ({
     open: document.getElementById('settingsModalOverlay')?.classList.contains('is-active') === true,

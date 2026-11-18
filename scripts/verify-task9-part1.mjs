@@ -200,8 +200,8 @@ if (process.env.OBRIUM_URL || process.env.TENDAI_URL || process.env.SERRON_URL) 
     return { last, btn, step, types: log.map((e) => e.requestType), off: log.map((e) => e.sentOffDevice) };
   });
   console.log('[9c] after answer', JSON.stringify(afterTalk));
-  // Task 12: claim line is "Added to your … card" (not "Updated your …")
-  if (!/Added to your Sleep & Recovery card/.test(afterTalk.last)) {
+  // 14d-4: short Saved + know line (no "Added to your … card"); still names Sleep.
+  if (!/Saved:/.test(afterTalk.last) || !/I now know 1 thing about your Sleep/.test(afterTalk.last)) {
     fail(`confirmation did not name the Sleep card: ${afterTalk.last.slice(0, 120)}`);
   }
   if (!afterTalk.btn) fail('See it in Feed button missing');

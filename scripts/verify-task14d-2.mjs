@@ -113,7 +113,8 @@ const live = await page.evaluate(() => {
   return { ask, chips };
 });
 console.log('14d-2 live360', JSON.stringify(live));
-assert.ok(/quality|1.?5/i.test(live.ask), `ask ${live.ask}`);
+// 14d-4 may put why-next wording in the ask label; chips must still be the full 1–5 scale.
+assert.ok(/quality|1.?5|feel/i.test(live.ask), `ask ${live.ask}`);
 assert.deepEqual(live.chips, ['1', '2', '3', '4', '5'], `live chips ${JSON.stringify(live.chips)}`);
 
 await browser.close();

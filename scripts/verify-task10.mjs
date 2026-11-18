@@ -382,8 +382,9 @@ if (process.env.OBRIUM_URL) {
     buttons: [...document.querySelectorAll('#todayBlockActions button')].map((b) => b.textContent),
   }));
   console.log('[10a] strict', JSON.stringify(strict));
-  if (strict.hidden || !/check-in · not done/i.test(strict.text)) fail(`strict check-in missing: ${strict.text}`);
-  if (!strict.buttons.includes('Log sleep')) fail('strict check-in button missing');
+  // 14b: clear verb row — "Log how you slept · 1 min" + Log (no "not done")
+  if (strict.hidden || !/Log how you slept/i.test(strict.text)) fail(`strict check-in missing: ${strict.text}`);
+  if (!strict.buttons.includes('Log')) fail('strict check-in button missing');
   await page.screenshot({ path: path.join(outDir, 'task10-today-strict-390.png'), clip: { x: 0, y: 0, width: 390, height: 844 } });
   const waterText = await page.locator('#dayStatWater').textContent();
   if (waterText !== '- / 8') fail(`water stat ${waterText}`);
