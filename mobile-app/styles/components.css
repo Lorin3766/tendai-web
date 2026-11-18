@@ -990,14 +990,20 @@ body.calendar-open {
     padding-bottom: 12px;
   }
 
-  /* Flush pill to tab bar: no padding below input row; no flex gap stacking air under the pill */
-  .talk-view .conversation-card.card-soft {
-    padding-bottom: 0;
-    margin-bottom: 0;
-  }
-
+  /* 14d-5: one clean input bar — drop the nested card-soft outline around the pill */
+  .talk-view .conversation-card.card-soft,
   .talk-view .conversation-card {
     gap: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .talk-view .ai-input-row {
+    border-top: none !important;
   }
 }
 
@@ -1316,6 +1322,11 @@ body.calendar-open {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  /* 14d-5: no second rounded outline behind the Message pill (desktop + mobile) */
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Message list scroll region steals remaining height (not content-sized) */
