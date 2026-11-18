@@ -1449,6 +1449,8 @@ export function renderAgentReportsSection() {
       </div>
       <div class="agent-reports-list" id="agentReportsList">
         <div class="agent-reports-grid agent-reports-grid--panels" id="agentReportsGrid"></div>
+      </div>
+      <div class="agent-feed-add-strip" id="agentFeedAddStrip" data-uac-add-strip>
         <button type="button" class="agent-feed-add-panel add-agent-button" id="agentFeedAddBtn" aria-label="Add new focus area">
           <span class="agent-feed-add-panel__label">+ Add Focus</span>
         </button>

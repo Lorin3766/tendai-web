@@ -79,7 +79,7 @@ const GLOW_REMOVED = [
   '--gold-gradient: flat #f6c36a (no gradient fill)',
   '--agent-card-bg: flat #1c1a17 (no linear-gradient)',
   '.uac-compact / chips / Today primary: box-shadow none, no gold glow',
-  '.agent-feed-add-panel: transparent outline, box-shadow none',
+  '.agent-feed-add-panel: filled gold pill, box-shadow none (14d-1 pinned strip)',
 ];
 console.log('GLOW_REMOVED', JSON.stringify(GLOW_REMOVED, null, 2));
 
@@ -142,6 +142,7 @@ async function bootFeed(page) {
       const mod = await import('/js/features/settings/system-onboarding.js');
       mod.ensureOnboardingFocusAreasInFeed?.();
     } catch (_) {}
+    document.getElementById('centerBody')?.classList.add('view-feed');
     window.switchView?.('feed');
     window.renderAgentReportsSection?.();
     window.renderTodayBlock?.();
@@ -286,14 +287,12 @@ const apiHits = [];
       return r.top >= 0 && r.bottom <= navTop - 2;
     }).length;
     const add = document.querySelector('.agent-feed-add-panel');
+    const strip = document.querySelector('.agent-feed-add-strip');
     const addCs = add ? getComputedStyle(add) : null;
+    const stripCs = strip ? getComputedStyle(strip) : null;
     const primary = document.querySelector('.today-block__btn--primary');
     const primaryCs = primary ? getComputedStyle(primary) : null;
     const goldish = (bg) => /246,\s*195,\s*106|#f6c36a/i.test(bg || '');
-    const isTransparentBg = (bg) =>
-      !bg ||
-      bg === 'transparent' ||
-      /rgba?\(\s*0,\s*0,\s*0,\s*0\s*\)/i.test(bg);
     const filledGold = [...document.querySelectorAll('button, a, .btn')].filter((el) => {
       if (el.closest('#obriumReloadBar')) return false; // upgrade bar is not Feed chrome
       const r = el.getBoundingClientRect();
@@ -304,11 +303,15 @@ const apiHits = [];
     });
     const list = document.querySelector('.agent-reports-list');
     let lastClears = false;
+    let stripAboveNav = false;
     if (list && add && nav) {
       const before = list.scrollTop;
       list.scrollTop = list.scrollHeight;
-      const addBottom = add.getBoundingClientRect().bottom;
-      lastClears = addBottom <= navTop - 2;
+      const cards = [...document.querySelectorAll('.universal-agent-card')];
+      const last = cards[cards.length - 1];
+      const stripTop = strip?.getBoundingClientRect()?.top ?? add.getBoundingClientRect().top;
+      lastClears = last ? last.getBoundingClientRect().bottom <= stripTop - 2 : false;
+      stripAboveNav = add.getBoundingClientRect().bottom <= navTop - 2;
       list.scrollTop = before;
     }
     const chip = card?.querySelector('[data-uac-chip]');
@@ -352,16 +355,17 @@ const apiHits = [];
         if (!add) return false;
         const r = add.getBoundingClientRect();
         const mid = (r.left + r.right) / 2;
-        const parent = add.parentElement?.getBoundingClientRect();
-        const parentMid = parent ? (parent.left + parent.right) / 2 : 195;
-        return Math.abs(mid - parentMid) <= 28;
+        return Math.abs(mid - 195) <= 40;
       })(),
+      // 14d-1: opaque pinned strip
+      stripFixed: stripCs?.position === 'fixed',
+      stripOpaque: !!(stripCs && stripCs.backgroundColor && !/rgba?\(\s*0,\s*0,\s*0,\s*0\s*\)|transparent/i.test(stripCs.backgroundColor)),
+      stripBorderPx: stripCs ? parseFloat(stripCs.borderTopWidth) || 0 : 0,
+      stripAboveNav,
       primaryBg: primaryCs?.backgroundColor || '',
       primaryIsGold: goldish(primaryCs?.backgroundColor || ''),
-      // 14c-4: at most one filled gold in normal scroll (Do it). Add Focus is gold only at list end.
-      filledGoldAtTop: filledGold.filter(
-        (el) => !el.classList.contains('agent-feed-add-panel') && !el.closest('.agent-feed-add-panel'),
-      ).length,
+      // 14d-1 lint: only Today primary + pinned Add Focus may be filled gold
+      filledGoldCount: filledGold.length,
       filledGoldLabels: filledGold.map((el) => (el.textContent || '').trim().slice(0, 40)),
       lastClears,
       navTop,
@@ -392,13 +396,22 @@ const apiHits = [];
   assert.ok(empty.heights.every((h) => h >= 120 && h <= 210), `heights ${empty.heights}`);
   assert.ok(empty.fully >= 3, `need ≥3 cards visible above tab, got ${empty.fully}`);
   assert.ok(empty.addBgGold, `Add Focus should be filled gold, got bg=${empty.addBg}`);
-  assert.ok(empty.addCentered, 'Add Focus should be centered at list end');
+  assert.ok(empty.addCentered, 'Add Focus should be horizontally centered');
+  assert.ok(empty.stripFixed, 'Add Focus strip should be position:fixed');
+  assert.ok(empty.stripOpaque, 'Add Focus strip must be opaque (page background)');
+  assert.ok(empty.stripBorderPx >= 1, `strip needs 1px top border, got ${empty.stripBorderPx}`);
+  assert.ok(empty.stripAboveNav, 'pinned Add Focus must sit above the tab bar');
   assert.ok(empty.primaryIsGold, `Today primary not gold: ${empty.primaryBg}`);
   assert.ok(
-    empty.filledGoldAtTop === 1,
-    `expected one filled gold in normal scroll (Do it), got ${empty.filledGoldAtTop}: ${JSON.stringify(empty.filledGoldLabels)}`,
+    empty.filledGoldCount === 2,
+    `lint: only Today primary + pinned Add Focus may be filled gold, got ${empty.filledGoldCount}: ${JSON.stringify(empty.filledGoldLabels)}`,
   );
-  assert.ok(empty.lastClears, 'last card / Add Focus does not clear tab bar when scrolled to end');
+  assert.ok(
+    empty.filledGoldLabels.some((t) => /Do it|Log sleep|Done/i.test(t)) &&
+      empty.filledGoldLabels.some((t) => /Add Focus/i.test(t)),
+    `expected Do it + Add Focus among ${JSON.stringify(empty.filledGoldLabels)}`,
+  );
+  assert.ok(empty.lastClears, 'last card does not clear above the pinned Add Focus strip when scrolled to end');
 
   const logBefore = await page.evaluate(() => JSON.parse(localStorage.getItem('tendai_data_sent_log_v1') || '[]').length);
   const apiBefore = apiHits.length;

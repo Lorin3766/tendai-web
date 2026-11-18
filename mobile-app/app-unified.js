@@ -58,7 +58,8 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
   const centerFeedTalkSlider = document.getElementById('centerFeedTalkSlider');
 
   let talkComponent = null;
-  let currentView = 'feed';
+  // null until first switchView so init always applies view-feed / view-talk pane classes
+  let currentView = null;
   const HISTORY_SYNC_LAST_DATE_KEY = 'tendai_last_sync_date';
   const HISTORY_SYNC_PLACEHOLDERS_KEY = 'tendai_sync_placeholders_v1';
 

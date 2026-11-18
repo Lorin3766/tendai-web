@@ -65,6 +65,7 @@ await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
 await page.waitForTimeout(1800);
 await page.evaluate(() => {
   document.querySelectorAll('.system-onboarding-overlay, .welcome-modal-overlay').forEach((el) => el.remove());
+  document.getElementById('centerBody')?.classList.add('view-feed');
   window.switchView?.('feed');
   window.renderAgentReportsSection?.();
   window.renderTodayBlock?.();
