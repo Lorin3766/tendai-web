@@ -101,6 +101,7 @@ export function saveCardTapAnswer(areaId, section, field, value, echoRaw) {
   const nextSig = nextUnansweredSignalForArea(profile, areaId);
   const payoff = assembleTalkPayoff({
     echoRaw: echoRaw || String(value),
+    value,
     profile,
     answeredPath: `${section}.${field}`,
     answeredFieldKey: field,

@@ -259,6 +259,16 @@ export function isProfileFieldAskable(sectionKey, fieldKey) {
  * @param {string} [key]
  * @returns {boolean}
  */
+/** Declined / skipped values are stored so we do not ask again, but are not knowledge. */
+export function isDeclinedProfileValue(value) {
+  if (value == null) return false;
+  if (Array.isArray(value)) {
+    return value.length > 0 && value.every((v) => isDeclinedProfileValue(v));
+  }
+  const raw = String(value).trim().toLowerCase();
+  return raw === 'prefer-not-say' || raw === 'prefer not to say' || raw === 'rather not say';
+}
+
 export function isProfileFieldAnswered(value, key) {
   if (value === null || value === undefined || value === '') {
     return false;

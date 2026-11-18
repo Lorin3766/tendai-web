@@ -2,7 +2,11 @@
 // @owner: profile
 // @role: config
 
-import { isProfileFieldAnswered, isProfileFieldAskable } from './profile-schema.js';
+import {
+  isDeclinedProfileValue,
+  isProfileFieldAnswered,
+  isProfileFieldAskable,
+} from './profile-schema.js';
 import { getFocusAreaById, getSelectedFocusAreaIds } from '../human-os/focus-areas.js';
 import { sleepDurationDisplay } from './sleep-duration.js';
 
@@ -60,9 +64,17 @@ export function isSignalAnswered(profile, signal) {
   return isProfileFieldAnswered(value, signal.field);
 }
 
+/** Answered and not declined — counts for "I know N things" / stage / calibration. */
+export function isSignalKnown(profile, signal) {
+  if (!isSignalAnswered(profile, signal)) return false;
+  if (signal.section === 'location') return true;
+  return !isDeclinedProfileValue(readSignalValue(profile, signal));
+}
+
 export function signalProgress(profile, areaId) {
   const signals = signalsFor(areaId);
-  const n = signals.filter((signal) => isSignalAnswered(profile, signal)).length;
+  // 14d-3: declined answers are stored (skipped for re-ask) but do not count as knowledge.
+  const n = signals.filter((signal) => isSignalKnown(profile, signal)).length;
   return { n, m: signals.length };
 }
 
@@ -175,10 +187,10 @@ export function noteSignalSaved(section, field) {
 
 /** Last answered signal, preferring the field just saved. Null when none are answered. */
 export function payoffDetail(profile, areaId) {
-  const answered = signalsFor(areaId).filter((signal) => isSignalAnswered(profile, signal));
-  if (!answered.length) return null;
+  const known = signalsFor(areaId).filter((signal) => isSignalKnown(profile, signal));
+  if (!known.length) return null;
   const touched = lastTouched.get(areaId);
-  const signal = answered.find((s) => `${s.section}.${s.field}` === touched) || answered[answered.length - 1];
+  const signal = known.find((s) => `${s.section}.${s.field}` === touched) || known[known.length - 1];
   const name = getFocusAreaById(areaId)?.name || areaId;
   const echo = signal.echo === 'generic'
     ? `Your ${name} card now reflects your answer.`
@@ -195,11 +207,12 @@ export function payoffEcho(profile, areaId) {
  * Empty areas return '' — cards show the next question instead of "Not answered yet".
  */
 export function compactAreaValueHeadline(profile, areaId) {
-  const answered = signalsFor(areaId).filter((signal) => isSignalAnswered(profile, signal));
-  if (!answered.length) return '';
+  // 14d-3: never headline a declined value ("Prefer not to say" is not knowledge).
+  const known = signalsFor(areaId).filter((signal) => isSignalKnown(profile, signal));
+  if (!known.length) return '';
   const touched = lastTouched.get(areaId);
   const signal =
-    answered.find((s) => `${s.section}.${s.field}` === touched) || answered[answered.length - 1];
+    known.find((s) => `${s.section}.${s.field}` === touched) || known[known.length - 1];
   const value = readSignalValue(profile, signal);
   if (signal.section === 'lifestyle' && signal.field === 'sleepDuration') {
     return sleepDurationDisplay(value) || '';
@@ -210,8 +223,7 @@ export function compactAreaValueHeadline(profile, areaId) {
   if (value == null || value === '') return '';
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
   const raw = String(value).trim();
-  if (!raw) return '';
-  if (raw === 'prefer-not-say') return 'Prefer not to say';
+  if (!raw || isDeclinedProfileValue(raw)) return '';
   return raw.replace(/-/g, ' ');
 }
 

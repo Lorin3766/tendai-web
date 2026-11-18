@@ -5,7 +5,7 @@ import { getEntries } from '../feed/content-library.js';
 import { FOCUS_AREA_SIGNALS, focusAreasForField, signalProgress } from '../profile/focus-area-signals.js';
 import { getFocusAreaById } from '../human-os/focus-areas.js';
 import { getObriumCheckinHistory } from '../metrics/checkin-history.js';
-import { getProfileQuestionCatalog } from '../profile/profile-schema.js';
+import { getProfileQuestionCatalog, isDeclinedProfileValue } from '../profile/profile-schema.js';
 
 /** User-visible vocabulary that must never appear after Task 12b. */
 export const BANNED_USER_VOCAB = [
@@ -223,8 +223,9 @@ export function checkinRecapLine(todayEntry, yesterdayEntry) {
 }
 
 /**
- * Assemble payoff parts for a saved Talk answer. Missing parts stay empty (ok).
- * @returns {{ lines: string[], sourceLine: string, changedAreaIds: string[] }}
+ * Assemble payoff parts for a saved Talk/Feed answer. Missing parts stay empty (ok).
+ * 14d-3: declined answers → one short "Okay, skipped." line (no knowledge claims).
+ * @returns {{ lines: string[], sourceLine: string, changedAreaIds: string[], declined: boolean }}
  */
 export function assembleTalkPayoff({
   echoRaw,
@@ -234,7 +235,23 @@ export function assembleTalkPayoff({
   nextQuestion,
   changedAreaIds = [],
   claimLine = '',
+  value = undefined,
 }) {
+  const declined =
+    isDeclinedProfileValue(value) ||
+    isDeclinedProfileValue(echoRaw) ||
+    /^(rather not say|prefer not to say)$/i.test(String(echoRaw || '').trim());
+
+  if (declined) {
+    // Stored so we do not ask again — but never "I know N", "Added", or echo of the decline.
+    return {
+      lines: ['Okay, skipped.'],
+      sourceLine: '',
+      changedAreaIds: [],
+      declined: true,
+    };
+  }
+
   const lines = [];
   const echo = echoRaw ? `You said “${String(echoRaw).trim()}”.` : '';
   if (echo) lines.push(echo);
@@ -273,6 +290,7 @@ export function assembleTalkPayoff({
     lines: lines.filter(Boolean),
     sourceLine: sourceLineForAnswers(nKnown),
     changedAreaIds,
+    declined: false,
   };
 }
 

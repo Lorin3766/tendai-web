@@ -1429,6 +1429,7 @@ export class TalkComponent {
     const next = this.getNextUnsnoozedProfileQuestion(profileAfter);
     const payoff = assembleTalkPayoff({
       echoRaw,
+      value,
       profile: profileAfter,
       answeredPath: question.path,
       answeredFieldKey: question.fieldKey,
@@ -1437,10 +1438,11 @@ export class TalkComponent {
       claimLine: claim,
     });
     const parts = [...payoff.lines];
-    if (payoff.sourceLine) parts.push(payoff.sourceLine);
+    if (!payoff.declined && payoff.sourceLine) parts.push(payoff.sourceLine);
 
     const attachFeed = (el) => {
-      if (claim && changed[0]) this.appendSeeInFeed(el, changed[0]);
+      // Declined answers are not knowledge — no "See in Feed" / Added claim.
+      if (!payoff.declined && claim && changed[0]) this.appendSeeInFeed(el, changed[0]);
     };
 
     if (!next) {
