@@ -10,8 +10,8 @@ export const TODAY_STEPS_KEY = 'tendai_today_steps_v1';
 export const CONTACT_FREQUENCY_KEY = 'tendai_contact_frequency_v1';
 
 const CHECKIN = {
-  'checkin-sleep': { text: 'Log how you slept', area: 'sleep', focus: 'checkinSleep' },
-  'checkin-day': { text: 'How was your day?', area: 'day', focus: 'checkinEnergy' },
+  'checkin-sleep': { text: 'Log how you slept · 1 min', area: 'sleep', focus: 'checkinSleep' },
+  'checkin-day': { text: 'Log your day · 1 min', area: 'day', focus: 'checkinEnergy' },
 };
 
 function hashString(input) {

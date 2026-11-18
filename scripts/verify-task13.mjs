@@ -133,13 +133,16 @@ assert.equal(metrics.hasAgt, false, 'AGT code visible');
 // 14c follow-up: empty ~≤200; this scenario seeds one answered card with next-ask (~300+).
 assert.ok(metrics.heights.every((h) => h >= 120 && h <= 360), `card heights ${metrics.heights}`);
 assert.ok(metrics.fullyVisible >= 2, `need ≥2 cards visible with filled+ask heights, got ${metrics.fullyVisible}`);
-assert.ok(metrics.todayH > 0 && metrics.todayH <= 72, `today height ${metrics.todayH}`);
+// 14b: greeting + Today row — allow a bit more height than the old 52px-only row
+assert.ok(metrics.todayH > 0 && metrics.todayH <= 120, `today height ${metrics.todayH}`);
+assert.ok(!/not done/i.test(metrics.todayText), `14b removed "not done": ${metrics.todayText}`);
+assert.ok(/Good (morning|afternoon|evening)/i.test(metrics.todayText), `greeting missing: ${metrics.todayText}`);
 assert.ok(/7 to 8 hours|7-8/i.test(metrics.value), `value ${metrics.value}`);
 assert.ok(/Based on 1 answer/i.test(metrics.meta), `meta ${metrics.meta}`);
 assert.equal(metrics.expand, 'false');
 assert.equal(metrics.filledCount, 1, `filled gold buttons: ${JSON.stringify(metrics.filledGold)}`);
 assert.ok(
-  metrics.filledGold.some((t) => /Do it|Log sleep|Done/i.test(t)),
+  metrics.filledGold.some((t) => /Log|Do it|Done/i.test(t)),
   `Today primary missing among ${JSON.stringify(metrics.filledGold)}`,
 );
 

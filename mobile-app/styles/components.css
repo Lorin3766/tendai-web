@@ -10182,10 +10182,19 @@ button.sidebar-core-retry[hidden] {
 #feed-view > article.card-soft:last-child {
   margin-bottom: 0;
 }
-/* Task 13b — compact Today row (~44–52 px) */
+/* Task 13b / 14b — greeting + compact Today row (~44–52 px) */
+.today-block__greeting {
+  margin: 0 0 8px;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--fg, #f7f3ee);
+  letter-spacing: -0.01em;
+}
 .today-block.today-block--compact,
 .today-block--compact {
-  padding: 8px 12px;
+  padding: 10px 12px;
   margin-bottom: 12px !important;
   min-height: 44px;
   max-height: none;

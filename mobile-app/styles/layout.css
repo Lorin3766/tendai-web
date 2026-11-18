@@ -715,9 +715,12 @@ main {
     opacity: 1;
     padding: 0;
     min-width: 0;
-    max-width: none;
-    width: auto;
+    /* 14b: Feed column ~560 px centered so cards are not stretched across the page */
+    max-width: 560px;
+    width: 100%;
     flex: 1 1 auto;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   #col-left {

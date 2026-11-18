@@ -407,9 +407,9 @@ const apiHits = [];
     `lint: only Today primary + pinned Add Focus may be filled gold, got ${empty.filledGoldCount}: ${JSON.stringify(empty.filledGoldLabels)}`,
   );
   assert.ok(
-    empty.filledGoldLabels.some((t) => /Do it|Log sleep|Done/i.test(t)) &&
+    empty.filledGoldLabels.some((t) => /Do it|Log|Done/i.test(t)) &&
       empty.filledGoldLabels.some((t) => /Add Focus/i.test(t)),
-    `expected Do it + Add Focus among ${JSON.stringify(empty.filledGoldLabels)}`,
+    `expected Today primary + Add Focus among ${JSON.stringify(empty.filledGoldLabels)}`,
   );
   assert.ok(empty.lastClears, 'last card does not clear above the pinned Add Focus strip when scrolled to end');
 
