@@ -25,8 +25,9 @@ import {
 import { assembleTalkPayoff } from '../js/features/talk/talk-payoff.js';
 
 const TALK_OPENING_SESSION_KEY = 'tendai_talk_opening_shown_v1';
-/** First-ever Obrium intro sentence (persists across sessions). */
+/** First-ever Obrium intro sentence (persists across sessions). Cleared by Delete all local data. */
 const TALK_INTRO_EVER_KEY = 'tendai_talk_intro_ever_v1';
+// Keep in sync with mobile-app/js/core/local-storage-inventory.js
 import { obriumNow, localDateKey } from '../js/core/obrium-clock.js';
 import { persistTalkSession } from '../js/features/metrics/local-metrics.js';
 import { loadTodaySteps } from '../js/features/feed/today-steps.js';

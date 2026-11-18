@@ -53,6 +53,15 @@ await page.addInitScript(() => {
   );
 });
 await page.goto(baseUrl + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await page.evaluate(async () => {
+  try {
+    const regs = await navigator.serviceWorker?.getRegistrations?.();
+    await Promise.all((regs || []).map((r) => r.unregister()));
+    const keys = (await caches?.keys?.()) || [];
+    await Promise.all(keys.map((k) => caches.delete(k)));
+  } catch (_) {}
+});
+await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
 await page.waitForTimeout(1800);
 await page.evaluate(() => {
   document.querySelectorAll('.system-onboarding-overlay, .welcome-modal-overlay').forEach((el) => el.remove());
@@ -120,10 +129,9 @@ console.log('13 metrics', JSON.stringify(metrics));
 assert.equal(metrics.hasOnTrack, false, 'On track visible');
 assert.equal(metrics.hasAgt, false, 'AGT code visible');
 // Task 14a: empty/simple cards ~140–170; filled+next-question chips may reach ~220.
-// 14c: empty cards ~255–270 with chip wrap; filled+next-ask can reach ~360. Was ≤230 pre-14a.
-assert.ok(metrics.heights.every((h) => h >= 130 && h <= 380), `card heights ${metrics.heights}`);
-// 14c chip-wrap cards are taller; ≥3 fully above the tab is no longer reliable at 844px.
-assert.ok(metrics.fullyVisible >= 2, `need ≥2 cards visible, got ${metrics.fullyVisible}`);
+// 14c follow-up: empty ~≤200; this scenario seeds one answered card with next-ask (~300+).
+assert.ok(metrics.heights.every((h) => h >= 120 && h <= 360), `card heights ${metrics.heights}`);
+assert.ok(metrics.fullyVisible >= 2, `need ≥2 cards visible with filled+ask heights, got ${metrics.fullyVisible}`);
 assert.ok(metrics.todayH > 0 && metrics.todayH <= 72, `today height ${metrics.todayH}`);
 assert.ok(/7 to 8 hours|7-8/i.test(metrics.value), `value ${metrics.value}`);
 assert.ok(/Based on 1 answer/i.test(metrics.meta), `meta ${metrics.meta}`);

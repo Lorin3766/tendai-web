@@ -282,6 +282,7 @@ main {
   align-self: stretch;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
 }
 
 /* FEED: pane scrolls. TALK: pane is a locked flex column; only .chat-scroll-wrapper scrolls */
@@ -514,12 +515,13 @@ main {
     color: var(--gold);
   }
 
-  /* Ensure views take full width and proper spacing; slider panes stay 50% */
+  /* 14c: one full-width pane (not 50% side-by-side). Inactive pane stays display:none via view-feed/view-talk. */
   .center-feed-talk-slider > .feed-view,
   .center-feed-talk-slider > .talk-view {
-    width: 50%;
-    min-width: 50%;
-    max-width: 50%;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
   }
   .feed-view,
   .services-view,
@@ -543,7 +545,9 @@ main {
   }
 
   /* TALK: height-locked column; tab-bar clearance; history scrolls inside .chat-scroll-wrapper only.
-     Horizontal inset is a single 16px (see mobile-responsive Talk section) — do not stack more. */
+     Horizontal inset is a single 16px (see mobile-responsive Talk section) — do not stack more.
+     Do NOT set display:flex here — that overrides the slider's display:none for the inactive pane.
+     Visibility is owned by #centerBody.view-talk / .view-feed rules above. */
   .talk-view,
   #talk-view.talk-view {
     width: 100%;
@@ -551,7 +555,6 @@ main {
     padding: 12px 16px calc(88px + env(safe-area-inset-bottom, 0px));
     margin: 0;
     gap: 0;
-    display: flex;
     flex-direction: column;
     overflow: hidden;
     overflow-x: hidden;

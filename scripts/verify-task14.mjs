@@ -107,9 +107,8 @@ for (const rel of cssFiles) {
   // Chip row must wrap (no horizontal scroll)
   if (rel.endsWith('components.css')) {
     assert.ok(
-      /\.uac-compact__chips\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr/s.test(src) ||
-        /\.uac-compact__chips\s*\{[^}]*flex-wrap:\s*wrap/s.test(src),
-      'chips must wrap (grid 2-col or flex-wrap)',
+      /\.uac-compact__chips\s*\{[^}]*flex-wrap:\s*wrap/s.test(src),
+      'chips must use flex-wrap',
     );
     assert.ok(!/\.uac-compact__chips\s*\{[^}]*overflow-x:\s*auto/s.test(src), 'chips must not overflow-x auto');
   }
@@ -127,6 +126,15 @@ assert.ok(about.includes(cacheName));
 
 async function bootFeed(page) {
   await page.goto(baseUrl + '/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.evaluate(async () => {
+    try {
+      const regs = await navigator.serviceWorker?.getRegistrations?.();
+      await Promise.all((regs || []).map((r) => r.unregister()));
+      const keys = (await caches?.keys?.()) || [];
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    } catch (_) {}
+  });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(1600);
   await page.evaluate(async () => {
     document.querySelectorAll('.system-onboarding-overlay, .welcome-modal-overlay').forEach((el) => el.remove());
@@ -177,13 +185,22 @@ const apiHits = [];
     const rather = card?.querySelector('[data-uac-rather]');
     const chipRects = chips.map((b) => b.getBoundingClientRect());
     const ratherRect = rather?.getBoundingClientRect();
-    const rows = new Set(chipRects.map((r) => Math.round(r.top)));
+    // Cluster tops within 6px so subpixel / isMobile rounding does not invent a second row.
+    const tops = chipRects.map((r) => r.top).sort((a, b) => a - b);
+    let rows = 0;
+    let last = -Infinity;
+    for (const t of tops) {
+      if (t - last > 6) {
+        rows += 1;
+        last = t;
+      }
+    }
     const overflowX = chipsEl ? chipsEl.scrollWidth > chipsEl.clientWidth + 1 : false;
     const inView = (r) => r && r.left >= 0 && r.right <= 360 + 1 && r.width > 0 && r.height > 0;
     return {
       chipCount: chips.length,
       chipLabels: chips.map((b) => b.textContent.trim()),
-      rows: rows.size,
+      rows,
       overflowX,
       chipsFullyVisible: chipRects.every(inView),
       ratherVisible: !!rather && inView(ratherRect) && /Rather not say/i.test(rather.textContent || ''),
@@ -192,7 +209,11 @@ const apiHits = [];
   });
   console.log('14a wrap360', JSON.stringify(wrap));
   assert.ok(wrap.chipCount >= 2 && wrap.chipCount <= 4, `chip count ${wrap.chipCount}`);
-  assert.ok(wrap.rows >= 2 || wrap.chipCount <= 2, `expected wrap onto 2nd line, rows=${wrap.rows}`);
+  // Short labels (<6h … 8h+) fit one row at 360; longer labels may wrap.
+  assert.ok(wrap.rows >= 1, `chip rows=${wrap.rows}`);
+  if (wrap.chipLabels.every((l) => String(l).length <= 12)) {
+    assert.equal(wrap.rows, 1, `short chips should be one row at 360, rows=${wrap.rows}`);
+  }
   assert.equal(wrap.overflowX, false, 'horizontal scroll on chips');
   assert.ok(wrap.chipsFullyVisible, 'chips clipped at 360');
   assert.ok(wrap.ratherVisible, `Rather not say not fully visible: ${wrap.ratherText}`);
@@ -359,18 +380,17 @@ const apiHits = [];
     empty.chipBg === 'rgba(0, 0, 0, 0)' || /rgba?\(\s*0,\s*0,\s*0,\s*0\s*\)|transparent/i.test(empty.chipBg),
     `chip bg should be transparent outline, got ${empty.chipBg}`,
   );
-  assert.ok(empty.chipFontPx >= 14, `chip font ${empty.chipFontPx}`);
-  assert.ok(empty.chipMinH >= 44, `chip height ${empty.chipMinH}`);
+  assert.ok(empty.chipFontPx >= 12, `chip font ${empty.chipFontPx}`);
+  assert.ok(empty.chipMinH >= 36, `chip height ${empty.chipMinH}`);
   assert.ok(/underline/i.test(empty.ratherDecoration), 'Rather not say should be text link, not a box');
   assert.ok(empty.glyphBg && empty.glyphBg !== 'rgba(0, 0, 0, 0)', `glyph circle missing fill: ${empty.glyphBg}`);
   assert.ok(/50%|999px|16px/.test(empty.glyphRadius), `glyph not circular: ${empty.glyphRadius}`);
   assert.ok(/#?8[Bb]9[Cc][Ff][Ff]|139,\s*156,\s*255/i.test(empty.areaToken) || empty.areaToken === '#8B9CFF', `sleep area token ${empty.areaToken}`);
   assert.ok(empty.askFontPx >= 15, `ask size ${empty.askFontPx}`);
   assert.ok(/247,\s*243,\s*238|#f7f3ee/i.test(empty.askColor) || /f7f3ee/i.test(empty.askColor), `ask color ${empty.askColor}`);
-  // Wrap adds a second chip row — allow taller empty cards than the single-row 140–170 budget
-  // 14c: 2-col chip wrap + rather line needs ~255–270px (was ≤180 single-row / ≤260 follow-up)
-  assert.ok(empty.heights.every((h) => h >= 130 && h <= 280), `heights ${empty.heights}`);
-  assert.ok(empty.fully >= 2, `need ≥2 cards visible above tab, got ${empty.fully}`);
+  // 14c follow-up: compact flex-wrap chips — empty target ≤~200px
+  assert.ok(empty.heights.every((h) => h >= 120 && h <= 210), `heights ${empty.heights}`);
+  assert.ok(empty.fully >= 3, `need ≥3 cards visible above tab, got ${empty.fully}`);
   assert.ok(empty.addBgGold, `Add Focus should be filled gold, got bg=${empty.addBg}`);
   assert.ok(empty.addCentered, 'Add Focus should be centered at list end');
   assert.ok(empty.primaryIsGold, `Today primary not gold: ${empty.primaryBg}`);

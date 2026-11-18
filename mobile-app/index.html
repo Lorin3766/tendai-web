@@ -31,12 +31,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <meta name="obrium-build" content="obrium-shell-v11e-10" />
-  <link rel="stylesheet" href="styles/theme.css?b=obrium-shell-v11e-10" />
-  <link rel="stylesheet" href="styles/layout.css?b=obrium-shell-v11e-10" />
-  <link rel="stylesheet" href="styles/components.css?b=obrium-shell-v11e-10" />
-  <link rel="stylesheet" href="styles/premium-motion.css?b=obrium-shell-v11e-10" />
-  <link rel="stylesheet" href="styles/mobile-responsive.css?b=obrium-shell-v11e-10" />
+  <meta name="obrium-build" content="obrium-shell-v11e-12" />
+  <link rel="stylesheet" href="styles/theme.css?b=obrium-shell-v11e-12" />
+  <link rel="stylesheet" href="styles/layout.css?b=obrium-shell-v11e-12" />
+  <link rel="stylesheet" href="styles/components.css?b=obrium-shell-v11e-12" />
+  <link rel="stylesheet" href="styles/premium-motion.css?b=obrium-shell-v11e-12" />
+  <link rel="stylesheet" href="styles/mobile-responsive.css?b=obrium-shell-v11e-12" />
   <link rel="manifest" href="manifest.json" />
 </head>
 <body>
@@ -1058,7 +1058,7 @@
           <div class="settings-field">
             <div class="settings-field-label">
               <span>Build id</span>
-              <span class="settings-version" id="settingsBuildCache">obrium-shell-v11e-10</span>
+              <span class="settings-version" id="settingsBuildCache">obrium-shell-v11e-12</span>
             </div>
           </div>
           <div class="settings-field">
@@ -1212,13 +1212,13 @@
   </footer>
 
   <!-- Calendar must load BEFORE app-unified.js -->
-  <script type="module" src="js/calendar-init.js?b=obrium-shell-v11e-10"></script>
+  <script type="module" src="js/calendar-init.js?b=obrium-shell-v11e-12"></script>
   
   <!-- Bootstrap: centralized module initialization -->
-  <script type="module" src="js/bootstrap.js?b=obrium-shell-v11e-10"></script>
+  <script type="module" src="js/bootstrap.js?b=obrium-shell-v11e-12"></script>
   
   <!-- App unified: main app logic -->
-  <script type="module" src="app-unified.js?b=obrium-shell-v11e-10"></script>
+  <script type="module" src="app-unified.js?b=obrium-shell-v11e-12"></script>
 
   <!-- Global bulletproof asset loader for <img> tags -->
   <script>
@@ -1273,7 +1273,7 @@
   <!-- Service Worker: single registration, relative path (Base Directory Rule) -->
   <script>
     (function() {
-      var BUILD_ID = 'obrium-shell-v11e-10';
+      var BUILD_ID = 'obrium-shell-v11e-12';
       window.__OBRIUM_BUILD_ID = BUILD_ID;
 
       function showReloadBar() {

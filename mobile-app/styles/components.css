@@ -4222,8 +4222,8 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 }
 .universal-agent-card.uac-compact .heart-agent-module,
 .universal-agent-card.uac-compact .uac-compact__inner {
-  padding: 10px 12px !important;
-  gap: 6px !important;
+  padding: 8px 12px !important;
+  gap: 4px !important;
   min-height: 0 !important;
   background: transparent !important;
 }
@@ -4353,46 +4353,49 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   margin-top: 2px;
 }
 .uac-compact__ask-text {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   font-size: 15px;
-  line-height: 1.3;
+  line-height: 1.25;
   color: var(--fg, #f7f3ee);
   font-weight: 500;
 }
 .uac-compact__chips {
-  /* Wrap onto a second line — no horizontal scroll (14a follow-up) */
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  /* Compact flex-wrap: short chips stay on one line when they fit (14c follow-up) */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   overflow: visible;
 }
 .uac-chip {
   margin: 0;
-  padding: 6px 10px;
-  min-height: 44px;
-  width: 100%;
+  padding: 4px 8px;
+  min-height: 36px;
+  flex: 0 1 auto;
+  width: auto;
+  max-width: 100%;
   box-sizing: border-box;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 248, 235, 0.28);
   background: transparent !important;
   color: var(--fg, #f7f3ee);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 550;
   cursor: pointer;
   box-shadow: none !important;
+  white-space: nowrap;
 }
 .uac-chip:hover {
   border-color: color-mix(in srgb, var(--area-color, #f6c36a) 70%, #fff 10%);
 }
 .uac-compact__rather {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--fg-soft, #e6dfd6);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 13px;
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;

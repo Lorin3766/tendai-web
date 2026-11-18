@@ -130,7 +130,7 @@ function dispatchLocalMockUpdateAgentFromInput(userInput) {
   return dispatched;
 }
 
-const HONEST_OFFLINE_REPLY = "Obrium can't reach its server right now. Try again later.";
+export const HONEST_OFFLINE_REPLY = "Obrium can't reach its server right now. Try again later.";
 
 /** Dev-only simulator: localhost + explicit window.__OBRIUM_DEV_LOCAL_SIM === true. */
 function allowDevLocalSim() {
@@ -141,6 +141,19 @@ function allowDevLocalSim() {
   } catch (_) {
     return false;
   }
+}
+
+/**
+ * Probe for tests: given a hostname (and optional force flag), return the offline reply
+ * that would ship. Non-localhost never gets the simulator text.
+ */
+export function offlineReplyForHostname(hostname, { forceDevSimFlag = false } = {}) {
+  const host = String(hostname || '');
+  const isLoopback = /^(localhost|127\.0\.0\.1)$/i.test(host);
+  if (forceDevSimFlag && isLoopback) {
+    return '[TEST REPLY] (dev simulator would run on localhost only)';
+  }
+  return HONEST_OFFLINE_REPLY;
 }
 
 function localFallbackResponse(opts = {}) {

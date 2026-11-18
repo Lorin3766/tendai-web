@@ -478,7 +478,7 @@ export function createUniversalAgentCard(props) {
   const chipsHtml = (nextQ?.chips || [])
     .map(
       (chip, i) =>
-        `<button type="button" class="uac-chip" data-uac-chip data-chip-index="${i}" style="min-height:44px">${universalEsc(chip.label)}</button>`,
+        `<button type="button" class="uac-chip" data-uac-chip data-chip-index="${i}">${universalEsc(chip.label)}</button>`,
     )
     .join('');
   const questionBlock = nextQ
@@ -486,9 +486,9 @@ export function createUniversalAgentCard(props) {
         <p class="uac-compact__ask-text" data-uac-ask>${universalEsc(nextQ.ask)}</p>
         ${
           nextQ.settingsCity
-            ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="settings-city" data-uac-calibration-settings style="min-height:44px">Open Settings</button>`
+            ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="settings-city" data-uac-calibration-settings>Open Settings</button>`
             : nextQ.talkOnly
-              ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="confidence-talk" data-uac-calibration-talk style="min-height:44px">Answer in Talk</button>`
+              ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="confidence-talk" data-uac-calibration-talk>Answer in Talk</button>`
               : `<div class="uac-compact__chips" data-uac-chips>${chipsHtml}</div>`
         }
         ${
