@@ -767,13 +767,13 @@ export class TalkComponent {
     else content.appendChild(wrap);
   }
 
-  /** Same chip rule as Feed 14c-3 (choice/scale only) + Rather not say. */
+  /** Same chip rule as Feed 14c-3/14d-2 (choice/scale, all options) + Rather not say. */
   attachProfileQuestionControls(messageDiv, question) {
     if (!messageDiv || !question) return;
     const spec = getProfileFieldSpec(question.sectionKey, question.fieldKey);
     const chipEligible = spec?.type === 'choice' || spec?.type === 'scale';
     if (chipEligible) {
-      const taps = getClarifyTapOptions(question).slice(0, 4);
+      const taps = getClarifyTapOptions(question);
       this.appendClarifyTapOptions(messageDiv, question, taps);
     }
     const content = messageDiv.querySelector('.message-content');

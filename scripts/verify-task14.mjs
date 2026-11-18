@@ -209,10 +209,10 @@ const apiHits = [];
     };
   });
   console.log('14a wrap360', JSON.stringify(wrap));
-  assert.ok(wrap.chipCount >= 2 && wrap.chipCount <= 4, `chip count ${wrap.chipCount}`);
-  // Short labels (<6h … 8h+) fit one row at 360; longer labels may wrap.
+  assert.ok(wrap.chipCount >= 2, `chip count ${wrap.chipCount}`);
+  // Short labels (<6h … 8h+) fit one row at 360; longer labels / 5-scale may wrap.
   assert.ok(wrap.rows >= 1, `chip rows=${wrap.rows}`);
-  if (wrap.chipLabels.every((l) => String(l).length <= 12)) {
+  if (wrap.chipCount <= 4 && wrap.chipLabels.every((l) => String(l).length <= 12)) {
     assert.equal(wrap.rows, 1, `short chips should be one row at 360, rows=${wrap.rows}`);
   }
   assert.equal(wrap.overflowX, false, 'horizontal scroll on chips');
@@ -373,7 +373,7 @@ const apiHits = [];
   });
   console.log('14a empty', JSON.stringify(empty));
   assert.ok(/sleep/i.test(empty.ask), `ask ${empty.ask}`);
-  assert.ok(empty.chips.length >= 2 && empty.chips.length <= 4);
+  assert.ok(empty.chips.length >= 2, `chip count ${empty.chips.length}`);
   assert.equal(empty.rather, true);
   assert.equal(empty.hasNotAnswered, false);
   assert.equal(empty.hasSelfReported, false);

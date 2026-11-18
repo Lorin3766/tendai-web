@@ -512,9 +512,9 @@ export function getClarifyTapOptions(question) {
   const spec = getProfileFieldSpec(question?.sectionKey, question?.fieldKey);
   if (!spec) return [];
   if (spec.type === 'choice' || spec.type === 'multi') {
+    // 14d-2: render ALL choice options (Rather not say stays a separate control).
     return (spec.options || [])
       .filter((o) => o.value !== 'prefer-not-say')
-      .slice(0, 6)
       .map((o) => ({ label: o.label, value: o.value }));
   }
   if (spec.type === 'scale') {
@@ -755,6 +755,11 @@ function forbiddenScaleClarify(spec, fieldKey) {
 
 export function getProfileFieldSpec(sectionKey, fieldKey) {
   return FIELD_SPECS[`${sectionKey}.${fieldKey}`] || null;
+}
+
+/** All profile field specs (for tests / inventories). Keyed by `section.field`. */
+export function listProfileFieldSpecs() {
+  return { ...FIELD_SPECS };
 }
 
 const QUESTION_START = /^(why|what|whats|what's|how|when|where|who|can|could|would|will|do|does|did|is|are|am|should)\b/i;

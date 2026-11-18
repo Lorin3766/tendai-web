@@ -73,9 +73,10 @@ export function nextCardQuestion(profile, areaId) {
     getConversationalAsk(question) ||
     spec?.ask ||
     'Answer this in Talk';
-  // 14c-3: one-tap chips only for single-choice and scale. Multi needs Talk.
+  // 14c-3 / 14d-2: one-tap chips for single-choice and scale — render ALL options (no slice).
+  // Multi needs Talk.
   const chipEligible = spec?.type === 'choice' || spec?.type === 'scale';
-  let chips = chipEligible ? getClarifyTapOptions(question).slice(0, 4) : [];
+  let chips = chipEligible ? getClarifyTapOptions(question) : [];
   const talkOnly = !chipEligible || chips.length === 0;
   return {
     section: signal.section,
