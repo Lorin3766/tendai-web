@@ -19,6 +19,7 @@ export const LOCAL_STORAGE_INVENTORY = [
   'tendai_local_metrics_v1',
   'tendai_checkin_history_v1',
   'tendai_today_steps_v1',
+  'tendai_library_shown_v1',
   'tendai_contact_frequency_v1',
   'tendai_user_memory_v1',
   'tendai_user_agents',

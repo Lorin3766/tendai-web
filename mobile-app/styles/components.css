@@ -4442,6 +4442,43 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   line-height: 1.4;
   color: var(--fg-soft, #d6cfc4);
 }
+.uac-compact__library-block {
+  margin: 0 0 8px;
+}
+.uac-compact__library-source {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--fg-muted, #c9c2b8);
+}
+.uac-compact__library-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--area-labs, #2FD6C6);
+  text-decoration: underline;
+}
+.uac-compact__library-disclaimer {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--fg-muted, #c9c2b8);
+}
+.today-block__source {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--fg-muted, #c9c2b8);
+}
+.today-block__expand {
+  margin-top: 4px;
+}
+.today-block__disclaimer {
+  margin: 0;
+  font-size: 13px;
+  color: var(--fg-muted, #c9c2b8);
+}
 .uac-compact__actions {
   display: flex;
   flex-wrap: wrap;

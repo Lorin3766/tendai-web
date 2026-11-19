@@ -1,7 +1,7 @@
 // Obrium — deterministic Talk payoff (1 question = 1 payoff). No LLM. No judgments.
 // @owner: talk
 
-import { getEntries } from '../feed/content-library.js';
+import { getEntries, shortSourceLabel } from '../feed/content-library.js';
 import { FOCUS_AREA_SIGNALS, focusAreasForField, signalProgress } from '../profile/focus-area-signals.js';
 import { getFocusAreaById } from '../human-os/focus-areas.js';
 import { getObriumCheckinHistory } from '../metrics/checkin-history.js';
@@ -171,6 +171,8 @@ export function libraryLineForField(profile, areaId, fieldKey) {
     const text = entry && String(entry.text || '').trim();
     if (!text) return '';
     if (JUDGMENT_RE.test(text) || CAUSAL_RE.test(text)) return '';
+    const short = shortSourceLabel(entry.sourceLabel || '');
+    if (!short) return '';
     return text;
   } catch (_) {
     return '';

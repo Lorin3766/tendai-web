@@ -114,12 +114,31 @@ function renderRecorded(record, step, actions, ack, textEl, slotEl, rowEl) {
   }
 }
 
+function setTodaySource(step, sourceEl, expandEl) {
+  const short = String(step?.sourceShort || '').trim();
+  const isLibraryAction = step?.kind === 'action' && short;
+  if (sourceEl) {
+    if (isLibraryAction) {
+      sourceEl.hidden = false;
+      sourceEl.textContent = `Source: ${short}`;
+    } else {
+      sourceEl.hidden = true;
+      sourceEl.textContent = '';
+    }
+  }
+  if (expandEl) {
+    expandEl.hidden = !isLibraryAction;
+  }
+}
+
 export function renderTodayBlock() {
   const root = document.getElementById('todayBlock');
   const greetEl = document.getElementById('todayGreeting');
   const rowEl = document.getElementById('todayBlockRow');
   const slotEl = document.getElementById('todayBlockSlot');
   const textEl = document.getElementById('todayBlockText');
+  const sourceEl = document.getElementById('todayBlockSource');
+  const expandEl = document.getElementById('todayBlockExpand');
   const actions = document.getElementById('todayBlockActions');
   const ack = document.getElementById('todayBlockAck');
   if (!root || !textEl || !actions || !ack) return;
@@ -140,12 +159,14 @@ export function renderTodayBlock() {
     offeredCheckin = null;
     if (rowEl) rowEl.hidden = true;
     textEl.textContent = '';
+    setTodaySource(null, sourceEl, expandEl);
     return;
   }
   if (rowEl) rowEl.hidden = false;
 
   if (view.mode === 'recorded') {
     offeredCheckin = null;
+    setTodaySource(view.step, sourceEl, expandEl);
     renderRecorded(view.record, view.step, actions, ack, textEl, slotEl, rowEl);
     return;
   }
@@ -155,9 +176,11 @@ export function renderTodayBlock() {
   const slot = view.slot || (step.slot === 'evening' ? 'evening' : 'morning');
   if (slotEl) slotEl.textContent = '';
   textEl.textContent = lineLabel(view);
+  setTodaySource(step, sourceEl, expandEl);
 
   if (step.kind === 'checkin') {
     offeredCheckin = { date: dateKey, slot, actionId: step.id, area: step.area };
+    setTodaySource(null, sourceEl, expandEl);
     actions.appendChild(
       button('Log', 'btn btn-initialize today-block__btn today-block__btn--primary', () => {
         if (typeof window.openDayCheckin === 'function') window.openDayCheckin(step.focus);

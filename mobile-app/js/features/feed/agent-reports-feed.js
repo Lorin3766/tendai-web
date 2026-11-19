@@ -52,7 +52,7 @@ import {
   resolveFeedContentSlot,
   buildSignalConfidenceNudge,
 } from './feed-content-slot.js';
-import { getEntries } from './content-library.js';
+import { getEntries, shortSourceLabel } from './content-library.js';
 import { dataCollectionModePillLabel, isSensorNagText } from '../settings/data-collection-mode.js';
 import { feedCardKnowledgeLine } from '../talk/talk-payoff.js';
 import { nextCardQuestion, saveCardTapAnswer } from './card-tap-answer.js';
@@ -2377,21 +2377,51 @@ function syncFocusCardsFromProfile() {
       ask.remove();
     }
 
+    let libBlock = el.querySelector('[data-uac-library-expand], [data-uac-library-block]');
     let lib = el.querySelector('[data-uac-payoff-context], .uac-compact__library');
     if (fact?.text) {
-      if (!lib) {
+      const short = shortSourceLabel(fact.sourceLabel || '');
+      if (!libBlock) {
         const panel = el.querySelector('[data-uac-expand-panel]');
         if (panel) {
+          libBlock = document.createElement('div');
+          libBlock.className = 'uac-compact__library-block uac-compact__library-block--expand';
+          libBlock.dataset.uacLibraryExpand = '';
           lib = document.createElement('p');
           lib.className = 'uac-compact__library';
           lib.dataset.uacPayoffContext = '';
           lib.dataset.uacContentSlot = '';
-          panel.insertBefore(lib, panel.firstChild);
+          const src = document.createElement('p');
+          src.className = 'uac-compact__library-source';
+          src.dataset.uacLibrarySource = '';
+          libBlock.appendChild(lib);
+          libBlock.appendChild(src);
+          if (fact.sourceUrl) {
+            const a = document.createElement('a');
+            a.className = 'uac-compact__library-link';
+            a.dataset.uacLibraryLink = '';
+            a.href = fact.sourceUrl;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.textContent = 'View source';
+            libBlock.appendChild(a);
+          }
+          const disc = document.createElement('p');
+          disc.className = 'uac-compact__library-disclaimer';
+          disc.dataset.uacLibraryDisclaimer = '';
+          disc.textContent = 'General guidance, not medical advice.';
+          libBlock.appendChild(disc);
+          panel.insertBefore(libBlock, panel.firstChild);
         }
       }
       if (lib) lib.textContent = fact.text;
+      const srcEl = libBlock?.querySelector('[data-uac-library-source]');
+      if (srcEl && short) srcEl.textContent = `Source: ${short}`;
     } else if (lib && lib.classList.contains('uac-compact__library')) {
-      if (lib.hasAttribute('data-uac-payoff-context')) lib.remove();
+      if (lib.hasAttribute('data-uac-payoff-context')) {
+        if (libBlock) libBlock.remove();
+        else lib.remove();
+      }
     }
 
     const talkBtn = el.querySelector('.uac-compact__talk');

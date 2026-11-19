@@ -15,7 +15,7 @@ import {
   getFocusAreaByName,
   resolveFocusAreaTrackId,
 } from '../human-os/focus-areas.js';
-import { getEntries } from './content-library.js';
+import { getEntries, shortSourceLabel } from './content-library.js';
 
 /** @typedef {'personal_insight' | 'grounded_science'} FeedContentKind */
 
@@ -25,8 +25,12 @@ import { getEntries } from './content-library.js';
  *   title: string,
  *   body: string,
  *   sourceLabel: string,
+ *   shortSource?: string,
+ *   sourceUrl?: string,
+ *   entryId?: string,
  *   focusAreaId: string|null,
  *   maturityStage: 0|1|2|3,
+ *   noFact?: boolean,
  * }} FeedContentSlot
  */
 
@@ -251,6 +255,26 @@ export function buildGroundedScience(opts = {}) {
       title: '',
       body: '',
       sourceLabel: '',
+      shortSource: '',
+      sourceUrl: '',
+      entryId: '',
+      focusAreaId: fa?.id || focusKey || null,
+      maturityStage,
+      noFact: true,
+    };
+  }
+  const label = String(entry.sourceLabel || '').trim();
+  const short = shortSourceLabel(label);
+  // Never show a fact without a derivable short source label.
+  if (!short) {
+    return {
+      kind: 'grounded_science',
+      title: '',
+      body: '',
+      sourceLabel: '',
+      shortSource: '',
+      sourceUrl: '',
+      entryId: '',
       focusAreaId: fa?.id || focusKey || null,
       maturityStage,
       noFact: true,
@@ -260,7 +284,10 @@ export function buildGroundedScience(opts = {}) {
     kind: 'grounded_science',
     title: 'Grounded Science',
     body: String(entry.text),
-    sourceLabel: String(entry.sourceLabel || ''),
+    sourceLabel: label,
+    shortSource: short,
+    sourceUrl: String(entry.sourceUrl || '').trim(),
+    entryId: String(entry.id || ''),
     focusAreaId: fa?.id || focusKey || null,
     maturityStage,
     noFact: false,

@@ -427,7 +427,9 @@ export function createUniversalAgentCard(props) {
       ? slot.kind
       : 'grounded_science';
   const slotBody = String(slot?.body || '').trim();
-  const noFact = slot?.noFact === true || !slotBody;
+  const slotShortSource = String(slot?.shortSource || '').trim();
+  const slotSourceUrl = String(slot?.sourceUrl || '').trim();
+  const noFact = slot?.noFact === true || !slotBody || (slotKind === 'grounded_science' && !slotShortSource);
   const calibrationText = String(props.calibrationText || '').trim();
   const calibrationSettings = props.calibrationAction === 'settings';
   const knowledgeLine = String(props.knowledgeLine || '').trim();
@@ -505,6 +507,29 @@ export function createUniversalAgentCard(props) {
     : `<span class="uac-compact__value uac-compact__value--empty" data-uac-value hidden></span>
        <span class="uac-compact__meta" data-uac-meta hidden></span>`;
 
+  const libraryBody = !noFact ? (payoffContext || slotBody) : '';
+  const libraryShort = slotShortSource;
+  const libraryCollapsed =
+    libraryBody && libraryShort && !nextQ
+      ? `<div class="uac-compact__library-block" data-uac-library-block>
+          <p class="uac-compact__library" data-uac-content-slot>${universalEsc(libraryBody)}</p>
+          <p class="uac-compact__library-source" data-uac-library-source>Source: ${universalEsc(libraryShort)}</p>
+        </div>`
+      : '';
+  const libraryExpanded =
+    libraryBody && libraryShort
+      ? `<div class="uac-compact__library-block uac-compact__library-block--expand" data-uac-library-expand>
+          <p class="uac-compact__library" data-uac-payoff-context data-uac-content-slot>${universalEsc(libraryBody)}</p>
+          <p class="uac-compact__library-source" data-uac-library-source>Source: ${universalEsc(libraryShort)}</p>
+          ${
+            slotSourceUrl
+              ? `<a class="uac-compact__library-link" data-uac-library-link href="${universalEsc(slotSourceUrl)}" target="_blank" rel="noopener">View source</a>`
+              : ''
+          }
+          <p class="uac-compact__library-disclaimer" data-uac-library-disclaimer>General guidance, not medical advice.</p>
+        </div>`
+      : '';
+
   el.innerHTML = `
     <div class="agent-report-card-inner heart-agent-module uac-compact__inner">
       <div class="uac-compact__row uac-compact__row--head">
@@ -531,6 +556,7 @@ export function createUniversalAgentCard(props) {
         >${universalEsc(talkLabel)}</button>
       </div>
       <div class="uac-compact__payoff-inline" data-uac-payoff-inline hidden></div>
+      ${libraryCollapsed}
       ${questionBlock}
       <div
         class="uac-compact__expand heart-agent-module__details"
@@ -538,13 +564,7 @@ export function createUniversalAgentCard(props) {
         hidden
         data-uac-expand-panel
       >
-        ${
-          !noFact && payoffContext
-            ? `<p class="uac-compact__library" data-uac-payoff-context data-uac-content-slot>${universalEsc(payoffContext)}</p>`
-            : !noFact && slotBody
-              ? `<p class="uac-compact__library" data-uac-content-slot>${universalEsc(slotBody)}</p>`
-              : ''
-        }
+        ${libraryExpanded}
         <div class="uac-compact__actions heart-agent-module__actions">
           <button type="button" class="heart-agent-module__btn heart-agent-module__btn--switch" data-uac-action="discuss">Discuss</button>
           <button type="button" class="heart-agent-module__btn heart-agent-module__btn--switch" data-uac-action="remind">Remind</button>

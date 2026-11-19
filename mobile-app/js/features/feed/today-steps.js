@@ -2,7 +2,7 @@
 // @owner: feed
 // @role: logic
 
-import { actionEntries, isContentPreviewEnabled } from './content-library.js';
+import { actionEntries, factForAction, isContentPreviewEnabled, shortSourceLabel } from './content-library.js';
 import { localDateKey, slotForTime } from '../../core/obrium-clock.js';
 import { persistCompletedStep } from '../metrics/local-metrics.js';
 
@@ -74,10 +74,24 @@ function eligibleActions(areas, preview, entries) {
   });
 }
 
+/** Slot match: exact time-of-day or `any`. */
 function preferSlot(actions, slot) {
-  const exact = actions.filter((entry) => entry.slot === slot);
-  if (exact.length) return exact;
-  return actions.filter((entry) => entry.slot === 'any');
+  return actions.filter((entry) => entry.slot === slot || entry.slot === 'any');
+}
+
+function idsUsedOnDate(history, dateKey) {
+  return new Set(
+    (Array.isArray(history) ? history : [])
+      .filter((row) => row && row.date === dateKey && row.actionId)
+      .map((row) => String(row.actionId)),
+  );
+}
+
+function previousDayActionId(history, dateKey) {
+  const prior = (Array.isArray(history) ? history : [])
+    .filter((row) => row && row.date && row.date < dateKey && row.actionId)
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  return prior[0] ? String(prior[0].actionId) : '';
 }
 
 /**
@@ -101,12 +115,18 @@ export function selectTodayStep(opts) {
   let candidates = preferSlot(eligibleActions(opts.areas || [], !!opts.preview, opts.entries), slot);
   if (!candidates.length) return null;
 
+  // Not twice in one day; never the same action two calendar days in a row.
+  const usedToday = idsUsedOnDate(opts.history, dateKey);
+  const yesterdayId = previousDayActionId(opts.history, dateKey);
+  candidates = candidates.filter((entry) => !usedToday.has(entry.id) && entry.id !== yesterdayId);
+  if (!candidates.length) return null;
+
   const last = history[history.length - 1];
   const lastTwo = history.slice(-2);
   if (lastTwo.length === 2 && lastTwo.every((row) => row.status === 'skipped')) {
     const skippedAreas = new Set(lastTwo.map((row) => row.area));
     const lowered = candidates.filter((entry) => entry.effort === 'low' && !skippedAreas.has(entry.focusArea));
-    candidates = lowered;
+    candidates = lowered.length ? lowered : candidates;
   } else if (last && last.status === 'done') {
     const same = candidates.filter((entry) => entry.focusArea === last.area && entry.id !== last.actionId);
     const other = candidates.filter((entry) => entry.focusArea !== last.area);
@@ -120,6 +140,8 @@ export function selectTodayStep(opts) {
   const ordered = [...candidates].sort((a, b) => String(a.id).localeCompare(String(b.id)));
   const areasKey = [...(opts.areas || [])].sort().join(',');
   const picked = ordered[hashString(`${dateKey}|${slot}|${areasKey}`) % ordered.length];
+  const base = factForAction(picked, opts.entries);
+  const sourceShort = shortSourceLabel(base?.sourceLabel || picked.sourceLabel || '');
   return {
     kind: 'action',
     id: picked.id,
@@ -127,6 +149,8 @@ export function selectTodayStep(opts) {
     text: picked.text,
     slot: picked.slot,
     effort: picked.effort,
+    sourceShort,
+    basedOn: picked.basedOn || '',
   };
 }
 
@@ -149,6 +173,9 @@ export function resolveTodayDisplay(opts) {
   const existing = (opts.history || []).find((row) => row && row.date === dateKey && row.slot === active);
   if (existing) {
     const text = stepTextForRecord(existing, opts.entries);
+    const found = (opts.entries || actionEntries()).find((e) => e && e.id === existing.actionId);
+    const base = factForAction(found, opts.entries);
+    const sourceShort = shortSourceLabel(base?.sourceLabel || found?.sourceLabel || '');
     return {
       mode: 'recorded',
       record: existing,
@@ -159,6 +186,8 @@ export function resolveTodayDisplay(opts) {
         text,
         slot: existing.slot,
         effort: existing.effort || 'low',
+        sourceShort,
+        basedOn: found?.basedOn || '',
       },
     };
   }

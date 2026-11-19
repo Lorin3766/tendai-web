@@ -7,6 +7,9 @@ import library from './content-library.json' with { type: 'json' };
 const AREAS = ['sleep', 'move', 'nutrition', 'labs', 'stress', 'longevity', 'skin', 'cardio', 'mental'];
 const EVIDENCE = new Set(['consensus', 'guideline', 'observational', 'emerging']);
 
+/** Rotation cursor for reviewed facts. Cleared by Delete all local data. */
+export const LIBRARY_SHOWN_KEY = 'tendai_library_shown_v1';
+
 /**
  * Entry ids allowed to contain plain numbers in text (hours, minutes, guideline counts).
  * Do not add dosing / medication amounts here. Task 15a-1.
@@ -130,6 +133,54 @@ export function shortSourceLabel(sourceLabel) {
   return year ? `${org}, ${year}` : org;
 }
 
+function readShownState() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LIBRARY_SHOWN_KEY) || '{}');
+    return raw && typeof raw === 'object' ? raw : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function writeShownState(state) {
+  try {
+    localStorage.setItem(LIBRARY_SHOWN_KEY, JSON.stringify(state || {}));
+  } catch (_) {
+    /* ignore quota */
+  }
+}
+
+/**
+ * Pick the next reviewed fact for an area: first not-yet-shown (id order), then rotate.
+ * Stable for the same local date. No randomness.
+ * @param {object[]} ordered
+ * @param {string} focusArea
+ * @param {Date|undefined} now
+ */
+function pickRotating(ordered, focusArea, now) {
+  const dateKey = localDateKey(now);
+  const state = readShownState();
+  const row = state[focusArea] && typeof state[focusArea] === 'object' ? state[focusArea] : {};
+  const seen = Array.isArray(row.seen) ? row.seen.map(String) : [];
+  if (row.date === dateKey && row.id) {
+    const sticky = ordered.find((e) => e.id === row.id);
+    if (sticky) return sticky;
+  }
+  let pool = ordered.filter((e) => !seen.includes(String(e.id)));
+  if (!pool.length) {
+    pool = ordered;
+    seen.length = 0;
+  }
+  const picked = pool[0];
+  state[focusArea] = {
+    date: dateKey,
+    id: picked.id,
+    seen: [...seen, picked.id],
+  };
+  writeShownState(state);
+  return picked;
+}
+
 /**
  * One library fact for a Focus Area, or null.
  * Strict mode (default) never returns unreviewed entries.
@@ -152,18 +203,23 @@ export function getEntries(query = {}, env) {
   pool = pool.filter((e) => applies(e, query.profile));
   if (!pool.length) return null;
 
-  // Deterministic: first not-yet-shown (by id order), then rotate. No randomness.
   const ordered = [...pool].sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  const shown = Array.isArray(query.shownIds) ? query.shownIds.map(String) : null;
-  if (shown) {
+  if (Array.isArray(query.shownIds)) {
+    const shown = query.shownIds.map(String);
     const unseen = ordered.filter((e) => !shown.includes(String(e.id)));
-    const cycle = unseen.length ? unseen : ordered;
-    return cycle[0];
+    return (unseen.length ? unseen : ordered)[0];
   }
-  // Stable within a local day when caller does not pass shownIds.
+  if (typeof localStorage !== 'undefined') {
+    return pickRotating(ordered, focusArea, query.now);
+  }
   const key = `${profileIdentity(query.profile)}|${localDateKey(query.now)}|${focusArea}`;
-  const idx = hashString(key) % ordered.length;
-  return ordered[idx];
+  return ordered[hashString(key) % ordered.length];
+}
+
+/** Resolve basedOn fact for an action entry (for Today source line). */
+export function factForAction(action, entries = getLibraryEntries()) {
+  if (!action || action.kind !== 'action' || !action.basedOn) return null;
+  return entries.find((e) => e && e.id === action.basedOn) || null;
 }
 
 const ACTION_SLOTS = new Set(['morning', 'evening', 'any']);
