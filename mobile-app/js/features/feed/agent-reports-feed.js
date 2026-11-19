@@ -50,6 +50,7 @@ import {
 import { FeedState } from './feed-agent-state.js';
 import {
   resolveFeedContentSlot,
+  buildGroundedScience,
   buildSignalConfidenceNudge,
 } from './feed-content-slot.js';
 import { getEntries, shortSourceLabel } from './content-library.js';
@@ -1046,6 +1047,9 @@ function buildUniversalCardProps(p) {
       agentPaused,
       insightText: contentSlot.body,
       contentSlot,
+      librarySlot: focusAreaId
+        ? buildGroundedScience({ focusAreaId, trackId, displayName: agent, maturityStage })
+        : null,
       confidenceNudge,
       systemLogText: `SYS LOG: stack online; channel ${signalActive ? 'nominal' : 'probing'}; kernel ${agentPaused ? 'paused' : 'run'}.`,
       sensorData: sd,
@@ -1120,6 +1124,9 @@ function buildUniversalCardProps(p) {
     agentPaused,
     insightText: contentSlot.body,
     contentSlot,
+    librarySlot: focusAreaId
+      ? buildGroundedScience({ focusAreaId, trackId, displayName: agent, maturityStage })
+      : null,
     confidenceNudge,
     systemLogText: `SYS LOG: runtime synchronized; observer ${signal.active ? 'locked' : 'scanning'}; module ${agentPaused ? 'halt' : 'live'}.`,
     sensorData: sd,
@@ -1841,6 +1848,12 @@ function instantiateDynamicAgentCard(agentId, detail) {
     agentPaused: false,
     insightText: contentSlot.body,
     contentSlot,
+    librarySlot: buildGroundedScience({
+      focusAreaId: detail.trackingLifeAreaId || detail.focusAreaId || null,
+      trackId,
+      displayName: profile.agentName,
+      maturityStage,
+    }),
     confidenceNudge,
     systemLogText: '',
     sensorData,

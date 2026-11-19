@@ -422,14 +422,19 @@ export function createUniversalAgentCard(props) {
   );
 
   const slot = props.contentSlot && typeof props.contentSlot === 'object' ? props.contentSlot : null;
+  const librarySlot =
+    props.librarySlot && typeof props.librarySlot === 'object' ? props.librarySlot : slot;
   const slotKind =
     slot?.kind === 'personal_insight' || slot?.kind === 'grounded_science'
       ? slot.kind
       : 'grounded_science';
-  const slotBody = String(slot?.body || '').trim();
-  const slotShortSource = String(slot?.shortSource || '').trim();
-  const slotSourceUrl = String(slot?.sourceUrl || '').trim();
-  const noFact = slot?.noFact === true || !slotBody || (slotKind === 'grounded_science' && !slotShortSource);
+  const slotBody = String(librarySlot?.body || slot?.body || '').trim();
+  const slotShortSource = String(librarySlot?.shortSource || '').trim();
+  const slotSourceUrl = String(librarySlot?.sourceUrl || '').trim();
+  const noFact =
+    librarySlot?.noFact === true ||
+    !slotBody ||
+    !slotShortSource;
   const calibrationText = String(props.calibrationText || '').trim();
   const calibrationSettings = props.calibrationAction === 'settings';
   const knowledgeLine = String(props.knowledgeLine || '').trim();
