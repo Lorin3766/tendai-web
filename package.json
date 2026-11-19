@@ -9,6 +9,8 @@
     "dev": "concurrently \"cd tendai-backend && node server.js\" \"npm run serve\"",
     "dev:brain": "cd tendai-backend && node server.js",
     "dev:body": "npm run serve",
+    "test:quick": "node scripts/test-quick.mjs",
+    "test:all": "node scripts/verify-all.mjs",
     "weather-placeholders": "node mobile-app/scripts/generate-weather-placeholders.js",
     "cap:init": "cap init",
     "cap:add:ios": "cap add ios",
