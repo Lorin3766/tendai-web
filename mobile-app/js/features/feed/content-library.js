@@ -7,6 +7,18 @@ import library from './content-library.json' with { type: 'json' };
 const AREAS = ['sleep', 'move', 'nutrition', 'labs', 'stress', 'longevity', 'skin', 'cardio', 'mental'];
 const EVIDENCE = new Set(['consensus', 'guideline', 'observational', 'emerging']);
 
+/**
+ * Entry ids allowed to contain plain numbers in text (hours, minutes, guideline counts).
+ * Do not add dosing / medication amounts here. Task 15a-1.
+ */
+export const NUMBER_TEXT_ALLOWLIST = new Set([
+  'sleep-duration-7h',
+  'sleep-screens-evening',
+  'move-weekly-aerobic',
+  'move-strength-2days',
+  'act-sleep-screens',
+]);
+
 /** @returns {object[]} */
 export function getLibraryEntries() {
   return Array.isArray(library.entries) ? library.entries : [];
@@ -93,9 +105,35 @@ function applies(entry, profile) {
 }
 
 /**
+ * Short on-screen source: organization + year only. Empty if none can be derived.
+ * @param {string} sourceLabel
+ */
+export function shortSourceLabel(sourceLabel) {
+  const raw = String(sourceLabel || '').trim();
+  if (!raw) return '';
+  const yearMatch = raw.match(/\b(19|20)\d{2}\b/);
+  const year = yearMatch ? yearMatch[0] : '';
+
+  let org = '';
+  if (/AASM and Sleep Research Society/i.test(raw)) org = 'AASM and Sleep Research Society';
+  else if (/AASM Sleep Education/i.test(raw) || /\bAASM\b/.test(raw)) org = 'AASM Sleep Education';
+  else if (/\bNIGMS\b/i.test(raw)) org = 'NIGMS';
+  else if (/\bNCCIH\b/i.test(raw)) org = 'NCCIH';
+  else if (/\bCDC\b/.test(raw)) org = 'CDC';
+  else if (/\bWHO\b/.test(raw)) org = 'WHO';
+  else if (/Watson et al/i.test(raw)) org = 'AASM and Sleep Research Society';
+  else {
+    const beforeComma = raw.split(',')[0].trim();
+    org = beforeComma.replace(/\s+\d{4}.*$/, '').trim() || beforeComma;
+  }
+  if (!org) return '';
+  return year ? `${org}, ${year}` : org;
+}
+
+/**
  * One library fact for a Focus Area, or null.
  * Strict mode (default) never returns unreviewed entries.
- * @param {{ focusArea?: string, field?: string|null, profile?: object, now?: Date }} query
+ * @param {{ focusArea?: string, field?: string|null, profile?: object, now?: Date, shownIds?: string[] }} query
  * @param {{ hostname?: string, search?: string }} [env]
  * @returns {object|null}
  */
@@ -105,6 +143,7 @@ export function getEntries(query = {}, env) {
   if (!AREAS.includes(focusArea)) return null;
   let pool = getLibraryEntries().filter((e) => e && e.focusArea === focusArea && e.kind !== 'action');
   if (!preview) pool = pool.filter((e) => e.reviewed === true);
+  pool = pool.filter((e) => String(e.sourceLabel || '').trim() !== '');
   if (query.field) {
     const field = String(query.field);
     const specific = pool.filter((e) => e.field === field);
@@ -112,9 +151,19 @@ export function getEntries(query = {}, env) {
   }
   pool = pool.filter((e) => applies(e, query.profile));
   if (!pool.length) return null;
+
+  // Deterministic: first not-yet-shown (by id order), then rotate. No randomness.
+  const ordered = [...pool].sort((a, b) => String(a.id).localeCompare(String(b.id)));
+  const shown = Array.isArray(query.shownIds) ? query.shownIds.map(String) : null;
+  if (shown) {
+    const unseen = ordered.filter((e) => !shown.includes(String(e.id)));
+    const cycle = unseen.length ? unseen : ordered;
+    return cycle[0];
+  }
+  // Stable within a local day when caller does not pass shownIds.
   const key = `${profileIdentity(query.profile)}|${localDateKey(query.now)}|${focusArea}`;
-  const idx = hashString(key) % pool.length;
-  return pool[idx];
+  const idx = hashString(key) % ordered.length;
+  return ordered[idx];
 }
 
 const ACTION_SLOTS = new Set(['morning', 'evening', 'any']);
@@ -163,18 +212,37 @@ export function validateLibrary(entries = getLibraryEntries()) {
     if (!EVIDENCE.has(e.evidenceLevel)) errors.push(`${e.id} bad evidenceLevel`);
     if (typeof e.reviewed !== 'boolean') errors.push(`${e.id} reviewed not boolean`);
     if (typeof e.sourceVerified !== 'boolean') errors.push(`${e.id} sourceVerified not boolean`);
+
+    // Digits in text: forbid on actions unless allowlisted (15a-1). Facts with
+    // guideline numbers are allowlisted when they appear in NUMBER_TEXT_ALLOWLIST;
+    // non-allowlisted facts are not digit-checked (legacy pack).
+    if (kind === 'action' && /\d/.test(String(e.text || '')) && !NUMBER_TEXT_ALLOWLIST.has(e.id)) {
+      errors.push(`${e.id} action text has a number`);
+    }
+
+    if (e.reviewed === true) {
+      if (e.sourceVerified !== true) errors.push(`${e.id} reviewed requires sourceVerified`);
+      if (!String(e.sourceUrl || '').trim()) errors.push(`${e.id} reviewed requires sourceUrl`);
+      if (!String(e.sourceQuote || '').trim()) errors.push(`${e.id} reviewed requires sourceQuote`);
+    }
+
     if (kind === 'action') {
       if (!ACTION_SLOTS.has(e.slot)) errors.push(`${e.id} bad slot`);
       if (!ACTION_EFFORT.has(e.effort)) errors.push(`${e.id} bad effort`);
-      if (/\d/.test(String(e.text || ''))) errors.push(`${e.id} action text has a number`);
       for (const re of ACTION_FORBIDDEN) {
         if (re.test(String(e.text || ''))) errors.push(`${e.id} action forbidden ${re}`);
       }
     }
   }
+  for (const e of entries) {
+    if (e && e.kind === 'action' && e.basedOn != null && e.basedOn !== '' && !ids.has(e.basedOn)) {
+      errors.push(`${e.id} basedOn missing ${e.basedOn}`);
+    }
+  }
+  // 15a adds a verified pack on top of the original 3–5 / 2–3 caps; keep minima only.
   for (const area of AREAS) {
-    if (factsByArea[area] < 3 || factsByArea[area] > 5) errors.push(`${area} has ${factsByArea[area]} facts`);
-    if (actionsByArea[area] < 2 || actionsByArea[area] > 3) errors.push(`${area} has ${actionsByArea[area]} actions`);
+    if (factsByArea[area] < 3) errors.push(`${area} has ${factsByArea[area]} facts`);
+    if (actionsByArea[area] < 2) errors.push(`${area} has ${actionsByArea[area]} actions`);
   }
   return errors;
 }

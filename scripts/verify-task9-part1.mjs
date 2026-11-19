@@ -37,23 +37,62 @@ console.log(`[9b] ${entries.length} entries, schema errors: ${schemaErrors.lengt
 
 const texts = entries.map((e) => e.text.trim());
 if (new Set(texts).size !== texts.length) fail('duplicate entry text');
+/** Task 15a verified pack may ship reviewed + sourceVerified; legacy 62 stay false. */
+const VERIFIED_15A = new Set([
+  'sleep-duration-7h',
+  'sleep-consistent-wake',
+  'sleep-caffeine-late',
+  'sleep-screens-evening',
+  'sleep-light-cues',
+  'sleep-bedroom',
+  'sleep-evening-eating',
+  'move-weekly-aerobic',
+  'move-strength-2days',
+  'move-some-better',
+  'move-limit-sitting',
+  'move-feel-sleep',
+  'stress-breathe-stretch',
+  'stress-talk',
+  'stress-news-breaks',
+  'stress-body-basics',
+  'stress-relax-regular',
+  'act-sleep-same-wake',
+  'act-sleep-screens',
+  'act-sleep-caffeine',
+  'act-sleep-bedroom',
+  'act-stress-breathe',
+  'act-stress-talk',
+  'act-stress-news-break',
+  'act-move-walk',
+  'act-move-strength',
+  'act-move-sit-less',
+]);
 for (const e of entries) {
   for (const re of FORBIDDEN) {
     if (re.test(e.text)) fail(`${e.id} forbidden: ${re}`);
   }
-  if (e.reviewed !== false || e.sourceVerified !== false) fail(`${e.id} shipped reviewed or source-verified`);
+  if (VERIFIED_15A.has(e.id)) {
+    if (e.sourceVerified !== true) fail(`${e.id} 15a pack must be sourceVerified`);
+  } else if (e.reviewed !== false || e.sourceVerified !== false) {
+    fail(`${e.id} shipped reviewed or source-verified`);
+  }
 }
 
 const profile = { body: { name: 'Ada', birthYear: 1983 } };
 const strict = getEntries({ focusArea: 'sleep', profile }, { hostname: '127.0.0.1', search: '' });
-console.log('[9b] strict mode:', strict);
-if (strict !== null) fail('strict mode returned an unreviewed entry');
+console.log('[9b] strict mode:', strict?.id, strict?.reviewed);
+if (!strict || strict.reviewed !== true) fail('strict mode should return a reviewed 15a sleep fact');
+if (!VERIFIED_15A.has(strict.id)) fail('strict mode returned a non-15a entry');
 
 const prodPreview = getEntries(
   { focusArea: 'sleep', profile },
   { hostname: 'obrium.app', search: '?contentPreview=1' },
 );
-if (prodPreview !== null) fail('preview enabled off localhost');
+// Off-loopback: contentPreview ignored; reviewed entries still show in strict mode.
+if (!prodPreview || prodPreview.reviewed !== true) fail('prod strict should still show reviewed library');
+if (isContentPreviewEnabled({ hostname: 'obrium.app', search: '?contentPreview=1' }) !== false) {
+  fail('preview enabled off localhost');
+}
 if (isContentPreviewEnabled({ hostname: 'localhost', search: '?contentPreview=1' }) !== true) {
   fail('localhost preview guard');
 }

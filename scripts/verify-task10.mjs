@@ -132,7 +132,7 @@ const checkin = selectTodayStep({
   preview: false,
 });
 if (checkin?.id !== 'checkin-sleep') fail(`strict morning without sleep was ${checkin?.id}`);
-const strictHidden = selectTodayStep({
+const strictAction = selectTodayStep({
   areas,
   slot: 'morning',
   dateKey: '2026-10-26',
@@ -140,7 +140,11 @@ const strictHidden = selectTodayStep({
   day: logged,
   preview: false,
 });
-if (strictHidden) fail('strict mode offered an unreviewed action');
+// Task 15a: reviewed library actions are eligible in strict mode.
+if (!strictAction || strictAction.kind !== 'action') fail('strict mode should offer a reviewed library action');
+if (strictAction.id === 'act-move-sit-less' || strictAction.id === 'move-limit-sitting') {
+  fail('strict mode offered an unreviewed 15a action');
+}
 const eveningCheckin = selectTodayStep({
   areas,
   slot: 'evening',
