@@ -18,8 +18,11 @@ mobile-app/_reports/*.md
 mobile-app/_archive/**/*.md
 mobile-app/_archive/**/*.js
 
-# Audit folder (keep structure but ignore content - these are documentation)
-# Note: _audit/ contains important maps and rules, so we keep it tracked
+
+# Audit artifacts: keep baselines tracked; ignore the rest (screenshots, maps, logs)
+mobile-app/_audit/**
+!mobile-app/_audit/baselines/
+!mobile-app/_audit/baselines/**
 
 # Secrets — never commit
 .env
