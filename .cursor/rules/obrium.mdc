@@ -1,0 +1,13 @@
+---
+description: Obrium standing rules — always read AGENTS.md
+alwaysApply: true
+---
+
+# Obrium
+
+Before any task work, read and follow [AGENTS.md](mdc:AGENTS.md).
+
+Start each new task in a **new chat** with: `Read AGENTS.md and the task file`.
+Do not continue a finished task’s thread.
+
+Serve/tests: `npm run serve` (port 5501), `npm run test:quick` after edits, `npm run test:all` once before push.
