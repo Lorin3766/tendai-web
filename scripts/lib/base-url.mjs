@@ -2,7 +2,8 @@
  * Base URL of the static PWA server for test/screenshot scripts.
  * OBRIUM_URL wins; legacy SERRON_URL / TENDAI_URL still work but print a one-time warning.
  */
-const DEFAULT_BASE_URL = 'http://127.0.0.1:5500';
+/** Default matches `npm run serve` (mobile-app as web root on 5501). */
+const DEFAULT_BASE_URL = 'http://127.0.0.1:5501';
 
 function resolveBaseUrl() {
   if (process.env.OBRIUM_URL) return process.env.OBRIUM_URL;

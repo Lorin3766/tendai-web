@@ -2,7 +2,7 @@
  * Task 14c-7 — run every verify-*.mjs and print one PASS/FAIL/SKIPPED table.
  * Exit non-zero if any script FAILs.
  *
- * Usage: OBRIUM_URL=http://127.0.0.1:5500 node scripts/verify-all.mjs
+ * Usage: npm run test:all   (default OBRIUM_URL http://127.0.0.1:5501 via npm run serve)
  */
 import fs from 'fs';
 import path from 'path';
