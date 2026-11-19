@@ -4,7 +4,7 @@
 
 - Entry point (only): `mobile-app/app-entry.js` — imports `app-unified.js`. Run mode is logged as `[RUN MODE] ...`.
 - FEED (UI/logic): `mobile-app/app-unified.js` (unified source of truth). Do not edit `js/features/feed/feed-starter.js` for DEV; it is not loaded in this run mode.
-- Styles shared: `mobile-app/styles/components.css`; Nebula theme: `mobile-app/styles/feed-nebula-cards.css`.
+- Styles shared: `mobile-app/styles/components.css` (Nebula/glow CSS archived under `archive/styles/`).
 - Assets: `mobile-app/assets/feed-nebula/` (PNG backgrounds), `mobile-app/favicon.ico`.
 - Env flags: `mobile-app/js/env-flags.js` (IS_DEV, RUN_MODE). Avoid defining env flags elsewhere.
 - TALK core: `mobile-app/components/talk.js`.
