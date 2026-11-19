@@ -4558,14 +4558,18 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   outline: 2px solid rgba(246, 195, 106, 0.55);
   outline-offset: 2px;
 }
-/* Desktop: no tab bar — pin strip to bottom of the viewport */
+/* Desktop: no tab bar — pin strip to the bottom of the center column.
+   #centerContent uses contain:layout, so position:fixed is relative to that
+   column — left:0 / width:100% fills the free space between the sidebars. */
 @media (min-width: 900px) {
   .agent-feed-add-strip {
     bottom: 0;
-    left: 50%;
-    right: auto;
-    width: min(560px, 100%);
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    transform: none;
   }
 }
 
