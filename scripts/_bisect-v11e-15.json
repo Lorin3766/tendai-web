@@ -1,0 +1,159 @@
+{
+  "label": "v11e-15",
+  "root": "C:\\Users\\anton\\Downloads\\tendai-pwa-wt-v15",
+  "startedAt": "2026-11-24T20:00:07.546Z",
+  "runs": [
+    {
+      "script": "verify-talk-part3.mjs",
+      "run1": {
+        "script": "verify-talk-part3.mjs",
+        "code": 0,
+        "ms": 14407,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "DIM talk-part3-after-gender-390.png => 390x844\nSNAP after-age: {\"path\":null,\"text\":\"Saved: 43. We've covered a few things. Want to keep going now, or pick this up another time?\",\"tendai\":false,\"sex\":\"male\",\"gender\":\"man\",\"age\":43,\"bodyStatus\":\"In progress\",\"integrity\":\"System Integrity · 17%\"}\nDIM talk-part3-after-age-390.png => 390x844\nDIM talk-part3-profile-sidebar-390.png => 390x844\nSIDEBAR { body: 'In progress', integrity: 'System Integrity · 17%' }\nMODAL { sex: 'male', gender: 'man', age: '43', title: 'Your body' }\nDIM talk-part3-body-modal-390.png => 390x844\nPART3_CHECKPOINT_OK"
+      },
+      "run2": {
+        "script": "verify-talk-part3.mjs",
+        "code": 0,
+        "ms": 10796,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "DIM talk-part3-after-gender-390.png => 390x844\nSNAP after-age: {\"path\":null,\"text\":\"Saved: 43. We've covered a few things. Want to keep going now, or pick this up another time?\",\"tendai\":false,\"sex\":\"male\",\"gender\":\"man\",\"age\":43,\"bodyStatus\":\"In progress\",\"integrity\":\"System Integrity · 17%\"}\nDIM talk-part3-after-age-390.png => 390x844\nDIM talk-part3-profile-sidebar-390.png => 390x844\nSIDEBAR { body: 'In progress', integrity: 'System Integrity · 17%' }\nMODAL { sex: 'male', gender: 'man', age: '43', title: 'Your body' }\nDIM talk-part3-body-modal-390.png => 390x844\nPART3_CHECKPOINT_OK"
+      }
+    },
+    {
+      "script": "verify-talk-part4.mjs",
+      "run1": {
+        "script": "verify-talk-part4.mjs",
+        "code": 0,
+        "ms": 32463,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "  path: null,\n  pace: false,\n  text: 'The request took too long. Please try again in a moment.',\n  hasContinue: false,\n  hasLater: false\n}\nDIM talk-part4-freeform-390.png => 390x844\nPART4_CHECKPOINT_OK"
+      },
+      "run2": {
+        "script": "verify-talk-part4.mjs",
+        "code": 0,
+        "ms": 24784,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "  path: null,\n  pace: false,\n  text: \"Obrium can't reach its server right now. Try again later.\",\n  hasContinue: false,\n  hasLater: false\n}\nDIM talk-part4-freeform-390.png => 390x844\nPART4_CHECKPOINT_OK"
+      }
+    },
+    {
+      "script": "verify-talk-part5.mjs",
+      "run1": {
+        "script": "verify-talk-part5.mjs",
+        "code": 0,
+        "ms": 13747,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "  health: 'Complete',\n  mind: 'Complete',\n  lifestyle: 'Complete',\n  goals: 'Complete',\n  integrity: 'System Integrity · 33%'\n}\nDIM talk-part5-all-sections-complete-390.png => 390x844\nPART5_CHECKPOINT_OK"
+      },
+      "run2": {
+        "script": "verify-talk-part5.mjs",
+        "code": 0,
+        "ms": 13621,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "  health: 'Complete',\n  mind: 'Complete',\n  lifestyle: 'Complete',\n  goals: 'Complete',\n  integrity: 'System Integrity · 25%'\n}\nDIM talk-part5-all-sections-complete-390.png => 390x844\nPART5_CHECKPOINT_OK"
+      }
+    },
+    {
+      "script": "verify-onboarding-sync-fixes.mjs",
+      "run1": {
+        "script": "verify-onboarding-sync-fixes.mjs",
+        "code": 0,
+        "ms": 28983,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "[fresh] after one sleep signal: resolver body.physicalActivity | sidebar \"Add your physical activity\"\n[fresh] after Another-time snooze: {\"snoozed\":true,\"step\":\"Set your location for weather\",\"resolver\":\"settings_location\"}\n[fresh] after clearing snooze: \"Add your physical activity\"\n[fresh] same-day relaunch drift banner: none\n[established, 1 missed] banner: Welcome back. Nothing was logged for the last 1 day, so that day is empty in your history. Want to tell me roughly how it went, or start fresh from today? Tell you about it Start fresh from today\n[established, 3 missed] banner: Welcome bac"
+      },
+      "run2": {
+        "script": "verify-onboarding-sync-fixes.mjs",
+        "code": 0,
+        "ms": 30186,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "[fresh] after one sleep signal: resolver body.physicalActivity | sidebar \"Add your physical activity\"\n[fresh] after Another-time snooze: {\"snoozed\":true,\"step\":\"\",\"resolver\":null}\n[fresh] after clearing snooze: \"Add your physical activity\"\n[fresh] same-day relaunch drift banner: none\n[established, 1 missed] banner: Welcome back. Nothing was logged for the last 1 day, so that day is empty in your history. Want to tell me roughly how it went, or start fresh from today? Tell you about it Start fresh from today\n[established, 3 missed] banner: Welcome back. Nothing was logged for the last 3 days, s"
+      }
+    },
+    {
+      "script": "verify-task4-privacy.mjs",
+      "run1": {
+        "script": "verify-task4-privacy.mjs",
+        "code": 0,
+        "ms": 9466,
+        "kind": "pass",
+        "firstError": "",
+        "tail": " \"dataCategoriesIncluded\": [\n  \"profile: none\",\n  \"today: hydrationLogged 3\"\n ],\n \"outcome\": \"not sent — request failed\"\n}\nFEED ADVICE REPLY: undefined\nTASK4_CHECKPOINT_OK"
+      },
+      "run2": {
+        "script": "verify-task4-privacy.mjs",
+        "code": 0,
+        "ms": 9456,
+        "kind": "pass",
+        "firstError": "",
+        "tail": " \"dataCategoriesIncluded\": [\n  \"profile: none\",\n  \"today: hydrationLogged 3\"\n ],\n \"outcome\": \"not sent — request failed\"\n}\nFEED ADVICE REPLY: undefined\nTASK4_CHECKPOINT_OK"
+      }
+    },
+    {
+      "script": "verify-task5c-consent.mjs",
+      "run1": {
+        "script": "verify-task5c-consent.mjs",
+        "code": 0,
+        "ms": 22943,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "[fresh] focus areas, none picked: {\"subtitle\":\"Pick 1 to 3 priorities to start. You can add more later.\",\"count\":\"0 of 3 selected\",\"continueDisabled\":true,\"selected\":0}\n[fresh] focus areas, 1 picked: {\"subtitle\":\"Pick 1 to 3 priorities to start. You can add more later.\",\"count\":\"1 of 3 selected\",\"continueDisabled\":false,\"selected\":1}\n[fresh] focus areas, tried 4: {\"subtitle\":\"Pick 1 to 3 priorities to start. You can add more later.\",\"count\":\"3 of 3 selected\",\"continueDisabled\":false,\"selected\":3}\n[fresh] onboarding complete: 1\n[fresh] relaunch: {\"overlay\":null,\"consent\":false}\n[mid-onboarding "
+      },
+      "run2": {
+        "script": "verify-task5c-consent.mjs",
+        "code": 0,
+        "ms": 22511,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "[fresh] focus areas, none picked: {\"subtitle\":\"Pick 1 to 3 priorities to start. You can add more later.\",\"count\":\"0 of 3 selected\",\"continueDisabled\":true,\"selected\":0}\n[fresh] focus areas, 1 picked: {\"subtitle\":\"Pick 1 to 3 priorities to start. You can add more later.\",\"count\":\"1 of 3 selected\",\"continueDisabled\":false,\"selected\":1}\n[fresh] focus areas, tried 4: {\"subtitle\":\"Pick 1 to 3 priorities to start. You can add more later.\",\"count\":\"3 of 3 selected\",\"continueDisabled\":false,\"selected\":3}\n[fresh] onboarding complete: 1\n[fresh] relaunch: {\"overlay\":null,\"consent\":false}\n[mid-onboarding "
+      }
+    },
+    {
+      "script": "verify-task6b-feed-toggle.mjs",
+      "run1": {
+        "script": "verify-task6b-feed-toggle.mjs",
+        "code": 0,
+        "ms": 9575,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "[ON default] requests: 1 | log entries: 1 | card hidden: false\n[OFF] card hidden right after toggle: true | new requests after Feed open + relay online + direct call: 0 | new log entries: 0 | card hidden: true\n[ON again, no reload] new requests: 1 | card hidden: false\nTASK6B_CHECKPOINT_OK"
+      },
+      "run2": {
+        "script": "verify-task6b-feed-toggle.mjs",
+        "code": 0,
+        "ms": 9463,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "[ON default] requests: 1 | log entries: 1 | card hidden: false\n[OFF] card hidden right after toggle: true | new requests after Feed open + relay online + direct call: 0 | new log entries: 0 | card hidden: true\n[ON again, no reload] new requests: 1 | card hidden: false\nTASK6B_CHECKPOINT_OK"
+      }
+    },
+    {
+      "script": "verify-task14c-1.mjs",
+      "run1": {
+        "script": "verify-task14c-1.mjs",
+        "code": 0,
+        "ms": 13034,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "14c-1 fresh {\"chipBg\":\"rgba(0, 0, 0, 0)\",\"chipColor\":\"rgb(247, 243, 238)\",\"meta\":\"obrium-shell-v11e-15\",\"jsId\":\"obrium-shell-v11e-15\",\"self\":\"OK\",\"whiteDefault\":false,\"expected\":\"obrium-shell-v11e-15\"}\n14c-1 beforeUpgrade {\"chipBg\":\"rgb(240, 240, 240)\",\"whiteDefault\":true,\"caches\":[\"obrium-shell-v11e-15\"]}\n14c-1 afterUpgrade {\"chipBg\":\"rgba(0, 0, 0, 0)\",\"whiteDefault\":false,\"cssHref\":\"styles/components.css?b=obrium-shell-v11e-15\",\"meta\":\"obrium-shell-v11e-15\",\"jsId\":\"obrium-shell-v11e-15\",\"caches\":[\"obrium-shell-v11e-15\"]}\nOK verify-task14c-1 obrium-shell-v11e-15"
+      },
+      "run2": {
+        "script": "verify-task14c-1.mjs",
+        "code": 0,
+        "ms": 13372,
+        "kind": "pass",
+        "firstError": "",
+        "tail": "14c-1 fresh {\"chipBg\":\"rgba(0, 0, 0, 0)\",\"chipColor\":\"rgb(247, 243, 238)\",\"meta\":\"obrium-shell-v11e-15\",\"jsId\":\"obrium-shell-v11e-15\",\"self\":\"OK\",\"whiteDefault\":false,\"expected\":\"obrium-shell-v11e-15\"}\n14c-1 beforeUpgrade {\"chipBg\":\"rgb(240, 240, 240)\",\"whiteDefault\":true,\"caches\":[\"obrium-shell-v11e-15\"]}\n14c-1 afterUpgrade {\"chipBg\":\"rgba(0, 0, 0, 0)\",\"whiteDefault\":false,\"cssHref\":\"styles/components.css?b=obrium-shell-v11e-15\",\"meta\":\"obrium-shell-v11e-15\",\"jsId\":\"obrium-shell-v11e-15\",\"caches\":[\"obrium-shell-v11e-15\"]}\nOK verify-task14c-1 obrium-shell-v11e-15"
+      }
+    }
+  ]
+}
