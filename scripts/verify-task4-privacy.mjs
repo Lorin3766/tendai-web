@@ -48,6 +48,12 @@ const newPage = async () => {
   if (/may show an alert/.test(text)) fail('policy claims behavior that does not happen');
   if (!/Feed advice<\/strong> is a separate, smaller request|Feed advice is a separate, smaller request/.test(text)) fail('Feed advice request not disclosed');
   if (/may be sent to our servers/.test(text)) fail('old vague "our servers" wording still present');
+  if (!/Closed library rotation/.test(text) || !/reviewed library lines were already shown/.test(text)) {
+    fail('policy missing closed library rotation disclosure');
+  }
+  if (!/Everything, all at once/.test(text) || !/closed library rotation/.test(text)) {
+    fail('Everything, all at once must name closed library rotation');
+  }
   await page.screenshot({ path: path.join(outDir, 'task4-privacy-policy-390.png'), fullPage: true });
   await page.context().close();
 }
@@ -164,6 +170,74 @@ if (reply) {
   const adviceText = [reply.quickAdvice, reply.nutritionInsight, reply.tip].join(' ');
   if (/\b\d+(\.\d+)?\s*(h|hours?)\b.*(you|your|last night)|you slept|your sleep of|7\.2/i.test(adviceText)) fail('advice references fabricated sleep numbers');
   if (/\byour mood\b|feeling good today/i.test(adviceText)) fail('advice references a mood the user never gave');
+}
+
+await page.context().close();
+
+// Delete all local data must clear tendai_library_shown_v1 (closed library rotation).
+// After reload the app may write a fresh cursor for newly shown lines; the wiped seed must not survive.
+{
+  const page = await newPage();
+  const seed = JSON.stringify({
+    lastId: 'sleep-demo-must-wipe',
+    lastDay: '2099-01-01',
+    recentIds: ['sleep-demo-must-wipe'],
+  });
+  // Do not plant the library seed in addInitScript: Delete all clears sessionStorage too,
+  // so a post-wipe reload would re-run init and re-plant the seed.
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('__priv_lib')) return;
+    sessionStorage.setItem('__priv_lib', '1');
+    localStorage.clear();
+    localStorage.setItem('tendai_system_onboarding_v1', '1');
+    localStorage.setItem('tendai_welcome_accepted', '1');
+    localStorage.setItem('tendai_quick_setup_v1', JSON.stringify({ completed: true, skipped: true }));
+    localStorage.setItem('tendai_ai_consent_v1', new Date().toISOString());
+    localStorage.setItem('tendai_focus_areas_v1', JSON.stringify(['sleep']));
+  });
+  await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1800);
+  await page.evaluate(() => {
+    document.querySelectorAll('.system-onboarding-overlay, .welcome-modal-overlay').forEach((el) => el.remove());
+  });
+
+  // Same wipe path Delete all uses (localStorage.clear).
+  const clearProbe = await page.evaluate(() => {
+    localStorage.setItem('tendai_library_shown_v1', '{"probe":true}');
+    localStorage.clear();
+    return localStorage.getItem('tendai_library_shown_v1');
+  });
+  if (clearProbe != null) fail('localStorage.clear() did not remove tendai_library_shown_v1');
+  await page.evaluate((seedJson) => {
+    localStorage.setItem('tendai_system_onboarding_v1', '1');
+    localStorage.setItem('tendai_welcome_accepted', '1');
+    localStorage.setItem('tendai_quick_setup_v1', JSON.stringify({ completed: true, skipped: true }));
+    localStorage.setItem('tendai_ai_consent_v1', new Date().toISOString());
+    localStorage.setItem('tendai_focus_areas_v1', JSON.stringify(['sleep']));
+    localStorage.setItem('tendai_library_shown_v1', seedJson);
+  }, seed);
+  const before = await page.evaluate(() => localStorage.getItem('tendai_library_shown_v1'));
+  if (!before || !before.includes('sleep-demo-must-wipe')) fail('tendai_library_shown_v1 seed missing before Delete all');
+
+  await page.evaluate(() => window.openSettingsModal && window.openSettingsModal());
+  await page.waitForTimeout(500);
+  page.once('dialog', (d) => d.accept());
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20000 }),
+    page.evaluate(() => document.getElementById('settingsDeleteData')?.click()),
+  ]);
+  await page.waitForTimeout(2000);
+  const afterDelete = await page.evaluate(() => ({
+    libraryShown: localStorage.getItem('tendai_library_shown_v1'),
+  }));
+  console.log('DELETE ALL LIBRARY SHOWN:', JSON.stringify(afterDelete));
+  if (afterDelete.libraryShown && afterDelete.libraryShown.includes('sleep-demo-must-wipe')) {
+    fail('Delete all local data left prior tendai_library_shown_v1 seed');
+  }
+  if (afterDelete.libraryShown && afterDelete.libraryShown.includes('2099-01-01')) {
+    fail('Delete all local data left prior library rotation day');
+  }
+  await page.context().close();
 }
 
 await browser.close();
