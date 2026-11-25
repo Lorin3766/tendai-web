@@ -170,7 +170,7 @@ const ok =
   modal.sex === 'male' &&
   modal.gender === 'man' &&
   Number(modal.age) === 43 &&
-  /in progress/i.test(sidebar.body);
+  /3 of 11/.test(sidebar.body); // 15d-4: counts, not "In progress"
 
 if (!ok) {
   console.error('PART3_CHECKPOINT_FAILED');

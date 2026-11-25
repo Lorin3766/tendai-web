@@ -210,11 +210,8 @@ const apiHits = [];
   });
   console.log('14a wrap360', JSON.stringify(wrap));
   assert.ok(wrap.chipCount >= 2, `chip count ${wrap.chipCount}`);
-  // Short labels (<6h … 8h+) fit one row at 360; longer labels / 5-scale may wrap.
-  assert.ok(wrap.rows >= 1, `chip rows=${wrap.rows}`);
-  if (wrap.chipCount <= 4 && wrap.chipLabels.every((l) => String(l).length <= 12)) {
-    assert.equal(wrap.rows, 1, `short chips should be one row at 360, rows=${wrap.rows}`);
-  }
+  // 15d-2: ≥44×44 chips; choice labels use a 2-col grid. Pure 1–5 scale stays one row (verify-task15d-2).
+  assert.ok(wrap.rows >= 1 && wrap.rows <= 2, `chip rows=${wrap.rows}`);
   assert.equal(wrap.overflowX, false, 'horizontal scroll on chips');
   assert.ok(wrap.chipsFullyVisible, 'chips clipped at 360');
   assert.ok(wrap.ratherVisible, `Rather not say not fully visible: ${wrap.ratherText}`);
@@ -396,7 +393,8 @@ const apiHits = [];
   assert.ok(/247,\s*243,\s*238|#f7f3ee/i.test(empty.askColor) || /f7f3ee/i.test(empty.askColor), `ask color ${empty.askColor}`);
   // 15d-2: chips are ≥44×44 (was ~32); long-label choice chips use a 2-col grid, so empty cards can exceed the old ~200px band.
   assert.ok(empty.heights.every((h) => h >= 120 && h <= 260), `heights ${empty.heights}`);
-  assert.ok(empty.fully >= 3, `need ≥3 cards visible above tab, got ${empty.fully}`);
+  // 15d-2: taller 44px / 2-col chips — at least 2 cards fully above the tab (was ≥3 at ~32px chips).
+  assert.ok(empty.fully >= 2, `need ≥2 cards visible above tab, got ${empty.fully}`);
   assert.ok(empty.addBgGold, `Add Focus should be filled gold, got bg=${empty.addBg}`);
   assert.ok(empty.addCentered, 'Add Focus should be horizontally centered');
   assert.ok(empty.stripFixed, 'Add Focus pin host should be position:fixed');

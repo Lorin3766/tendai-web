@@ -41,7 +41,7 @@ async function freshPage(viewport, seedName) {
   return { context, page };
 }
 
-// 1) Desktop, no name: Guest placeholder + branding
+// 1) Desktop, no name: "Your profile" + neutral avatar (15d-4; never Guest / G)
 {
   const { context, page } = await freshPage({ width: 1280, height: 900 });
   const info = await page.evaluate(() => ({
@@ -49,6 +49,7 @@ async function freshPage(viewport, seedName) {
     brand: document.querySelector('.brand-title')?.textContent?.trim(),
     name: document.getElementById('profileName')?.childNodes[0]?.textContent?.trim(),
     avatar: document.getElementById('profileAvatar')?.textContent?.trim(),
+    neutral: document.getElementById('profileAvatar')?.classList.contains('profile-avatar--neutral'),
     hasDot: !!document.querySelector('#profileName [data-obrium-core-status]'),
     visibleText: document.body.innerText,
     manifest: document.querySelector('link[rel="manifest"]')?.getAttribute('href'),
@@ -56,8 +57,11 @@ async function freshPage(viewport, seedName) {
   console.log('DESKTOP:', JSON.stringify({ ...info, visibleText: undefined }));
   if (info.title !== 'Obrium') fail(`title is "${info.title}"`);
   if (info.brand !== 'Obrium') fail(`brand is "${info.brand}"`);
-  if (info.name !== 'Guest' || info.avatar !== 'G') fail('expected Guest placeholder');
+  if (!/Your profile/i.test(info.name || '') || info.avatar === 'G' || !info.neutral) {
+    fail(`expected Your profile + neutral avatar, got name=${info.name} avatar=${info.avatar}`);
+  }
   if (!info.hasDot) fail('status dot span missing from desktop name');
+  if (/\bGuest\b/.test(info.visibleText)) fail('Guest still visible');
   if (/\bAnton\b/.test(info.visibleText)) fail('"Anton" visible with no profile name');
   const oldHit = info.visibleText.match(new RegExp(`.{0,40}(${OLD.source}).{0,40}`, 'i'));
   if (oldHit) fail(`old brand name visible in page text: "${oldHit[0]}"`);

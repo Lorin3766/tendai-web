@@ -109,7 +109,8 @@ const browser = await chromium.launch({ headless: true });
   // 15d-2: long-label choice chips (sleep duration) use a 2-col grid; short 1–5 scale stays one row (see verify-task15d-2).
   assert.ok(at360.chipRows >= 1 && at360.chipRows <= 2, `chip rows at 360: ${at360.chipRows}`);
   assert.ok(at390.emptyHeights.every((h) => h <= 260), `empty too tall ${at390.emptyHeights}`);
-  assert.ok(at390.fully >= 3, `≥3 visible got ${at390.fully}`);
+  // 15d-2: 44×44 chips + 2-col long labels make cards taller; ≥2 fully above the tab is the new floor.
+  assert.ok(at390.fully >= 2, `≥2 visible got ${at390.fully}`);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.click('.universal-agent-card[data-focus-area-id="sleep"] [data-uac-chip]');

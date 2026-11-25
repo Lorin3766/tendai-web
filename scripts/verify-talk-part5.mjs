@@ -297,11 +297,12 @@ const ok =
   !welcomeAfterClear.path &&
   !reopen.path && reopen.count === welcomeAfterClear.count && !reopen.tendai &&
   !freshComplete.path && freshComplete.next == null && /Welcome/i.test(freshComplete.header) && !freshComplete.tendai &&
-  statuses.body === 'Complete' &&
-  statuses.health === 'Complete' &&
-  statuses.mind === 'Complete' &&
-  statuses.lifestyle === 'Complete' &&
-  statuses.goals === 'Complete';
+  // 15d-4: section status is "N of M" (no "Complete" / "In progress")
+  statuses.body === '11 of 11' &&
+  statuses.health === '9 of 9' &&
+  statuses.mind === '7 of 7' &&
+  statuses.lifestyle === '10 of 10' &&
+  statuses.goals === '3 of 3';
 
 if (!ok) {
   console.error('PART5_CHECKPOINT_FAILED');

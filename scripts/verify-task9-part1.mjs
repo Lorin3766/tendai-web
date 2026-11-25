@@ -146,7 +146,7 @@ const { payoffEcho, visibleCardSnapshot, focusAreasForField } = await import(
   '../mobile-app/js/features/profile/focus-area-signals.js'
 );
 const slept = { lifestyle: { sleepDuration: '7-8h' } };
-if (payoffEcho(slept, 'sleep') !== 'You noted about 7 to 8 hours of sleep.') fail(`sleep echo ${payoffEcho(slept, 'sleep')}`);
+if (payoffEcho(slept, 'sleep') !== 'You noted 7 to 8 hours of sleep.') fail(`sleep echo ${payoffEcho(slept, 'sleep')}`);
 const anxious = { mind: { anxietyFrequency: 'often' } };
 if (!payoffEcho(anxious, 'stress').startsWith('Your ') || /often/.test(payoffEcho(anxious, 'stress'))) {
   fail(`generic echo leaked a value: ${payoffEcho(anxious, 'stress')}`);
