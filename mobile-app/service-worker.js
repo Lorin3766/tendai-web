@@ -2,7 +2,7 @@
    Network-first for HTML, JS, and CSS so a page can never mix two builds.
    Cache is offline fallback only for those. Other static assets stay cache-first.
    Bump CACHE_NAME in lockstep with js/build-id.js BUILD_ID. */
-const CACHE_NAME = 'obrium-shell-v11e-16';
+const CACHE_NAME = 'obrium-shell-v11e-17';
 const OFFLINE_URL = './offline.html';
 
 const PRECACHE = [
