@@ -394,8 +394,8 @@ const apiHits = [];
   assert.ok(/#?8[Bb]9[Cc][Ff][Ff]|139,\s*156,\s*255/i.test(empty.areaToken) || empty.areaToken === '#8B9CFF', `sleep area token ${empty.areaToken}`);
   assert.ok(empty.askFontPx >= 13, `ask size ${empty.askFontPx}`);
   assert.ok(/247,\s*243,\s*238|#f7f3ee/i.test(empty.askColor) || /f7f3ee/i.test(empty.askColor), `ask color ${empty.askColor}`);
-  // 14c follow-up: compact flex-wrap chips — empty target ≤~200px
-  assert.ok(empty.heights.every((h) => h >= 120 && h <= 210), `heights ${empty.heights}`);
+  // 15d-2: chips are ≥44×44 (was ~32); long-label choice chips use a 2-col grid, so empty cards can exceed the old ~200px band.
+  assert.ok(empty.heights.every((h) => h >= 120 && h <= 260), `heights ${empty.heights}`);
   assert.ok(empty.fully >= 3, `need ≥3 cards visible above tab, got ${empty.fully}`);
   assert.ok(empty.addBgGold, `Add Focus should be filled gold, got bg=${empty.addBg}`);
   assert.ok(empty.addCentered, 'Add Focus should be horizontally centered');

@@ -106,8 +106,9 @@ const browser = await chromium.launch({ headless: true });
   console.log('CHIPS_360', JSON.stringify(at360));
   assert.ok(at390.emptyHeights.length >= 3, `cards ${at390.emptyHeights.length}`);
   assert.ok(at360.chipCount === 4, `chip count ${at360.chipCount}`);
-  assert.equal(at360.chipRows, 1, `short chips should be one row at 360, got ${at360.chipRows}`);
-  assert.ok(at390.emptyHeights.every((h) => h <= 210), `empty too tall ${at390.emptyHeights}`);
+  // 15d-2: long-label choice chips (sleep duration) use a 2-col grid; short 1–5 scale stays one row (see verify-task15d-2).
+  assert.ok(at360.chipRows >= 1 && at360.chipRows <= 2, `chip rows at 360: ${at360.chipRows}`);
+  assert.ok(at390.emptyHeights.every((h) => h <= 260), `empty too tall ${at390.emptyHeights}`);
   assert.ok(at390.fully >= 3, `≥3 visible got ${at390.fully}`);
 
   await page.setViewportSize({ width: 390, height: 844 });

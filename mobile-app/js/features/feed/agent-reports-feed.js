@@ -2307,6 +2307,12 @@ function noteChangedFocusSignals(profile) {
   }
 }
 
+function chipsRowClass(chips) {
+  const list = Array.isArray(chips) ? chips : [];
+  const long = list.some((chip) => String(chip?.label || '').trim().length > 2);
+  return long ? 'uac-compact__chips uac-compact__chips--grid' : 'uac-compact__chips';
+}
+
 function renderAskBlockHtml(nextQ) {
   if (!nextQ) return '';
   const chipsHtml = (nextQ.chips || [])
@@ -2322,7 +2328,7 @@ function renderAskBlockHtml(nextQ) {
         ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="settings-city" data-uac-calibration-settings>Open Settings</button>`
         : nextQ.talkOnly
           ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="confidence-talk" data-uac-calibration-talk>Answer in Talk</button>`
-          : `<div class="uac-compact__chips" data-uac-chips>${chipsHtml}</div>`
+          : `<div class="${chipsRowClass(nextQ.chips)}" data-uac-chips>${chipsHtml}</div>`
       }
     ${nextQ.settingsCity ? '' : `<button type="button" class="uac-compact__rather" data-uac-rather>Rather not say</button>`}
   </div>`;

@@ -488,6 +488,8 @@ export function createUniversalAgentCard(props) {
         `<button type="button" class="uac-chip" data-uac-chip data-chip-index="${i}">${universalEsc(chip.label)}</button>`,
     )
     .join('');
+  const chipsLong = (nextQ?.chips || []).some((chip) => String(chip?.label || '').trim().length > 2);
+  const chipsClass = chipsLong ? 'uac-compact__chips uac-compact__chips--grid' : 'uac-compact__chips';
   const questionBlock = nextQ
     ? `<div class="uac-compact__ask" data-uac-ask-block>
         <p class="uac-compact__ask-text" data-uac-ask>${universalEsc(nextQ.ask)}</p>
@@ -496,7 +498,7 @@ export function createUniversalAgentCard(props) {
             ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="settings-city" data-uac-calibration-settings>Open Settings</button>`
             : nextQ.talkOnly
               ? `<button type="button" class="uac-chip uac-chip--talk" data-uac-action="confidence-talk" data-uac-calibration-talk>Answer in Talk</button>`
-              : `<div class="uac-compact__chips" data-uac-chips>${chipsHtml}</div>`
+              : `<div class="${chipsClass}" data-uac-chips>${chipsHtml}</div>`
         }
         ${
           nextQ.settingsCity

@@ -2713,7 +2713,11 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 .talk-clarify-taps .talk-clarify-tap {
   margin: 0;
   padding: 8px 12px;
-  min-height: 40px;
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 13px;
   font-weight: 500;
   text-transform: none;
@@ -4371,30 +4375,44 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   font-weight: 500;
 }
 .uac-compact__chips {
-  /* Compact flex-wrap: short chips stay on one line when they fit (14c follow-up) */
+  /* 15d-2: ≥44×44 chips, ≥8px gap; short scale chips stay one row at 360px */
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 8px;
   overflow: visible;
+}
+.uac-compact__chips--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 .uac-chip {
   margin: 0;
-  padding: 3px 7px;
-  min-height: 32px;
+  padding: 8px 10px;
+  min-height: 44px;
+  min-width: 44px;
   flex: 0 1 auto;
   width: auto;
   max-width: 100%;
   box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 8px;
   border: 1px solid rgba(255, 248, 235, 0.28);
   background: transparent !important;
   color: var(--fg, #f7f3ee);
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 550;
   cursor: pointer;
   box-shadow: none !important;
   white-space: nowrap;
+}
+.uac-compact__chips--grid .uac-chip {
+  width: 100%;
+  white-space: normal;
+  text-align: center;
 }
 .uac-chip:hover {
   border-color: color-mix(in srgb, var(--area-color, #f6c36a) 70%, #fff 10%);
