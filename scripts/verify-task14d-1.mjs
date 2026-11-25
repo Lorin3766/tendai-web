@@ -1,5 +1,5 @@
 /**
- * Task 14d-1 — pinned opaque + Add Focus strip above tab bar.
+ * Task 14d-1 / 15c-1 — pinned + Add Focus pill above tab bar (no strip chrome).
  */
 import assert from 'assert';
 import { chromium } from 'playwright';
@@ -59,11 +59,14 @@ for (const width of [360, 390, 412]) {
     list && (list.scrollTop = list.scrollHeight);
     const cards = [...document.querySelectorAll('.universal-agent-card')];
     const last = cards[cards.length - 1];
-    const stripR = strip?.getBoundingClientRect();
     const addR = add?.getBoundingClientRect();
     const stripCs = strip ? getComputedStyle(strip) : null;
+    const addCs = add ? getComputedStyle(add) : null;
     const mid = addR ? (addR.left + addR.right) / 2 : 0;
     const goldish = (bg) => /246,\s*195,\s*106/i.test(bg || '');
+    const stripTransparent =
+      !stripCs ||
+      /transparent|rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/i.test(stripCs.backgroundColor);
     const filled = [...document.querySelectorAll('button')].filter((el) => {
       const r = el.getBoundingClientRect();
       if (r.width < 8 || r.height < 8) return false;
@@ -72,21 +75,24 @@ for (const width of [360, 390, 412]) {
     });
     return {
       stripFixed: stripCs?.position === 'fixed',
-      stripOpaque: stripCs && !/transparent|rgba\(0,\s*0,\s*0,\s*0\)/i.test(stripCs.backgroundColor),
-      border: stripCs ? parseFloat(stripCs.borderTopWidth) : 0,
+      stripTransparent,
+      border: stripCs ? parseFloat(stripCs.borderTopWidth) || 0 : 0,
+      addH: addR ? Math.round(Math.max(addR.height, parseFloat(addCs?.minHeight) || 0)) : 0,
+      addBgGold: goldish(addCs?.backgroundColor || ''),
       addAboveNav: addR ? addR.bottom <= navTop - 2 : false,
-      lastAboveStrip: last && stripR ? last.getBoundingClientRect().bottom <= stripR.top - 1 : false,
+      lastAbovePill: last && addR ? last.getBoundingClientRect().bottom <= addR.top - 1 : false,
       centered: Math.abs(mid - window.innerWidth / 2) <= 40,
       filledLabels: filled.map((b) => b.textContent.trim().slice(0, 24)),
-      stripH: stripR ? Math.round(stripR.height) : 0,
     };
   });
   console.log('14d-1', width, JSON.stringify(m));
-  assert.ok(m.stripFixed, `${width} strip fixed`);
-  assert.ok(m.stripOpaque, `${width} strip opaque`);
-  assert.ok(m.border >= 1, `${width} strip border`);
+  assert.ok(m.stripFixed, `${width} pin host fixed`);
+  assert.ok(m.stripTransparent, `${width} strip chrome must be transparent (15c-1)`);
+  assert.equal(m.border, 0, `${width} strip must have no border-top (15c-1), got ${m.border}`);
+  assert.ok(m.addBgGold, `${width} pill gold`);
+  assert.ok(m.addH >= 44, `${width} pill tap height ${m.addH}`);
   assert.ok(m.addAboveNav, `${width} above nav`);
-  assert.ok(m.lastAboveStrip, `${width} last card above strip`);
+  assert.ok(m.lastAbovePill, `${width} last card above pill`);
   assert.ok(m.centered, `${width} centered`);
   assert.equal(m.filledLabels.length, 2, `${width} gold count ${JSON.stringify(m.filledLabels)}`);
   await context.close();

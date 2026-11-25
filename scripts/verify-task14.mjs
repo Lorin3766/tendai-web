@@ -79,7 +79,7 @@ const GLOW_REMOVED = [
   '--gold-gradient: flat #f6c36a (no gradient fill)',
   '--agent-card-bg: flat #1c1a17 (no linear-gradient)',
   '.uac-compact / chips / Today primary: box-shadow none, no gold glow',
-  '.agent-feed-add-panel: filled gold pill, box-shadow none (14d-1 pinned strip)',
+  '.agent-feed-add-panel: filled gold pill, box-shadow none (14d-1 / 15c-1 pinned pill, no strip chrome)',
 ];
 console.log('GLOW_REMOVED', JSON.stringify(GLOW_REMOVED, null, 2));
 
@@ -309,8 +309,8 @@ const apiHits = [];
       list.scrollTop = list.scrollHeight;
       const cards = [...document.querySelectorAll('.universal-agent-card')];
       const last = cards[cards.length - 1];
-      const stripTop = strip?.getBoundingClientRect()?.top ?? add.getBoundingClientRect().top;
-      lastClears = last ? last.getBoundingClientRect().bottom <= stripTop - 2 : false;
+      const pillTop = add.getBoundingClientRect().top;
+      lastClears = last ? last.getBoundingClientRect().bottom <= pillTop - 2 : false;
       stripAboveNav = add.getBoundingClientRect().bottom <= navTop - 2;
       list.scrollTop = before;
     }
@@ -357,9 +357,11 @@ const apiHits = [];
         const mid = (r.left + r.right) / 2;
         return Math.abs(mid - 195) <= 40;
       })(),
-      // 14d-1: opaque pinned strip
+      // 14d-1 / 15c-1: pinned pill host — no strip chrome
       stripFixed: stripCs?.position === 'fixed',
-      stripOpaque: !!(stripCs && stripCs.backgroundColor && !/rgba?\(\s*0,\s*0,\s*0,\s*0\s*\)|transparent/i.test(stripCs.backgroundColor)),
+      stripTransparent:
+        !stripCs ||
+        /rgba?\(\s*0,\s*0,\s*0,\s*0\s*\)|transparent/i.test(stripCs.backgroundColor || ''),
       stripBorderPx: stripCs ? parseFloat(stripCs.borderTopWidth) || 0 : 0,
       stripAboveNav,
       primaryBg: primaryCs?.backgroundColor || '',
@@ -397,9 +399,9 @@ const apiHits = [];
   assert.ok(empty.fully >= 3, `need ≥3 cards visible above tab, got ${empty.fully}`);
   assert.ok(empty.addBgGold, `Add Focus should be filled gold, got bg=${empty.addBg}`);
   assert.ok(empty.addCentered, 'Add Focus should be horizontally centered');
-  assert.ok(empty.stripFixed, 'Add Focus strip should be position:fixed');
-  assert.ok(empty.stripOpaque, 'Add Focus strip must be opaque (page background)');
-  assert.ok(empty.stripBorderPx >= 1, `strip needs 1px top border, got ${empty.stripBorderPx}`);
+  assert.ok(empty.stripFixed, 'Add Focus pin host should be position:fixed');
+  assert.ok(empty.stripTransparent, 'Add Focus strip chrome must be transparent (15c-1)');
+  assert.equal(empty.stripBorderPx, 0, `strip must have no border-top (15c-1), got ${empty.stripBorderPx}`);
   assert.ok(empty.stripAboveNav, 'pinned Add Focus must sit above the tab bar');
   assert.ok(empty.primaryIsGold, `Today primary not gold: ${empty.primaryBg}`);
   assert.ok(
@@ -411,7 +413,7 @@ const apiHits = [];
       empty.filledGoldLabels.some((t) => /Add Focus/i.test(t)),
     `expected Today primary + Add Focus among ${JSON.stringify(empty.filledGoldLabels)}`,
   );
-  assert.ok(empty.lastClears, 'last card does not clear above the pinned Add Focus strip when scrolled to end');
+  assert.ok(empty.lastClears, 'last card does not clear above the pinned Add Focus pill when scrolled to end');
 
   const logBefore = await page.evaluate(() => JSON.parse(localStorage.getItem('tendai_data_sent_log_v1') || '[]').length);
   const apiBefore = apiHits.length;

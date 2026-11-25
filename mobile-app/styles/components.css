@@ -4510,25 +4510,29 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 }
 
 /*
- * 14d-1: + Add Focus pinned just above the tab bar on an opaque strip
- * (page background + 1px top border) so cards never show through or clip.
- * Strip height token (on panel) drives list bottom padding.
+ * 14d-1 / 15c-1: + Add Focus pill pinned above the tab bar.
+ * No strip chrome (no background, no border, no gap) — only the gold pill.
+ * Pill height token drives list bottom padding (pill + 16px + safe-area).
  */
 .agent-feed-add-strip {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  /* Sit just above the tab bar (same clearance as the old padded strip, without chrome). */
+  bottom: calc(70px + 8px + env(safe-area-inset-bottom, 0px));
   z-index: 45;
   display: none; /* shown only while Feed is the active pane */
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  padding: var(--agent-feed-add-strip-pad-y, 10px) 16px;
-  min-height: var(--agent-feed-add-strip-h, 56px);
-  background: var(--bg, #141210);
-  border-top: 1px solid var(--surface-border, rgba(255, 248, 235, 0.14));
+  padding: 0 16px;
+  min-height: 0;
+  height: auto;
+  background: transparent;
+  border: 0;
+  border-top: 0;
   pointer-events: none;
+  gap: 0;
 }
 #centerBody.view-feed .agent-feed-add-strip {
   display: flex;
@@ -4538,7 +4542,7 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 }
 .agent-feed-add-panel.add-agent-button,
 .agent-feed-add-panel {
-  /* Compact filled gold pill (same gold as Today "Do it") */
+  /* Filled gold pill (same gold as Today Log / Done) — 44px tap target */
   display: inline-flex;
   flex-direction: row;
   align-items: center;
@@ -4552,8 +4556,8 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   flex-shrink: 0;
   align-self: center;
   margin: 0;
-  min-height: var(--agent-feed-add-pill-h, 36px);
-  padding: 8px 18px;
+  min-height: var(--agent-feed-add-pill-h, 44px);
+  padding: 10px 18px;
   box-sizing: border-box;
   border-radius: 999px;
   border: 0;
@@ -4595,7 +4599,7 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   outline: 2px solid rgba(246, 195, 106, 0.55);
   outline-offset: 2px;
 }
-/* Desktop: no tab bar — pin strip to the bottom of the center column.
+/* Desktop: no tab bar — pin pill to the bottom of the center column.
    #centerContent uses contain:layout, so position:fixed is relative to that
    column — left:0 / width:100% fills the free space between the sidebars. */
 @media (min-width: 900px) {
@@ -4619,11 +4623,7 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 }
 /* Feed agent stack: flex + min-height:0 + overflow hidden so list scrolls; works mobile + desktop */
 .agent-reports-panel {
-  --agent-feed-add-strip-pad-y: 10px;
-  --agent-feed-add-pill-h: 36px;
-  --agent-feed-add-strip-h: calc(
-    (var(--agent-feed-add-strip-pad-y) * 2) + var(--agent-feed-add-pill-h)
-  );
+  --agent-feed-add-pill-h: 44px;
   display: flex;
   flex-direction: column;
   align-items: stretch; /* children full width; CTA overrides with align-self */
@@ -4643,13 +4643,13 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  /* Strip height + 16px so the last card scrolls fully above the pinned Add Focus */
+  /* Pill + 16px + safe-area so the last card scrolls fully above the pinned Add Focus */
   padding-bottom: calc(
-    var(--agent-feed-add-strip-h, 56px) + 16px + 70px + env(safe-area-inset-bottom, 0px)
+    var(--agent-feed-add-pill-h, 44px) + 16px + env(safe-area-inset-bottom, 0px)
   );
 }
 .agent-reports-panel .agent-feed-add-strip {
-  /* Strip is viewport-fixed; keep a no-layout placeholder out of the flex scroll chain */
+  /* Pin host is viewport-fixed; keep a no-layout placeholder out of the flex scroll chain */
   flex: 0 0 0;
 }
 .agent-reports-title--cyber {
