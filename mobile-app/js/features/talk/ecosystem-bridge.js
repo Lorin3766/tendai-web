@@ -167,12 +167,6 @@ export function openLabsReportModal(labId, labName) {
         </button>
         <p class="labs-choice-subtext">View a summary of your trends to show your doctor.</p>
       </div>
-      <div class="labs-choice-card">
-        <button type="button" class="labs-choice-btn" id="labsChoiceOnlineMD" data-action="online-md">
-          <span class="labs-choice-label">Consult Online MD</span>
-        </button>
-        <p class="labs-choice-subtext">Coming soon: 10-min sync with a partner specialist ($29). Not bookable yet.</p>
-      </div>
       <div class="labs-choice-card labs-choice-secondary">
         <button type="button" class="labs-choice-btn labs-choice-btn-secondary" id="labsChoiceHomeLab" data-action="home-lab">
           <span class="labs-choice-label">Schedule Home Lab</span>
@@ -185,14 +179,7 @@ export function openLabsReportModal(labId, labName) {
   overlay.querySelector('#labsChoiceMedicalBrief').addEventListener('click', () => {
     showMedicalBriefLoading(contentEl, overlay, labName);
   });
-  overlay.querySelector('#labsChoiceOnlineMD').addEventListener('click', () => {
-    closeLabsOverlay(overlay);
-    if (typeof window.switchView === 'function') window.switchView('talk');
-    const talkComponent = window.__obriumTalkComponent;
-    if (talkComponent) {
-      talkComponent.addSystemMessage('[ CONSULT ]', 'Online MD consults are not available yet: Obrium has no booking partner connected, so no request was sent and nobody will contact you. Until then, please book with your own doctor or a telehealth service directly.', true);
-    }
-  });
+  // 15d-3: "Consult Online MD" removed from UI (implied a medical service).
   overlay.querySelector('#labsChoiceHomeLab').addEventListener('click', () => {
     closeLabsOverlay(overlay);
     if (typeof window.switchView === 'function') window.switchView('talk');

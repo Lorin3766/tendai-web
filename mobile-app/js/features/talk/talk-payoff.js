@@ -20,6 +20,7 @@ export const BANNED_USER_VOCAB = [
   'Stage 3',
   'On track',
   'AGT-',
+  'Online doctor',
 ];
 
 const JUDGMENT_RE = /\b(normal|abnormal|low|high|good|bad|poor|excellent|healthy|unhealthy|optimal|worse|better)\b/i;

@@ -5316,7 +5316,56 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   width: 100%;
 }
 
-/* Unified Services row: icon (left) + name + arrow. Same for Labs, Online doctor, Programs. */
+/* 15d-3: flat Services rows — one 1px border each, no nested card / chevron */
+.services-flat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 24px;
+  margin: 0;
+}
+.services-flat-list--desktop {
+  padding: 8px 0 16px;
+}
+.service-flat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 248, 235, 0.14);
+  border-radius: 12px;
+  background: var(--bg-panel, #1c1b19);
+  color: var(--fg, #f7f3ee);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 550;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+}
+.service-flat-row:hover:not(.service-flat-row--soon) {
+  border-color: rgba(255, 248, 235, 0.22);
+}
+.service-flat-row--soon {
+  cursor: default;
+  pointer-events: none;
+}
+.service-flat-row__name {
+  flex: 1 1 auto;
+}
+.service-flat-row__soon {
+  flex: 0 0 auto;
+  color: var(--fg-muted, #9a938a);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Unified Services row: icon (left) + name + arrow (legacy nested lists). */
 .service-row {
   display: flex;
   align-items: center;

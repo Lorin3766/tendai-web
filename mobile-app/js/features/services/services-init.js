@@ -3,7 +3,11 @@
 // @role: init
 // Initialize services rendering for both mobile and desktop versions
 
-import { renderAllServicesMobile, renderAllServicesDesktop } from './services-renderer.js';
+import {
+  renderAllServicesMobile,
+  renderAllServicesDesktop,
+  openServicesFocusPicker,
+} from './services-renderer.js';
 import { openEditAgentModal, openConfigureAgentSourcesModal } from '../human-os/agents-ui.js';
 import { openBlueprintStoreModal } from '../human-os/blueprint-store-modal.js';
 import { tickModularAgents } from '../human-os/modular-agents-runtime.js';
@@ -184,6 +188,12 @@ import { getUserAgentById, deleteUserAgent, updateUserAgent } from '../human-os/
       if (row) {
         e.preventDefault();
         openBlueprintStoreModal(refreshServicesAfterAgentChange);
+        return;
+      }
+      const focusPicker = e.target && e.target.closest && e.target.closest('[data-action="open-focus-picker"]');
+      if (focusPicker) {
+        e.preventDefault();
+        openServicesFocusPicker();
         return;
       }
 

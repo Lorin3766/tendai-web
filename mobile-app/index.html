@@ -553,60 +553,12 @@
             </div>
             <!-- /center-feed-talk-slider -->
 
-            <!-- SERVICES VIEW (Mobile only) -->
+            <!-- SERVICES VIEW (Mobile only) — flat rows (15d-3); Online doctor removed -->
             <div class="services-view hidden" id="services-view">
               <div id="screen-services">
-                <!-- Labs Section -->
-                <article class="card-soft service-section sidebar-panel-flat" data-service-section="labs">
-                  <div class="card-header-toggle" data-collapse="MOBILE_LABS" role="button" tabindex="0" aria-expanded="false">
-                    <h3 class="card-title" style="margin: 0;">Labs</h3>
-                    <span class="chevron">▼</span>
-                  </div>
-                  <div class="card-body-collapsible" data-collapse-body="MOBILE_LABS">
-                    <div class="service-options-list" id="mobileLabsList">
-                      <!-- Labs will be rendered dynamically -->
-                    </div>
-                  </div>
-                </article>
-
-                <!-- Online Doctor Section -->
-                <article class="card-soft service-section sidebar-panel-flat" data-service-section="online-doctor">
-                  <div class="card-header-toggle" data-collapse="MOBILE_ONLINE_DOCTOR" role="button" tabindex="0" aria-expanded="false">
-                    <h3 class="card-title" style="margin: 0;">Online doctor</h3>
-                    <span class="chevron">▼</span>
-                  </div>
-                  <div class="card-body-collapsible" data-collapse-body="MOBILE_ONLINE_DOCTOR">
-                    <div class="service-options-list service-section-content" id="mobileOnlineDoctorContainer">
-                      <!-- Online doctor options will be rendered dynamically -->
-                    </div>
-                  </div>
-                </article>
-
-                <!-- Programs Section -->
-                <article class="card-soft service-section sidebar-panel-flat" data-service-section="mini-programs">
-                  <div class="card-header-toggle" data-collapse="MOBILE_MINI_PROGRAMS" role="button" tabindex="0" aria-expanded="false">
-                    <h3 class="card-title" style="margin: 0;">Programs</h3>
-                    <span class="chevron">▼</span>
-                  </div>
-                  <div class="card-body-collapsible" data-collapse-body="MOBILE_MINI_PROGRAMS">
-                    <div class="pinned-list" id="mobileMiniPlansList">
-                      <!-- Programs: Create my plan rendered dynamically -->
-                    </div>
-                  </div>
-                </article>
-
-                <!-- Focus Areas Section (internal id: agents — see focus-areas.js tech debt note) -->
-                <article class="card-soft service-section sidebar-panel-flat" data-service-section="agents">
-                  <div class="card-header-toggle" data-collapse="MOBILE_AGENTS" role="button" tabindex="0" aria-expanded="false">
-                    <h3 class="card-title" style="margin: 0;">Focus Areas</h3>
-                    <span class="chevron">▼</span>
-                  </div>
-                  <div class="card-body-collapsible" data-collapse-body="MOBILE_AGENTS">
-                    <div class="pinned-list" id="mobileAgentsList">
-                      <!-- User agents + Create agent CTA -->
-                    </div>
-                  </div>
-                </article>
+                <div class="services-flat-list" id="servicesFlatList">
+                  <!-- Filled by services-renderer: Labs (soon), Programs, Focus Areas -->
+                </div>
               </div>
             </div>
 
@@ -729,60 +681,11 @@
           <!-- End of centerContent -->
         </section>
 
-        <!-- RIGHT COLUMN -->
+        <!-- RIGHT COLUMN — flat Services rows (15d-3); Online doctor removed -->
         <aside id="col-right" class="layout-sidebar-right">
-          <!-- Labs -->
-          <article class="card-soft quick-help-card sidebar-panel-flat" id="labsCard">
-            <div class="card-header-toggle" data-collapse="RIGHT_LABS" role="button" tabindex="0" aria-expanded="false">
-              <h3 class="card-title" style="margin: 0;">Labs</h3>
-              <span class="chevron">▼</span>
-            </div>
-            <div class="card-body-collapsible" data-collapse-body="RIGHT_LABS">
-              <div class="service-options-list" id="labsList">
-                <!-- Labs will be rendered dynamically -->
-              </div>
-            </div>
-          </article>
-
-          <!-- Online doctor -->
-          <article class="card-soft quick-help-card sidebar-panel-flat" id="onlineDoctorCard">
-            <div class="card-header-toggle" data-collapse="RIGHT_ONLINE_DOCTOR" role="button" tabindex="0" aria-expanded="false">
-              <h3 class="card-title" style="margin: 0;">Online doctor</h3>
-              <span class="chevron">▼</span>
-            </div>
-            <div class="card-body-collapsible" data-collapse-body="RIGHT_ONLINE_DOCTOR">
-              <div class="pinned-list" id="onlineDoctorList">
-                <!-- Online doctor options will be rendered dynamically -->
-              </div>
-            </div>
-          </article>
-
-          <!-- Programs -->
-          <article class="card-soft sidebar-panel-flat" id="miniPlansCard">
-            <div class="card-header-toggle" data-collapse="RIGHT_MINI_PROGRAMS" role="button" tabindex="0" aria-expanded="false">
-              <h3 class="card-title" style="margin: 0;">Programs</h3>
-              <span class="chevron">▼</span>
-            </div>
-            <div class="card-body-collapsible" data-collapse-body="RIGHT_MINI_PROGRAMS">
-              <div class="pinned-list" id="miniPlansList">
-                <!-- Programs: Create my plan rendered dynamically -->
-              </div>
-            </div>
-          </article>
-
-          <!-- Focus Areas (internal id: agents — see focus-areas.js tech debt note) -->
-          <article class="card-soft sidebar-panel-flat" id="agentsCard">
-            <div class="card-header-toggle" data-collapse="RIGHT_AGENTS" role="button" tabindex="0" aria-expanded="false">
-              <h3 class="card-title" style="margin: 0;">Focus Areas</h3>
-              <span class="chevron">▼</span>
-            </div>
-            <div class="card-body-collapsible" data-collapse-body="RIGHT_AGENTS">
-              <div class="pinned-list" id="agentsList">
-                <!-- User agents + Create agent CTA -->
-              </div>
-            </div>
-          </article>
-
+          <div class="services-flat-list services-flat-list--desktop" id="servicesFlatListDesktop">
+            <!-- Filled by services-renderer: Labs (soon), Programs, Focus Areas -->
+          </div>
         </aside>
       </div>
     </main>

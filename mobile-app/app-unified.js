@@ -4,7 +4,7 @@ import { getState, subscribe } from './js/core/app-state.js';
 import { IS_VERBOSE_BOOT_LOGS } from './js/env-flags.js';
 import { profileState } from './js/state.js';
 import { OPEN_TALK_KEY, GREETING_KEY } from './js/features/settings/system-onboarding.js';
-import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel } from './js/features/talk/ecosystem-bridge.js';
+import { startPlanGenerationFlow, openLabsReportModal } from './js/features/talk/ecosystem-bridge.js';
 
 (function () {
   'use strict';
@@ -265,20 +265,8 @@ import { startPlanGenerationFlow, openLabsReportModal, startSecureMedicalChannel
     document.body.dataset.obriumLabsDelegate = '1';
   }
 
-  // Online Doctor "Chat with doctor": switch to TALK + Secure Medical Channel
-  if (!document.body.dataset.obriumDoctorChatDelegate) {
-    document.body.addEventListener('click', (e) => {
-      const row = e.target && e.target.closest && e.target.closest('[data-service="online-doctor"][data-doctor-id="chat"]');
-      if (!row) return;
-      e.preventDefault();
-      addGoldPulseToServiceRow(row);
-      if (typeof window.switchView === 'function') window.switchView('talk');
-      setTimeout(() => {
-        if (talkComponent) startSecureMedicalChannel(talkComponent);
-      }, 200);
-    });
-    document.body.dataset.obriumDoctorChatDelegate = '1';
-  }
+  // 15d-3: Online doctor UI removed (archive/online-doctor-services-legacy).
+  // startSecureMedicalChannel remains in ecosystem-bridge for reference only.
 
   function addGoldPulseToServiceRow(element) {
     const row = element.classList && element.classList.contains('service-row') ? element : element.closest('.service-row');
