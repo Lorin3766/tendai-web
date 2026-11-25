@@ -19,6 +19,8 @@ Each of the 8 tests run **alone, twice**. Servers: `5515` (v15) and `5516` (v16)
 None of the eight are assertion regressions from 15a (library, Today selector, `tendai_library_shown_v1`, or source labels).  
 When run alone they pass on both builds. The earlier suite reds were **load / timeout flakiness** under a long sequential `verify-all` run (Playwright `TimeoutError`s), plus one mid-bump `verify-task14c-1` failure when BUILD_ID was only partially updated during the 15a ship.
 
+**Follow-up (15b-2):** Port 5501 was often claimed by VS Code Live Server (`liveServer.settings.port: 5501`), which injects live-reload and reloads the page when verify scripts write screenshots under `mobile-app/_audit/`. That destroys Playwright execution contexts mid-test. Use `npm run serve` (static, no live-reload) for `test:all`.
+
 Live-relay / Gemini scripts remain SKIPPED by design (not among these eight).
 
 Raw JSON: `scripts/_bisect-v11e-15.json`, `scripts/_bisect-v11e-16.json`.
