@@ -7,7 +7,7 @@ import { getSystemContextDetails, getUserProfile } from '../js/features/talk/tal
 import { recordDataSent, DATA_SENT_REQUEST_TYPES } from '../js/features/talk/data-sent-log.js';
 import { isAutoProfileQuestionsEnabled } from '../js/features/settings/auto-requests.js';
 import { talkState, profileState } from '../js/state.js';
-import { getNextProfileQuestion } from '../js/features/profile/profile-schema.js';
+import { getNextProfileQuestion, getProfileQuestionByPath } from '../js/features/profile/profile-schema.js';
 import { setProfileQuestionsSnoozed } from '../js/features/feed/next-step.js';
 import { getSelectedFocusAreaIds, getFocusAreaById } from '../js/features/human-os/focus-areas.js';
 import { getEntries } from '../js/features/feed/content-library.js';
@@ -41,6 +41,7 @@ import {
   saveFollowups,
   selectDueFollowUp,
   setAreaMuted,
+  setFieldFollowUpDeclined,
 } from '../js/features/talk/follow-ups.js';
 import { parseAndUpdateState } from '../js/features/talk/messageParser.js';
 import { extractRoutineSuggestionFromText, protocolIdForRoutine } from '../js/features/talk/talk-engine.js';
@@ -1304,11 +1305,23 @@ export class TalkComponent {
     }
     if (choice === 'mute') {
       setAreaMuted(pending.area, true);
+    } else if (choice === 'mute-field') {
+      if (pending.path) setFieldFollowUpDeclined(pending.path, true);
+      saveFollowups(saveFollowUpAnswer(loadFollowups(), pending, choice, today));
     } else {
       saveFollowups(saveFollowUpAnswer(loadFollowups(), pending, choice, today));
     }
     this._proactiveAnswersThisSession += 1;
     this.addMessageToChat(followUpAcknowledgment(choice, areaName), 'ai', true, null, { followUpAck: true });
+
+    // Re-open the same field's normal question (with tap options).
+    if ((choice === 'changed' || choice === 'answer-now') && pending.path) {
+      const question = getProfileQuestionByPath(pending.path);
+      if (question) {
+        await this.askNextProfileQuestion(question);
+        return;
+      }
+    }
 
     const next = getNextProfileQuestion(profileState.get());
     if (!next) return;

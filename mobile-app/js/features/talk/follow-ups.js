@@ -3,12 +3,42 @@
 // @role: logic
 
 import { signalsFor, statedValueEcho } from '../profile/focus-area-signals.js';
+import { isDeclinedProfileValue, getProfileQuestionCatalog } from '../profile/profile-schema.js';
+import { sleepDurationDisplay } from '../profile/sleep-duration.js';
 import { stepTextForRecord } from '../feed/today-steps.js';
 
 export const FOLLOWUPS_KEY = 'tendai_followups_v1';
 export const FOLLOWUP_MUTED_KEY = 'tendai_followup_muted_areas_v1';
+/** Permanent per-field "Don't ask again" for profile follow-ups. */
+export const FOLLOWUP_DECLINED_FIELDS_KEY = 'tendai_followup_declined_fields_v1';
 
 const EMPTY = { answers: [], seen: [], deferrals: [] };
+
+/**
+ * Proactive Talk templates that interpolate a stored value and/or field label.
+ * Action follow-ups interpolate Today action text (not a profile field).
+ */
+export const PROACTIVE_FOLLOWUP_TEMPLATES = [
+  {
+    id: 'action',
+    description: 'Today action revisit',
+    build: ({ actionText }) => {
+      const sentence = /[.?!]$/.test(actionText) ? actionText : `${actionText}.`;
+      return `Last time you tried ${sentence} How did it go?`;
+    },
+  },
+  {
+    id: 'profile-answered',
+    description: 'Profile field with a real prior answer',
+    build: ({ value, fieldLabel }) =>
+      `Last time you said ${value} for ${fieldLabel}. Anything changed?`,
+  },
+  {
+    id: 'profile-declined',
+    description: 'Profile field the user previously declined',
+    build: ({ fieldLabel }) => `Want to answer the ${fieldLabel} question now?`,
+  },
+];
 
 export function localDayOffset(fromKey, toKey) {
   const a = new Date(`${fromKey}T12:00:00`);
@@ -59,6 +89,20 @@ export function setAreaMuted(area, muted) {
   return next;
 }
 
+export function loadDeclinedFollowUpFields() {
+  const raw = readJson(FOLLOWUP_DECLINED_FIELDS_KEY, []);
+  return Array.isArray(raw) ? raw.map((id) => String(id)) : [];
+}
+
+export function setFieldFollowUpDeclined(path, declined = true) {
+  const id = String(path || '').trim();
+  if (!id) return loadDeclinedFollowUpFields();
+  const next = loadDeclinedFollowUpFields().filter((item) => item !== id);
+  if (declined) next.push(id);
+  localStorage.setItem(FOLLOWUP_DECLINED_FIELDS_KEY, JSON.stringify(next));
+  return next;
+}
+
 export function actionRef(step) {
   return `${step.date}|${step.slot}|${step.actionId}`;
 }
@@ -71,11 +115,83 @@ function answeredRefs(state) {
   return new Set((state?.answers || []).map((row) => row && row.ref).filter(Boolean));
 }
 
-function mentionFromEcho(echo) {
-  return String(echo || '')
-    .replace(/^You noted\s+/i, '')
-    .replace(/\.$/, '')
-    .trim();
+export function fieldLabelForPath(path) {
+  const [sectionKey, fieldKey] = String(path || '').split('.');
+  if (!sectionKey || !fieldKey) return fieldKey || 'question';
+  const section = getProfileQuestionCatalog().find((entry) => entry.key === sectionKey);
+  const field = section?.fields.find((entry) => entry.key === fieldKey);
+  return field?.label || fieldKey;
+}
+
+/** Human phrase for an answered follow-up. Empty for declined / missing. */
+export function displayFollowUpValue(signal, value) {
+  if (value == null || isDeclinedProfileValue(value)) return '';
+  const path = `${signal.section}.${signal.field}`;
+  if (path === 'lifestyle.sleepDuration') {
+    const phrase = sleepDurationDisplay(value);
+    if (!phrase || isDeclinedProfileValue(phrase) || /prefer not|rather not/i.test(phrase)) return '';
+    return phrase;
+  }
+  if (Array.isArray(value)) return value.filter(Boolean).join(', ');
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  const raw = String(value).trim();
+  if (!raw || isDeclinedProfileValue(raw)) return '';
+  return raw.replace(/-/g, ' ');
+}
+
+export const ACTION_CHIPS = [
+  { id: 'went-well', label: 'Went well' },
+  { id: 'not-really', label: 'Not really' },
+  { id: 'not-yet', label: "Haven't tried yet" },
+  { id: 'later', label: 'Another time' },
+  { id: 'mute', label: "Don't ask about this" },
+];
+
+export const PROFILE_ANSWERED_CHIPS = [
+  { id: 'same', label: 'About the same' },
+  { id: 'changed', label: 'Something changed' },
+  { id: 'later', label: 'Not now' },
+  { id: 'mute-field', label: "Don't ask again" },
+];
+
+export const PROFILE_DECLINED_CHIPS = [
+  { id: 'answer-now', label: 'Answer now' },
+  { id: 'later', label: 'Not now' },
+  { id: 'mute-field', label: "Don't ask again" },
+];
+
+/**
+ * Build the profile follow-up payload for one signal + stored value.
+ * Declined answers never appear as values in the sentence.
+ */
+export function buildProfileFollowUp({ signal, area, stated, seenOn }) {
+  const path = `${signal.section}.${signal.field}`;
+  const fieldLabel = fieldLabelForPath(path);
+  const declined = isDeclinedProfileValue(stated.stored);
+  if (declined) {
+    return {
+      kind: 'profile',
+      profileState: 'declined',
+      ref: profileRef(path, stated.stored),
+      area,
+      path,
+      seenOn,
+      text: PROACTIVE_FOLLOWUP_TEMPLATES.find((t) => t.id === 'profile-declined').build({ fieldLabel }),
+      chips: PROFILE_DECLINED_CHIPS,
+    };
+  }
+  const value = displayFollowUpValue(signal, stated.stored);
+  if (!value) return null;
+  return {
+    kind: 'profile',
+    profileState: 'answered',
+    ref: profileRef(path, stated.stored),
+    area,
+    path,
+    seenOn,
+    text: PROACTIVE_FOLLOWUP_TEMPLATES.find((t) => t.id === 'profile-answered').build({ value, fieldLabel }),
+    chips: PROFILE_ANSWERED_CHIPS,
+  };
 }
 
 /**
@@ -106,22 +222,6 @@ export function noteProfileFactsSeen(profile, today, state, areas) {
   return { state: next, changed };
 }
 
-const ACTION_CHIPS = [
-  { id: 'went-well', label: 'Went well' },
-  { id: 'not-really', label: 'Not really' },
-  { id: 'not-yet', label: "Haven't tried yet" },
-  { id: 'later', label: 'Another time' },
-  { id: 'mute', label: "Don't ask about this" },
-];
-
-const PROFILE_CHIPS = [
-  { id: 'same', label: 'About the same' },
-  { id: 'changed', label: 'Something changed' },
-  { id: 'skip', label: 'Rather not say' },
-  { id: 'later', label: 'Another time' },
-  { id: 'mute', label: "Don't ask about this" },
-];
-
 function dueAction(opts, muted, done) {
   const steps = (opts.steps || [])
     .filter((step) => step && (step.status === 'done' || step.status === 'skipped'))
@@ -141,12 +241,11 @@ function dueAction(opts, muted, done) {
     const text = opts.textForStep ? opts.textForStep(step) : stepTextForRecord(step);
     const actionText = String(text || '').trim();
     if (!actionText) continue;
-    const sentence = /[.?!]$/.test(actionText) ? actionText : `${actionText}.`;
     return {
       kind: 'action',
       ref: actionRef(step),
       area: step.area,
-      text: `Last time you tried ${sentence} How did it go?`,
+      text: PROACTIVE_FOLLOWUP_TEMPLATES.find((t) => t.id === 'action').build({ actionText }),
       chips: ACTION_CHIPS,
     };
   }
@@ -155,6 +254,7 @@ function dueAction(opts, muted, done) {
 
 function dueProfile(opts, muted, done) {
   const seen = opts.state?.seen || [];
+  const declinedFields = new Set(opts.declinedFields || loadDeclinedFollowUpFields());
   const candidates = [];
   for (const area of opts.areas || []) {
     if (muted.has(area)) continue;
@@ -163,23 +263,18 @@ function dueProfile(opts, muted, done) {
       const stated = statedValueEcho(opts.profile, signal);
       if (!stated) continue;
       const path = `${signal.section}.${signal.field}`;
+      if (declinedFields.has(path)) continue;
       const ref = profileRef(path, stated.stored);
       if (done.has(ref)) continue;
       const stamp = seen.find((row) => row.path === path && row.value === stated.stored);
       if (!stamp?.on) continue;
       const offset = localDayOffset(stamp.on, opts.today);
       if (offset == null || offset < 1) continue;
-      const mention = mentionFromEcho(stated.echo);
-      if (!mention) continue;
-      candidates.push({
-        kind: 'profile',
-        ref,
-        area,
-        path,
-        seenOn: stamp.on,
-        text: `You mentioned ${mention}. Anything changed?`,
-        chips: PROFILE_CHIPS,
-      });
+      const declined = isDeclinedProfileValue(stated.stored);
+      // Declined follow-ups: at most once per 7-day window after the decline was noted.
+      if (declined && offset > 7) continue;
+      const built = buildProfileFollowUp({ signal, area, stated, seenOn: stamp.on });
+      if (built) candidates.push(built);
     }
   }
   candidates.sort((a, b) => (a.seenOn === b.seenOn ? a.path.localeCompare(b.path) : a.seenOn < b.seenOn ? -1 : 1));
@@ -209,7 +304,7 @@ export function saveFollowUpAnswer(state, due, answer, today) {
   return next;
 }
 
-/** Count an "Another time". The second one expires the item with answer code "deferred". */
+/** Count an "Another time" / "Not now". The second one expires the item with answer code "deferred". */
 export function noteFollowUpDeferred(state, due, today) {
   const deferrals = [...(state?.deferrals || [])];
   const index = deferrals.findIndex((row) => row && row.ref === due.ref);
@@ -234,11 +329,14 @@ export function followUpAcknowledgment(choice, areaName) {
   if (choice === 'mute') {
     return `I won't ask about ${name} follow-ups. You can turn that back on in Settings.`;
   }
+  if (choice === 'mute-field') {
+    return "Got it — I won't ask about that again.";
+  }
   if (choice === 'went-well') return 'Noted. Glad you gave it a try.';
   if (choice === 'not-really') return 'Noted. That one can wait.';
   if (choice === 'not-yet') return 'Noted. Trying it later is fine.';
   if (choice === 'same') return "Noted. I'll leave that as it is.";
-  if (choice === 'changed') return 'Noted. You can update it in your profile when you want.';
+  if (choice === 'changed' || choice === 'answer-now') return 'Okay — here is that question again.';
   if (choice === 'skip') return "All right. I won't follow up on that one.";
   return 'Noted.';
 }

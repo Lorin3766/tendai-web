@@ -163,7 +163,7 @@ function formatValueEcho(signal, value) {
   const shown = Array.isArray(value) ? value.filter(Boolean).join(', ') : String(value ?? '').trim();
   if (path === 'lifestyle.sleepDuration') {
     const phrase = sleepDurationDisplay(value) || shown;
-    return `You noted about ${phrase} of sleep.`;
+    return `You noted ${phrase} of sleep.`;
   }
   if (path === 'lifestyle.sleepQuality') return `You noted sleep quality at ${shown} on a 1 to 5 scale.`;
   if (path === 'body.physicalActivity') return `You noted your activity level: ${shown}.`;

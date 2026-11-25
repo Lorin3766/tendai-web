@@ -311,6 +311,26 @@ export function isProfileFieldAnswered(value, key) {
 }
 
 /**
+ * Look up a catalog question by `section.field` path (for re-asking after a follow-up).
+ * @param {string} path
+ * @returns {{ sectionKey: string, sectionLabel: string, fieldKey: string, fieldLabel: string, path: string } | null}
+ */
+export function getProfileQuestionByPath(path) {
+  const [sectionKey, fieldKey] = String(path || '').split('.');
+  if (!sectionKey || !fieldKey) return null;
+  const section = PROFILE_QUESTION_CATALOG.find((entry) => entry.key === sectionKey);
+  const field = section?.fields.find((entry) => entry.key === fieldKey);
+  if (!section || !field) return null;
+  return {
+    sectionKey: section.key,
+    sectionLabel: PROFILE_SECTION_LABELS[section.key],
+    fieldKey: field.key,
+    fieldLabel: field.label,
+    path: `${section.key}.${field.key}`,
+  };
+}
+
+/**
  * First unanswered profile-modal field, walking Body → Health → Mind → Lifestyle → Goals.
  * Does not invent fields; skips legacy schema keys that are not shown in the modals.
  *
