@@ -74,7 +74,7 @@ for (const [label, iso, expectGreet] of [
   assert.ok(!/Guest/i.test(snap.greet));
   assert.match(snap.header, /Your focus areas/i);
   if (snap.text) {
-    assert.ok(/Log how you slept|Log your day|Today: done|Today: not today/i.test(snap.text), snap.text);
+    assert.ok(/Log how you slept|Log your day|Done today|Not today/i.test(snap.text), snap.text);
     if (/Log how you slept|Log your day/i.test(snap.text)) {
       assert.ok(snap.actions.some((a) => /^Log$/i.test(a)), JSON.stringify(snap.actions));
     }

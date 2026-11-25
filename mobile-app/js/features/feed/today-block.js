@@ -75,8 +75,8 @@ export function feedGreetingFor(now = obriumNow(), profile = profileState.get?.(
 function lineLabel(view) {
   const step = view.step;
   if (view.mode === 'recorded') {
-    if (view.record?.status === 'skipped') return 'Today: not today';
-    return 'Today: done';
+    if (view.record?.status === 'skipped') return 'Not today';
+    return '✓ Done today';
   }
   if (step?.kind === 'checkin') {
     if (step.id === 'checkin-sleep') return 'Log how you slept · 1 min';
@@ -87,14 +87,23 @@ function lineLabel(view) {
   return clipped;
 }
 
-function renderRecorded(record, step, actions, ack, textEl, slotEl, rowEl) {
+function renderRecorded(record, step, actions, ack, textEl, slotEl, rowEl, root) {
   clearNode(actions);
   if (slotEl) slotEl.textContent = '';
   if (rowEl) rowEl.hidden = false;
-  if (textEl) textEl.textContent = record.status === 'skipped' ? 'Today: not today' : 'Today: done';
+  const pendingRating = record.status === 'done' && step.kind === 'action' && record.rating == null;
+  if (textEl) {
+    if (record.status === 'skipped') textEl.textContent = 'Not today';
+    else textEl.textContent = pendingRating ? 'Done today' : '✓ Done today';
+  }
+  // 15c-2: status lives in the row; keep ack text for screen readers / tests that read it.
   ack.hidden = false;
   ack.textContent = acknowledgment({ ...record, kind: step.kind });
-  if (record.status === 'done' && step.kind === 'action' && record.rating == null) {
+  if (root) {
+    root.classList.toggle('today-block--settled', !pendingRating);
+  }
+  if (pendingRating) {
+    if (root) root.classList.remove('today-block--settled');
     for (let n = 1; n <= 5; n += 1) {
       const value = n;
       actions.appendChild(
@@ -107,6 +116,8 @@ function renderRecorded(record, step, actions, ack, textEl, slotEl, rowEl) {
     actions.appendChild(
       button('Skip', 'btn today-block__chip today-block__chip--quiet', () => {
         clearNode(actions);
+        if (textEl) textEl.textContent = '✓ Done today';
+        if (root) root.classList.add('today-block--settled');
         ack.hidden = false;
         ack.textContent = acknowledgment(record);
       }),
@@ -150,9 +161,11 @@ export function renderTodayBlock() {
   const view = resolveTodayDisplay(displayOptions());
   root.hidden = false;
   root.classList.add('today-block--compact');
+  root.classList.remove('today-block--settled');
   clearNode(actions);
   ack.hidden = true;
   ack.textContent = '';
+  if (greetEl) greetEl.hidden = false;
 
   // 14b: if nothing is eligible, show only the greeting
   if (view.mode === 'hidden' || !view.step?.text) {
@@ -166,8 +179,9 @@ export function renderTodayBlock() {
 
   if (view.mode === 'recorded') {
     offeredCheckin = null;
-    setTodaySource(view.step, sourceEl, expandEl);
-    renderRecorded(view.record, view.step, actions, ack, textEl, slotEl, rowEl);
+    // Settled row is status-only — no source / disclaimer under the line.
+    setTodaySource(null, sourceEl, expandEl);
+    renderRecorded(view.record, view.step, actions, ack, textEl, slotEl, rowEl, root);
     return;
   }
 
