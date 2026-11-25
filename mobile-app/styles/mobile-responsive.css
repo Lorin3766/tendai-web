@@ -188,13 +188,17 @@
   }
 
   .profile-view-scroll {
-    flex: 1 1 auto;
+    /* 15d-4: content sits at the top — no flex-grown empty half screen */
+    flex: 0 1 auto;
+    align-self: stretch;
     min-height: 0;
+    max-height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
     gap: 12px;
     /* Bottom nav + safe area */
     padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));

@@ -5050,6 +5050,12 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
   box-shadow: 0 12px 26px rgba(246, 195, 106, 0.4);
   flex-shrink: 0;
 }
+.profile-avatar--neutral {
+  font-weight: 500;
+  font-size: 18px;
+  letter-spacing: 0;
+  color: #1b1300;
+}
 
 .profile-info {
   flex: 1;

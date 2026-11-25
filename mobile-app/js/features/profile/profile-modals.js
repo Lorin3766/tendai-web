@@ -32,13 +32,22 @@
 import { profileState, resolveAgeYears } from '../../state.js';
 import { IS_VERBOSE_BOOT_LOGS } from '../../env-flags.js';
 import { getState, updateState } from '../../core/app-state.js';
-import { getProfileSchema, getSectionSchema, getSectionKeys, getProfileQuestionCatalog, isProfileFieldAnswered } from './profile-schema.js';
+import {
+  getProfileSchema,
+  getSectionSchema,
+  getSectionKeys,
+  getProfileQuestionCatalog,
+  isProfileFieldAnswered,
+  isDeclinedProfileValue,
+} from './profile-schema.js';
 import { getSliderConfig } from '../storage/slider-config.js';
 import { deleteBiometricsDatabase } from '../../core/biometrics-db.js';
 import { getFocusAreaById } from '../human-os/focus-areas.js';
 import { loadMutedAreas, setAreaMuted } from '../talk/follow-ups.js';
 
-const PROFILE_NAME_PLACEHOLDER = 'Guest';
+/** Neutral header label when the user has not entered a name (never "Guest"). */
+const PROFILE_NAME_PLACEHOLDER = 'Your profile';
+const NEUTRAL_AVATAR_GLYPH = '◉';
 
 /**
  * Checked values of a rendered checkbox group; [] when the user unticked everything,
@@ -1751,10 +1760,7 @@ function countFilledFields(profile, structure) {
 
     renderProfileName(mobileProfileName, mobileProfileAvatar, profileData);
 
-    if (mobileProfileAge) {
-      const age = resolveAgeYears(profileData.body);
-      if (age != null) mobileProfileAge.textContent = `${age} yrs`;
-    }
+    updateProfileAgeLine(mobileProfileAge, profileData.body);
 
     // Section progress is now handled by updateSectionProgress()
     // This old status code is removed to avoid conflicts
@@ -1795,27 +1801,23 @@ function countFilledFields(profile, structure) {
     catalog.forEach((section) => {
       const sectionData = profileData[section.key] || {};
       const totalFields = section.fields.length;
-      const filledFields = section.fields.filter((field) =>
-        isProfileFieldAnswered(sectionData[field.key], field.key)
-      ).length;
+      const knownFields = section.fields.filter((field) => {
+        const value = sectionData[field.key];
+        return isProfileFieldAnswered(value, field.key) && !isDeclinedProfileValue(value);
+      }).length;
 
       const statusElements = document.querySelectorAll(`[data-profile-status="${section.key}"]`);
-      statusElements.forEach(el => {
-        // Soft profile-area language — not a checklist fraction
-        let label = 'Not started';
+      statusElements.forEach((el) => {
+        // 15d-4: "2 of 6" or blank when zero — no Not started / In progress.
+        const label = knownFields > 0 ? `${knownFields} of ${totalFields}` : '';
         let stateClass = 'is-empty';
-        if (totalFields > 0 && filledFields >= totalFields) {
-          label = 'Complete';
-          stateClass = 'is-complete';
-        } else if (filledFields > 0) {
-          label = 'In progress';
-          stateClass = 'is-partial';
-        }
+        if (totalFields > 0 && knownFields >= totalFields) stateClass = 'is-complete';
+        else if (knownFields > 0) stateClass = 'is-partial';
         el.textContent = label;
         el.classList.remove('is-empty', 'is-partial', 'is-complete');
         el.classList.add(stateClass);
         el.removeAttribute('style');
-        el.title = `${filledFields} of ${totalFields} details filled`;
+        el.title = knownFields > 0 ? `${knownFields} of ${totalFields}` : '';
       });
     });
 
@@ -1832,29 +1834,51 @@ function countFilledFields(profile, structure) {
 
     renderProfileName(profileName, profileAvatar, profileData);
     
-    // Update age (prefer birthYear-derived age)
-    if (profileAge) {
-      const age = resolveAgeYears(profileData.body);
-      if (age != null) profileAge.textContent = `${age} yrs`;
+    updateProfileAgeLine(profileAge, profileData.body);
+  }
+
+  /** Age only when the user entered age/birthYear in this app — never a dash or default. */
+  function updateProfileAgeLine(ageEl, body) {
+    if (!ageEl) return;
+    const age = resolveAgeYears(body);
+    const meta = ageEl.closest('.profile-meta') || ageEl.parentElement;
+    if (age != null) {
+      ageEl.textContent = `${age} yrs`;
+      if (meta) meta.hidden = false;
+    } else {
+      ageEl.textContent = '';
+      if (meta) meta.hidden = true;
     }
   }
 
   /**
-   * Show the user's real name (or a neutral placeholder) without wiping the
-   * status-dot <span> that lives inside the name element.
+   * Show the user's real name, or "Your profile" with a neutral avatar glyph (never Guest / G).
+   * Keeps the status-dot <span> inside the name element.
    */
   function renderProfileName(nameEl, avatarEl, profileData) {
     const raw = profileData?.body?.name;
-    const name = typeof raw === 'string' && raw.trim() ? raw.trim() : PROFILE_NAME_PLACEHOLDER;
+    const hasName = typeof raw === 'string' && raw.trim();
+    const name = hasName ? raw.trim() : PROFILE_NAME_PLACEHOLDER;
     if (nameEl) {
-      let textNode = Array.from(nameEl.childNodes).find((n) => n.nodeType === Node.TEXT_NODE && n.textContent.trim());
+      let textNode = Array.from(nameEl.childNodes).find((n) => n.nodeType === Node.TEXT_NODE);
       if (!textNode) {
         textNode = document.createTextNode('');
         nameEl.insertBefore(textNode, nameEl.firstChild);
       }
       textNode.textContent = `${name} `;
+      // Hide the status LED when there is no personal name (avoids "Your profile •").
+      const dot = nameEl.querySelector('[data-obrium-core-status]');
+      if (dot && !hasName) dot.setAttribute('hidden', '');
     }
-    if (avatarEl) avatarEl.textContent = name.charAt(0).toUpperCase();
+    if (avatarEl) {
+      if (hasName) {
+        avatarEl.textContent = name.charAt(0).toUpperCase();
+        avatarEl.classList.remove('profile-avatar--neutral');
+      } else {
+        avatarEl.textContent = NEUTRAL_AVATAR_GLYPH;
+        avatarEl.classList.add('profile-avatar--neutral');
+      }
+    }
   }
 
   // Setup modal handlers

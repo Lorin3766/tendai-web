@@ -6,6 +6,7 @@
 import { profileState } from '../../state.js';
 import { storageManager } from '../../core/storage.js';
 import { getProfileSchema } from './profile-schema.js';
+import { countKnownProfileFacts } from '../talk/talk-payoff.js';
 
 /**
  * Count total fields in a profile structure (recursively)
@@ -193,14 +194,17 @@ export function updateSystemIntegrityDisplay() {
   const score = storageManager ? storageManager.calculateSystemIntegrityScore() : 0;
   const percentage = Math.min(100, Math.max(0, score));
   const filledSegments = Math.min(10, Math.round((percentage / 100) * 10));
-  const readoutText = `System Integrity · ${percentage}%`;
+  // 15d-4: plain wording from known facts (declined excluded); bar stays gold/segments.
+  const known = countKnownProfileFacts(profileState.get());
+  const readoutText =
+    known === 1 ? 'Obrium knows 1 thing about you' : `Obrium knows ${known} things about you`;
 
   [ { badge: 'profileCompletenessDesktop', details: 'profileCompletenessDetailsDesktop', bar: 'dataIntegrityBarDesktop' },
     { badge: 'profileCompletenessMobile', details: 'profileCompletenessDetailsMobile', bar: 'dataIntegrityBarMobile' } ].forEach(({ badge, details, bar }) => {
     const badgeEl = document.getElementById(badge);
     if (badgeEl) badgeEl.textContent = readoutText;
     const detailsEl = document.getElementById(details);
-    if (detailsEl) detailsEl.textContent = `${percentage}%`;
+    if (detailsEl) detailsEl.textContent = String(known);
     const barEl = document.getElementById(bar);
     if (barEl) {
       const segments = barEl.querySelectorAll('.data-integrity-segment');

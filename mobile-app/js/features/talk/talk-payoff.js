@@ -5,7 +5,11 @@ import { getEntries, shortSourceLabel } from '../feed/content-library.js';
 import { FOCUS_AREA_SIGNALS, focusAreasForField, signalProgress } from '../profile/focus-area-signals.js';
 import { getFocusAreaById } from '../human-os/focus-areas.js';
 import { getObriumCheckinHistory } from '../metrics/checkin-history.js';
-import { getProfileQuestionCatalog, isDeclinedProfileValue } from '../profile/profile-schema.js';
+import {
+  getProfileQuestionCatalog,
+  isDeclinedProfileValue,
+  isProfileFieldAnswered,
+} from '../profile/profile-schema.js';
 
 /** User-visible vocabulary that must never appear after Task 12b. */
 export const BANNED_USER_VOCAB = [
@@ -21,6 +25,10 @@ export const BANNED_USER_VOCAB = [
   'On track',
   'AGT-',
   'Online doctor',
+  'System Integrity',
+  'Not started',
+  'In progress',
+  'Guest',
 ];
 
 const JUDGMENT_RE = /\b(normal|abnormal|low|high|good|bad|poor|excellent|healthy|unhealthy|optimal|worse|better)\b/i;
@@ -135,6 +143,25 @@ export function whyNextLine(answeredPath, nextQuestion) {
 
 export function countKnownForArea(profile, areaId) {
   return signalProgress(profile, areaId).n;
+}
+
+/**
+ * Total known profile facts for the Profile header (declined answers excluded).
+ * Same filled rules as payoff / isDeclinedProfileValue — not judgment wording.
+ */
+export function countKnownProfileFacts(profile) {
+  let n = 0;
+  const data = profile && typeof profile === 'object' ? profile : {};
+  for (const section of getProfileQuestionCatalog()) {
+    const sectionData = data[section.key] && typeof data[section.key] === 'object' ? data[section.key] : {};
+    for (const field of section.fields) {
+      const value = sectionData[field.key];
+      if (!isProfileFieldAnswered(value, field.key)) continue;
+      if (isDeclinedProfileValue(value)) continue;
+      n += 1;
+    }
+  }
+  return n;
 }
 
 function shortAreaName(areaId) {
