@@ -4463,6 +4463,19 @@ body.talk-header-secure-channel #tab-talk.center-tab[aria-selected="true"] {
 .uac-compact__library-block {
   margin: 0 0 8px;
 }
+/* 15d-5: TIP label above library lines (not questions / Today). Neutral muted, ≥14px, ≥4.5:1. */
+.uac-compact__tip-label {
+  display: block;
+  margin: 0 0 2px;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-muted, #c9c2b8);
+}
 .uac-compact__library-source {
   margin: 0 0 6px;
   font-size: 14px;

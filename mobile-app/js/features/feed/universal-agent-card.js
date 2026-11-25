@@ -516,9 +516,11 @@ export function createUniversalAgentCard(props) {
 
   const libraryBody = !noFact ? (payoffContext || slotBody) : '';
   const libraryShort = slotShortSource;
+  const tipLabel = `<span class="uac-compact__tip-label" data-uac-tip-label>TIP</span>`;
   const libraryCollapsed =
     libraryBody && libraryShort && !nextQ
       ? `<div class="uac-compact__library-block" data-uac-library-block>
+          ${tipLabel}
           <p class="uac-compact__library" data-uac-content-slot>${universalEsc(libraryBody)}</p>
           <p class="uac-compact__library-source" data-uac-library-source>Source: ${universalEsc(libraryShort)}</p>
         </div>`
@@ -526,6 +528,7 @@ export function createUniversalAgentCard(props) {
   const libraryExpanded =
     libraryBody && libraryShort
       ? `<div class="uac-compact__library-block uac-compact__library-block--expand" data-uac-library-expand>
+          ${tipLabel}
           <p class="uac-compact__library" data-uac-payoff-context data-uac-content-slot>${universalEsc(libraryBody)}</p>
           <p class="uac-compact__library-source" data-uac-library-source>Source: ${universalEsc(libraryShort)}</p>
           ${

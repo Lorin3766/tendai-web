@@ -2406,6 +2406,10 @@ function syncFocusCardsFromProfile() {
           libBlock = document.createElement('div');
           libBlock.className = 'uac-compact__library-block uac-compact__library-block--expand';
           libBlock.dataset.uacLibraryExpand = '';
+          const tip = document.createElement('span');
+          tip.className = 'uac-compact__tip-label';
+          tip.dataset.uacTipLabel = '';
+          tip.textContent = 'TIP';
           lib = document.createElement('p');
           lib.className = 'uac-compact__library';
           lib.dataset.uacPayoffContext = '';
@@ -2413,6 +2417,7 @@ function syncFocusCardsFromProfile() {
           const src = document.createElement('p');
           src.className = 'uac-compact__library-source';
           src.dataset.uacLibrarySource = '';
+          libBlock.appendChild(tip);
           libBlock.appendChild(lib);
           libBlock.appendChild(src);
           if (fact.sourceUrl) {
